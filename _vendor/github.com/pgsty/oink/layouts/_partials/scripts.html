@@ -1,0 +1,295 @@
+{{/* cSpell:ignore docsearch markmap plantuml katex hasmermaid */ -}}
+{{ $shell := partial "shell/chrome-enabled.html" . -}}
+{{ $localSearch := partial "shell/search-enabled.html" . -}}
+{{ $hasGoogleSearch := ne (.Site.Params.gcs_engine_id | default "") "" -}}
+{{ $hasMarkmap := and .Site.Params.markmap.enable (.Page.Store.Get "hasMarkmap") -}}
+{{ $hasPlantuml := and .Site.Params.plantuml.enable (.Page.Store.Get "hasPlantuml") -}}
+{{ $hasGiscus := .Page.Store.Get "hasGiscus" | default false -}}
+{{ $interactiveOutput := eq (lower (.Page.Store.Get "tdOutputFormat" | default "html")) "html" -}}
+{{ $keyboardNavParam := .Param "ui.keyboard_nav.enable" -}}
+{{ if and (ne $keyboardNavParam nil) (ne (printf "%T" $keyboardNavParam) "bool") -}}
+  {{ errorf "params.ui.keyboard_nav.enable must be a boolean" -}}
+{{ end -}}
+{{/* Global action keys (language/theme/navbar/search) also belong on landing
+     and ordinary pages; keyboard-nav.js keeps tree, pager, and zen bindings
+     scoped to shell chrome at runtime. */ -}}
+{{ $hasKeyboardNav := and $interactiveOutput (ne $keyboardNavParam false) -}}
+{{ $footerData := dict -}}
+{{ if eq (partial "footer-style.html" .) "fat" -}}
+  {{ $footerData = partial "footer-data.html" . -}}
+{{ end -}}
+{{ $hasFooterCollapse := and $interactiveOutput (or $footerData.brand $footerData.columns) -}}
+{{ $imageZoomConfig := partial "content/image-zoom-config.html" . -}}
+{{ $hasImageZoom := and $interactiveOutput $imageZoomConfig.enable (.Page.Store.Get "hasImageZoom" | default false) -}}
+{{ $hasCodeRuntime := and $interactiveOutput (.Page.Store.Get "hasCodeRuntime" | default false) -}}
+{{ $hasAssetList := and $interactiveOutput (.Page.Store.Get "hasAssetList" | default false) -}}
+{{ $hasLanding := and $interactiveOutput (.Page.Store.Get "hasLanding" | default false) -}}
+{{ $hasTabRuntime := and $interactiveOutput (or
+  (.Page.Store.Get "hasTabpane" | default false)
+  (.Page.Store.Get "hasCodeGroup" | default false)
+) -}}
+
+{{ if $hasMarkmap -}}
+{{ range resources.Match "third_party/katex/fonts/*" -}}
+  {{ $published := .Publish -}}
+{{ end -}}
+{{ $d3 := resources.Get "third_party/markmap/d3.min.js" -}}
+{{ $katexJS := resources.Get "third_party/katex/katex.min.js" -}}
+{{ $katexCSS := resources.Get "third_party/katex/katex.min.css" -}}
+{{ $markmapLib := resources.Get "third_party/markmap/markmap-lib.js" -}}
+{{ $markmapView := resources.Get "third_party/markmap/markmap-view.js" -}}
+{{ $markmapToolbar := resources.Get "third_party/markmap/markmap-toolbar.js" -}}
+{{ $markmapToolbarCSS := resources.Get "third_party/markmap/markmap-toolbar.css" -}}
+{{ $markmapAutoloader := resources.Get "third_party/markmap/markmap-autoloader.js" -}}
+{{ $highlightJS := resources.Get "third_party/markmap/highlightjs/highlight.min.js" -}}
+{{ $highlightCSS := resources.Get "third_party/markmap/highlightjs/default.min.css" -}}
+{{ $webfontloader := resources.Get "third_party/markmap/webfontloader.js" -}}
+{{ if hugo.IsProduction -}}
+  {{ $d3 = $d3 | fingerprint -}}
+  {{ $katexJS = $katexJS | fingerprint -}}
+  {{ $katexCSS = $katexCSS | fingerprint -}}
+  {{ $markmapLib = $markmapLib | fingerprint -}}
+  {{ $markmapView = $markmapView | fingerprint -}}
+  {{ $markmapToolbar = $markmapToolbar | fingerprint -}}
+  {{ $markmapToolbarCSS = $markmapToolbarCSS | fingerprint -}}
+  {{ $markmapAutoloader = $markmapAutoloader | fingerprint -}}
+  {{ $highlightJS = $highlightJS | fingerprint -}}
+  {{ $highlightCSS = $highlightCSS | fingerprint -}}
+  {{ $webfontloader = $webfontloader | fingerprint -}}
+{{ end -}}
+<style>
+.markmap > svg {
+  width: 100%;
+  height: 300px;
+}
+</style>
+<script>
+window.markmap = {
+  autoLoader: {
+    manual: true,
+    baseJs: [
+      { type: 'script', data: { src: {{ $d3.RelPermalink | jsonify | safeJS }} } },
+      { type: 'script', data: { src: {{ $katexJS.RelPermalink | jsonify | safeJS }} } },
+      { type: 'script', data: { src: {{ $markmapLib.RelPermalink | jsonify | safeJS }} } },
+      { type: 'script', data: { src: {{ $markmapView.RelPermalink | jsonify | safeJS }} } },
+      { type: 'script', data: { src: {{ $markmapToolbar.RelPermalink | jsonify | safeJS }} } },
+    ],
+    baseCss: [
+      { type: 'stylesheet', data: { href: {{ $markmapToolbarCSS.RelPermalink | jsonify | safeJS }} } },
+    ],
+    provider(path) {
+      const assets = {
+        {{/* Markmap 0.18.12 requests its pinned asset IDs; serve the
+             compatible refreshed files from those local aliases. */ -}}
+        '@highlightjs/cdn-assets@11.11.1/highlight.min.js': {{ $highlightJS.RelPermalink | jsonify | safeJS }},
+        '@highlightjs/cdn-assets@11.11.1/styles/default.min.css': {{ $highlightCSS.RelPermalink | jsonify | safeJS }},
+        'katex@0.16.18/dist/katex.min.js': {{ $katexJS.RelPermalink | jsonify | safeJS }},
+        'katex@0.16.18/dist/katex.min.css': {{ $katexCSS.RelPermalink | jsonify | safeJS }},
+        'webfontloader@1.6.28/webfontloader.js': {{ $webfontloader.RelPermalink | jsonify | safeJS }},
+      };
+      if (!assets[path]) throw new Error(`Markmap asset is not vendored: ${path}`);
+      return assets[path];
+    },
+    onReady() {
+      const { autoLoader, builtInPlugins } = window.markmap;
+      autoLoader.transformPlugins = builtInPlugins.filter(plugin => plugin.name !== 'prism');
+    },
+  },
+};
+</script>
+<script src="{{ $markmapAutoloader.RelPermalink }}"
+  {{- with $markmapAutoloader.Data.Integrity }} integrity="{{ . }}" crossorigin="anonymous"{{ end }}></script>
+{{ end -}}
+
+{{ if and .Site.Params.plantuml.enable (not .Site.Params.plantuml.svg_image_url) -}}
+  {{ errorf "params.plantuml.enable requires an explicit params.plantuml.svg_image_url; the theme does not default to a public PlantUML service" -}}
+{{ end -}}
+{{ if and .Site.Params.drawio.enable (not .Site.Params.drawio.drawio_server) -}}
+  {{ errorf "params.drawio.enable requires an explicit params.drawio.drawio_server; the theme does not default to the public Draw.io service" -}}
+{{ end -}}
+
+{{ $jsBs := resources.Get "third_party/bootstrap/dist/js/bootstrap.bundle.js" -}}
+{{ $jsSurfaces := resources.Get "js/surface-coordinator.js" -}}
+{{ $jsBase := resources.Get "js/base.js" -}}
+{{ $jsNavbar := resources.Get "js/navbar-menu.js" -}}
+{{ $jsSidebarNav := resources.Get "js/sidebar-nav.js" -}}
+{{ $jsActions := resources.Get "js/action-registry.js" -}}
+{{ $jsPageActions := resources.Get "js/page-actions.js" -}}
+{{ $jsPaletteModel := resources.Get "js/palette-model.js" -}}
+{{ $jsPalette := resources.Get "js/command-palette.js" -}}
+{{ $jsSearchEngine := resources.Get "js/search-engine.js" -}}
+{{ $jsSearch := resources.Get "js/search.js" | resources.ExecuteAsTemplate "js/search.js" .Site.Home -}}
+{{ $jsMarkmap := resources.Get "js/markmap.js" | resources.ExecuteAsTemplate "js/markmap.js" . -}}
+{{ $jsPlantuml := resources.Get "js/plantuml.js" | resources.ExecuteAsTemplate "js/plantuml.js" . -}}
+{{ $jsDrawio := resources.Get "js/drawio.js" | resources.ExecuteAsTemplate "js/drawio.js" . -}}
+{{ $jsPako := resources.Get "third_party/pako/pako_deflate.min.js" -}}
+{{ $jsSvgLoader := resources.Get "third_party/external-svg-loader/svg-loader.min.js" -}}
+
+{{ $jsArray := slice $jsBs $jsSurfaces $jsBase $jsNavbar $jsSidebarNav $jsActions $jsPageActions (resources.Get "js/authored-a11y.js") -}}
+{{ if $hasPlantuml -}}
+  {{ $jsArray = $jsArray | append $jsPako -}}
+  {{ if .Site.Params.plantuml.svg }}{{ $jsArray = $jsArray | append $jsSvgLoader }}{{ end -}}
+  {{ $jsArray = $jsArray | append $jsPlantuml -}}
+{{ end -}}
+{{ if $hasMarkmap }}{{ $jsArray = $jsArray | append $jsMarkmap }}{{ end -}}
+{{ if .Site.Params.drawio.enable }}{{ $jsArray = $jsArray | append $jsDrawio }}{{ end -}}
+{{ $hasAsciinema := .Page.Store.Get "hasAsciinema" -}}
+{{ $hasEcharts := .Page.Store.Get "hasEcharts" -}}
+{{ $hasInfographic := .Page.Store.Get "hasInfographic" -}}
+{{ $hasDocCarousel := .Page.Store.Get "hasDocCarousel" -}}
+{{ if $hasAsciinema -}}
+  {{ $asciinemaCSS := resources.Get "third_party/asciinema/asciinema-player.css" -}}
+  {{ if hugo.IsProduction }}{{ $asciinemaCSS = $asciinemaCSS | minify | fingerprint }}{{ end -}}
+  <link rel="stylesheet" href="{{ $asciinemaCSS.RelPermalink }}"
+    {{- with $asciinemaCSS.Data.Integrity }} integrity="{{ . }}" crossorigin="anonymous"{{ end }}>
+  {{/* Asciinema ships a pre-minified bundle with a WASM runtime shim. Keep it
+       separate so Hugo's production minifier cannot rewrite that shim. */ -}}
+  {{ $asciinemaJS := resources.Get "third_party/asciinema/asciinema-player.min.js" -}}
+  {{ if hugo.IsProduction }}{{ $asciinemaJS = $asciinemaJS | fingerprint }}{{ end -}}
+  <script src="{{ $asciinemaJS.RelPermalink }}"
+    {{- with $asciinemaJS.Data.Integrity }} integrity="{{ . }}" crossorigin="anonymous"{{ end }}></script>
+{{ end -}}
+{{ if $hasEcharts -}}
+  {{ $jsArray = $jsArray | append (resources.Get "third_party/echarts/echarts.min.js") -}}
+{{ end -}}
+{{ if $hasInfographic -}}
+  {{/* AntV ships a pre-minified UMD bundle. Keep it separate so Hugo's
+       production minifier does not transform the runtime a second time. */ -}}
+  {{ $infographicJS := resources.Get "third_party/infographic/infographic.min.js" -}}
+  {{ if hugo.IsProduction }}{{ $infographicJS = $infographicJS | fingerprint }}{{ end -}}
+  <script src="{{ $infographicJS.RelPermalink }}"
+    {{- with $infographicJS.Data.Integrity }} integrity="{{ . }}" crossorigin="anonymous"{{ end }}></script>
+{{ end -}}
+{{ if or $hasAsciinema $hasEcharts $hasInfographic $hasDocCarousel -}}
+  {{ $jsArray = $jsArray | append (resources.Get "js/content-components.js") -}}
+{{ end -}}
+{{ if $shell -}}
+  {{ $jsArray = $jsArray | append (resources.Get "js/docs-shell.js") -}}
+  {{ if $hasGoogleSearch }}{{ $jsArray = $jsArray | append $jsSearch }}{{ end -}}
+{{ else if $hasGoogleSearch -}}
+  {{ $jsArray = $jsArray | append $jsSearch -}}
+{{ end -}}
+{{ if $hasKeyboardNav -}}
+  {{ $jsArray = $jsArray | append (resources.Get "js/keyboard-nav.js") -}}
+{{ end -}}
+{{ if $hasFooterCollapse -}}
+  {{ $jsArray = $jsArray | append (resources.Get "js/footer-collapse.js") -}}
+{{ end -}}
+{{ if $localSearch }}{{ $jsArray = $jsArray | append $jsSearchEngine $jsPaletteModel $jsPalette }}{{ end -}}
+
+{{ if .Page.Store.Get "hasmermaid" -}}
+  {{ partial "scripts/mermaid.html" . -}}
+{{ end -}}
+
+{{ if .Page.Store.Get "hasMath" -}}
+  {{ partial "scripts/katex.html" . -}}
+{{ end -}}
+
+{{ if .Page.Store.Get "hasRedoc" -}}
+  {{ $redoc := resources.Get "third_party/redoc/redoc.standalone.js" -}}
+  {{ if hugo.IsProduction }}{{ $redoc = $redoc | fingerprint }}{{ end -}}
+  <script src="{{ $redoc.RelPermalink }}"
+    {{- with $redoc.Data.Integrity }} integrity="{{ . }}" crossorigin="anonymous"{{ end }}></script>
+{{ end -}}
+
+{{ if .Page.Store.Get "hasSwagger" -}}
+  {{ $swaggerCSS := resources.Get "third_party/swagger-ui/swagger-ui.css" -}}
+  {{ $swaggerBundle := resources.Get "third_party/swagger-ui/swagger-ui-bundle.js" -}}
+  {{ $swaggerPreset := resources.Get "third_party/swagger-ui/swagger-ui-standalone-preset.js" -}}
+  {{ if hugo.IsProduction -}}
+    {{ $swaggerCSS = $swaggerCSS | fingerprint -}}
+    {{ $swaggerBundle = $swaggerBundle | fingerprint -}}
+    {{ $swaggerPreset = $swaggerPreset | fingerprint -}}
+  {{ end -}}
+  <link rel="stylesheet" href="{{ $swaggerCSS.RelPermalink }}"
+    {{- with $swaggerCSS.Data.Integrity }} integrity="{{ . }}" crossorigin="anonymous"{{ end }}>
+  <script src="{{ $swaggerBundle.RelPermalink }}"
+    {{- with $swaggerBundle.Data.Integrity }} integrity="{{ . }}" crossorigin="anonymous"{{ end }}></script>
+  <script src="{{ $swaggerPreset.RelPermalink }}"
+    {{- with $swaggerPreset.Data.Integrity }} integrity="{{ . }}" crossorigin="anonymous"{{ end }}></script>
+{{ end -}}
+
+{{ if $localSearch }}{{ partialCached "shell/search-dialog.html" . .Site.Language.Lang $localSearch }}{{ end -}}
+{{- if ne (lower (.Page.Store.Get "tdOutputFormat" | default "html")) "markdown" }}
+<script type="application/json" id="oink-action-manifest">{{ partial "actions/manifest.html" . | jsonify | safeJS }}</script>
+{{- end }}
+
+{{- $darkMode := partialCached "dark-mode-config.html" "dark-mode-global" -}}
+{{ if $darkMode.enable -}}
+  {{ $jsArray = $jsArray | append (resources.Get "js/dark-mode.js") -}}
+{{ end -}}
+{{ if $hasGiscus -}}
+  {{ $jsArray = $jsArray | append (resources.Get "js/giscus.js") -}}
+{{ end -}}
+{{ $hasFeedback := .Page.Store.Get "hasFeedback" | default false -}}
+{{ if $hasFeedback -}}
+  {{ $jsArray = $jsArray | append (resources.Get "js/feedback.js") -}}
+{{ end -}}
+{{ if $hasCodeRuntime -}}
+  {{ $jsArray = $jsArray | append (resources.Get "js/code-block.js") -}}
+{{ end -}}
+{{ if $hasAssetList -}}
+  {{ $jsArray = $jsArray | append (resources.Get "js/asset-list.js") -}}
+{{ end -}}
+{{ if $hasLanding -}}
+  {{ $jsArray = $jsArray | append (resources.Get "js/landing.js") -}}
+{{ end -}}
+{{ if $hasTabRuntime -}}
+  {{ $jsArray = $jsArray | append (resources.Get "js/code-tabs.js") -}}
+{{ end -}}
+{{ if $hasImageZoom -}}
+  {{ $jsArray = $jsArray | append (resources.Get "js/image-zoom.js") -}}
+{{ end -}}
+
+{{ if not (.Param "ui.scrollSpy.disable") -}}
+  {{ $jsScrollSpyPatch := resources.Get "js/scrollspy-patch.js" -}}
+  {{ $jsArray = $jsArray | append $jsScrollSpyPatch -}}
+{{ end -}}
+
+{{ $bundleKey := printf "%v-%v-%v-%s-%v-%v-%v-%v-%v-%v-%v-%v-%v-%v-%v-%v-%v-%v-%v-%v-%v"
+  $shell $localSearch $hasGoogleSearch .Site.Language.Lang $hasMarkmap
+  $hasPlantuml .Site.Params.drawio.enable
+  $hasAsciinema $hasEcharts $hasInfographic $hasDocCarousel $hasGiscus $hasFeedback
+  $hasCodeRuntime $hasAssetList $hasLanding $hasTabRuntime $hasImageZoom (not (.Param "ui.scrollSpy.disable"))
+  $hasKeyboardNav $hasFooterCollapse | md5 -}}
+{{ if $hasImageZoom }}{{ partial "content/image-zoom-dialog.html" . }}{{ end -}}
+{{ $js := $jsArray | resources.Concat (printf "js/main-%s.js" $bundleKey) -}}
+{{ if hugo.IsProduction -}}
+  {{ $js = $js | minify | fingerprint -}}
+  <script src="{{ $js.RelPermalink }}" integrity="{{ $js.Data.Integrity }}" crossorigin="anonymous"></script>
+{{ else -}}
+  <script src="{{ $js.RelPermalink }}"></script>
+{{ end -}}
+
+{{ if .Site.Params.prism_syntax_highlighting -}}
+  {{ $prismJS := resources.FromString "js/prism.js" (os.ReadFile "static/js/prism.js") -}}
+  {{ if hugo.IsProduction }}{{ $prismJS = $prismJS | minify | fingerprint }}{{ end -}}
+  <script src="{{ $prismJS.RelPermalink }}"
+    {{- with $prismJS.Data.Integrity }} integrity="{{ . }}" crossorigin="anonymous"{{ end }}></script>
+{{ end -}}
+
+{{ if and .Site.Params.search (isset .Site.Params.search "algolia") -}}
+  {{ template "algolia/scripts" .Site.Params.search.algolia -}}
+{{ end -}}
+{{ partial "hooks/body-end.html" . -}}
+
+{{ define "algolia/scripts" -}}
+{{ if not (and .appId .apiKey .indexName) -}}
+  {{ errorf "params.search.algolia requires explicit appId, apiKey, and indexName values; OINK does not use another project's DocSearch credentials" -}}
+{{ end -}}
+{{ $docsearchJS := resources.Get "third_party/docsearch/docsearch.js" -}}
+{{ if hugo.IsProduction }}{{ $docsearchJS = $docsearchJS | fingerprint }}{{ end -}}
+<script src="{{ $docsearchJS.RelPermalink }}"
+  {{- with $docsearchJS.Data.Integrity }} integrity="{{ . }}" crossorigin="anonymous"{{ end }}></script>
+<script type="text/javascript">
+const containers = ['#docsearch-0', '#docsearch-1'];
+for (let c of containers) {
+  docsearch({
+    container: c,
+    appId: {{ .appId | jsonify | safeJS }},
+    apiKey: {{ .apiKey | jsonify | safeJS }},
+    indexName: {{ .indexName | jsonify | safeJS }},
+  });
+}
+</script>
+{{ end -}}

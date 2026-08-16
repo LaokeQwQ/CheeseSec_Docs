@@ -1,0 +1,144 @@
+{{/* Docs navigation rendered from the frozen Sphinx toctree order. Checkbox
+     state, separate link/chevron controls, and grid-row animation preserve the
+     existing active_path and sidebar_expanded model. */ -}}
+{{ $context := .context -}}
+{{ $sidebarRootID := .sidebarRootID -}}
+{{ $cacheSidebar := .cacheSidebar -}}
+{{ $iconPolicy := .iconPolicy -}}
+
+{{ with $context -}}
+{{ $shouldDelayActive := $cacheSidebar -}}
+{{ $currentURL := .RelPermalink -}}
+{{ with .Site.LanguagePrefix -}}
+  {{ $currentURL = strings.TrimPrefix . $currentURL -}}
+{{ end -}}
+{{ $docsNav := index hugo.Data "docs_nav" | default dict -}}
+{{ $activeByURL := index $docsNav "active_path_by_url" | default dict -}}
+{{ $activeURLs := index $activeByURL $currentURL | default (slice) -}}
+{{ $sidebarRootURL := $sidebarRootID -}}
+{{ with .Site.LanguagePrefix -}}
+  {{ $sidebarRootURL = strings.TrimPrefix . $sidebarRootURL -}}
+{{ end -}}
+
+<div id="td-sidebar-menu" class="td-shell-tree-wrap{{ if $shouldDelayActive }} d-none{{ end }}">
+  <nav class="td-shell-tree" id="td-section-nav" aria-label="{{ T "ui_sidebar_nav" }}"
+      data-sidebar-icon-policy="{{ $iconPolicy }}"
+      {{- if .Site.Params.ui.sidebar_root_enabled }} data-sidebar-root-id="{{ $sidebarRootID }}"{{ end -}}>
+    {{/* Do not repeat the docs root while the root switcher is visible. */ -}}
+    {{ $rootMenuOn := and .Site.Params.ui.sidebar_root_menu
+        (gt (len (where .Site.Pages "Params.sidebar_root_for" "self")) 0) -}}
+    {{ with (index $docsNav "sections") -}}
+    <ul class="td-shell-tree__list ul-1">
+      {{ range . -}}
+        {{ if and $rootMenuOn (eq .url $sidebarRootURL) }}{{ continue }}{{ end -}}
+        {{ template "shell-docs-tree-nav-node" (dict
+            "page" $context
+            "node" .
+            "currentURL" $currentURL
+            "activeURLs" $activeURLs
+            "shouldDelayActive" $shouldDelayActive
+            "ulNr" 1
+            "iconPolicy" $iconPolicy
+        ) }}
+      {{ end -}}
+    </ul>
+    {{ else -}}
+      {{ errorf "data/docs_nav.json does not define any Docs navigation sections" -}}
+    {{ end -}}
+  </nav>
+</div>
+{{- end }}
+
+{{ define "shell-docs-tree-nav-node" -}}
+  {{ $p := .page -}}
+  {{ $node := .node -}}
+  {{ $currentURL := .currentURL -}}
+  {{ $activeURLs := .activeURLs -}}
+  {{ $shouldDelayActive := .shouldDelayActive -}}
+  {{ $ulNr := .ulNr -}}
+  {{ $iconPolicy := .iconPolicy -}}
+  {{ $s := $p.Site.GetPage $node.page -}}
+  {{ if not $s -}}
+    {{ errorf "Docs navigation page not found: %s" $node.page -}}
+  {{ else -}}
+    {{ $active := and (not $shouldDelayActive) (eq $node.url $currentURL) -}}
+    {{ $activePath := and (not $shouldDelayActive) (in $activeURLs $node.url) -}}
+    {{ $forceExpanded := $s.Params.sidebar_expanded | default false -}}
+    {{ $shouldExpand := or $activePath $forceExpanded -}}
+    {{ $withChild := gt (len $node.children) 0 -}}
+    {{ $showIcon := partial "shell/sidebar-icon-enabled.html" (dict "policy" $iconPolicy "root" (eq $ulNr 1) "hasChildren" $withChild) -}}
+    {{ $foldable := and ($p.Param "ui.sidebar_menu_foldable") $withChild -}}
+    {{ $ellipsis := ne ($p.Param "ui.sidebar_item_overflow") "wrap" -}}
+    {{ $nodeID := $s.RelPermalink | default $s.Path | default $s.Title -}}
+    {{ $mid := printf "m-%s" ($nodeID | anchorize) -}}
+    {{ $manualLink := cond
+        (isset $s.Params "manuallink")
+        $s.Params.manualLink
+        (cond
+          (isset $s.Params "manuallinkrelref")
+          (relref $s $s.Params.manualLinkRelref)
+          $s.RelPermalink
+        )
+    -}}
+    {{ $manualLinkTitle := cond
+        (isset $s.Params "manuallinktitle")
+        $s.Params.manualLinkTitle
+        $s.Title
+    -}}
+    {{ $isDivider := $s.Params.sidebar_divider | default false -}}
+    {{ if $isDivider -}}
+    <li class="td-shell-tree__item td-shell-tree__heading" id="{{ $mid }}-li">
+      <span class="td-shell-tree__heading-label" id="{{ $mid }}"><span>{{ $s.LinkTitle }}</span></span>
+    </li>
+    {{ else -}}
+    <li class="td-shell-tree__item
+          {{- if $withChild }} has-child{{ else }} leaf{{ end -}}
+          {{- if $activePath }} active-path{{ end }}"
+        id="{{ $mid }}-li">
+      <div class="td-shell-tree__row{{ if $active }} td-shell-active{{ end }}">
+        <a href="{{ $manualLink }}"
+          {{- if $active }} aria-current="page"{{ end -}}
+          {{- if ne $s.LinkTitle $manualLinkTitle }} title="{{ $manualLinkTitle }}"
+          {{- else if $ellipsis }} title="{{ $s.LinkTitle }}"{{ end -}}
+          {{- with $s.Params.manualLinkTarget }} target="{{ . }}"{{ if eq . "_blank" }} rel="noopener"{{ end }}{{ end }}
+          class="td-shell-tree__link{{ if $active }} active{{ end }}"
+          id="{{ $mid }}">
+          {{- if $showIcon }}{{ with $s.Params.Icon }}<i class="{{ . }}" aria-hidden="true"></i>{{ end }}{{ end -}}
+          {{- if eq $s.Type "book" }}{{ partial "book/sidebar-label.html" $s }}{{ else }}<span>{{ $s.LinkTitle }}</span>{{ end -}}
+        </a>
+        {{ if $foldable -}}
+        <button type="button" class="td-shell-tree__chevron" data-td-shell-tree-toggle
+          aria-expanded="{{ $shouldExpand }}" aria-controls="{{ $mid }}-children"
+          aria-label="{{ if $shouldExpand }}{{ T "ui_sidebar_collapse_section" }}{{ else }}{{ T "ui_sidebar_expand_section" }}{{ end }}: {{ $s.LinkTitle }}"
+          data-label-expand="{{ T "ui_sidebar_expand_section" }}: {{ $s.LinkTitle }}"
+          data-label-collapse="{{ T "ui_sidebar_collapse_section" }}: {{ $s.LinkTitle }}">
+          {{- partialCached "shell/icon.html" "chevron-down" "chevron-down" -}}
+        </button>
+        {{- end }}
+      </div>
+      {{- if eq $s.Type "book" }}{{ partial "book/sidebar-headings.html" (dict "page" $s "current" $p) }}{{ end -}}
+
+      {{ if $withChild -}}
+        {{ $childUlNr := add $ulNr 1 -}}
+        <div id="{{ $mid }}-children" class="td-shell-tree__children{{ if not $foldable }} td-shell-tree__children--static{{ else if $shouldExpand }} is-open{{ end }}">
+          <div class="td-shell-tree__children-inner">
+            <ul class="td-shell-tree__list ul-{{ $childUlNr }}">
+              {{ range $node.children -}}
+                {{ template "shell-docs-tree-nav-node" (dict
+                    "page" $p
+                    "node" .
+                    "currentURL" $currentURL
+                    "activeURLs" $activeURLs
+                    "shouldDelayActive" $shouldDelayActive
+                    "ulNr" $childUlNr
+                    "iconPolicy" $iconPolicy
+                ) }}
+              {{ end -}}
+            </ul>
+          </div>
+        </div>
+      {{- end }}
+    </li>
+    {{- end }}
+  {{- end }}
+{{- end }}

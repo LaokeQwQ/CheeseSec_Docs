@@ -1,0 +1,495 @@
+// ============================================================
+// Right-rail table of contents with a muted track and accent indicator.
+// Active path geometry is calculated by docs-shell.js.
+// ============================================================
+
+// The column reserves width while the fixed, collapsible panel stays in place.
+.td-shell-toc {
+  display: none;
+
+  @include media-breakpoint-up(xl) {
+    display: block;
+    flex: 0 0 286px;
+    width: 286px;
+    transition:
+      width 150ms ease,
+      flex-basis 150ms ease;
+  }
+}
+
+.td-shell-toc__panel {
+  display: none;
+
+  @include media-breakpoint-up(xl) {
+    position: fixed;
+    inset-block-start: var(--td-shell-nav-h);
+    inset-block-end: 0;
+    inset-inline-end: 0;
+    width: 286px;
+    z-index: 20;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+    padding: 16px 20px 12px 8px;
+    transition:
+      transform 200ms ease,
+      opacity 150ms ease;
+  }
+}
+
+// Collapsed state removes column width and slides the panel away.
+@include media-breakpoint-up(xl) {
+  [data-td-shell-toc='collapsed'] .td-shell-toc {
+    width: 0;
+    flex-basis: 0;
+  }
+
+  [data-td-shell-toc='collapsed'] .td-shell-toc__panel {
+    transform: translateX(100%);
+    opacity: 0;
+    pointer-events: none;
+  }
+
+  [dir='rtl'][data-td-shell-toc='collapsed'] .td-shell-toc__panel {
+    transform: translateX(-100%);
+  }
+}
+
+// Floating restore action, visible only when collapsed at xl and above.
+.td-shell-toc-float {
+  display: none;
+  position: fixed;
+  top: calc(var(--td-shell-nav-h) + 16px);
+  inset-inline-end: 16px;
+  z-index: 40;
+  gap: 2px;
+  padding: 2px;
+  border-radius: 12px;
+  border: 1px solid var(--bs-border-color);
+  background: var(--td-shell-card);
+  box-shadow: var(--td-shell-shadow-lg);
+}
+
+@include media-breakpoint-up(xl) {
+  [data-td-shell-toc='collapsed'] .td-shell-toc-float {
+    display: flex;
+    animation: td-shell-fade 300ms ease both;
+  }
+}
+
+/* Controls for rail collapse, content shortcuts, language, theme, and GitHub. */
+
+.td-shell-toc__actions {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  flex-shrink: 0;
+}
+
+.td-shell-toc__title-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 5px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--td-shell-muted-fg);
+  transition:
+    background-color 100ms ease,
+    color 100ms ease;
+
+  .td-shell-icon {
+    width: 16px;
+    height: 16px;
+  }
+
+  &:hover {
+    background: var(--td-shell-accent);
+    color: var(--bs-body-color);
+  }
+}
+
+.td-shell-toc__title {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+  margin: 10px 0 0;
+  padding-inline-start: 4px;
+  font-size: 14px;
+  font-weight: 400;
+  line-height: 20px;
+  color: var(--td-shell-muted-fg);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+
+  .td-shell-icon {
+    flex: 0 0 auto;
+    width: 16px;
+    height: 16px;
+  }
+}
+
+.td-shell-toc__actions-spacer {
+  flex: 1 1 auto;
+}
+
+// Compact ghost button used in the rail action row.
+.td-shell-iconbtn.td-shell-iconbtn--sm {
+  padding: 4px;
+  border-radius: 6px;
+
+  .td-shell-icon {
+    width: 16px;
+    height: 16px;
+  }
+
+  // Size Font Awesome content shortcuts to align with Lucide icons.
+  i {
+    display: inline-block;
+    width: 16px;
+    font-size: 14px;
+    line-height: 16px;
+    text-align: center;
+  }
+}
+
+.td-shell-toc__inner {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.td-shell-toc__body {
+  position: relative;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 12px 0;
+  margin-inline-start: 1px;
+  scrollbar-width: none;
+  mask-image: linear-gradient(
+    to bottom,
+    transparent,
+    #000 16px,
+    #000 calc(100% - 16px),
+    transparent
+  );
+  -webkit-mask-image: linear-gradient(
+    to bottom,
+    transparent,
+    #000 16px,
+    #000 calc(100% - 16px),
+    transparent
+  );
+
+  &::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+/* Each entry owns an SVG segment. The accent path is clipped to the active
+   range, and docs-shell.js writes depth-dependent logical indentation. */
+
+.td-shell-toc__body #TableOfContents {
+  ul {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+  }
+
+  a {
+    position: relative;
+    z-index: 0; // Keep the z-index:-1 track SVG behind the text.
+    display: block;
+    padding: 6px 0;
+    font-size: 14px;
+    line-height: 20px;
+    color: var(--td-shell-muted-fg);
+    overflow-wrap: anywhere;
+    transition: color 150ms ease;
+
+    &:hover {
+      color: var(--bs-body-color);
+      text-decoration: none;
+    }
+
+    &.active {
+      color: var(--td-shell-primary);
+    }
+  }
+
+  > ul > li:first-child > a {
+    padding-top: 0;
+  }
+
+  > ul > li:last-child > a:only-child {
+    padding-bottom: 0;
+  }
+}
+
+// Muted per-item track with Bezier connectors across depth changes.
+.td-shell-toc__rail {
+  position: absolute;
+  inset-inline-start: 0;
+  top: -6px;
+  height: calc(100% + 6px);
+  z-index: -1;
+  overflow: visible;
+
+  line,
+  path {
+    stroke: var(--td-shell-rail);
+    stroke-width: 1;
+    fill: none;
+  }
+
+  // End early before a depth change to leave room for the connector.
+  &--cut {
+    height: 100%;
+  }
+}
+
+// Clip the accent path to the active range with a 150ms transition.
+.td-shell-toc__active {
+  position: absolute;
+  top: 0;
+  inset-inline-start: 0;
+  z-index: 1;
+  pointer-events: none;
+
+  svg {
+    display: block;
+    overflow: visible;
+    clip-path: polygon(
+      0 var(--td-shell-track-top, 0px),
+      100% var(--td-shell-track-top, 0px),
+      100% var(--td-shell-track-bottom, 0px),
+      0 var(--td-shell-track-bottom, 0px)
+    );
+    transition: clip-path 150ms ease;
+  }
+
+  path {
+    stroke: var(--td-shell-primary);
+    stroke-width: 1;
+    fill: none;
+  }
+}
+
+// A 4px dot follows the accent path through CSS motion-path properties.
+.td-shell-toc__dot {
+  position: absolute;
+  top: 0;
+  inset-inline-start: 0;
+  width: 4px;
+  height: 4px;
+  border-radius: 999px;
+  background: var(--td-shell-primary);
+  offset-distance: var(--td-shell-dot-d, 0px);
+  opacity: var(--td-shell-dot-o, 0);
+  transition:
+    offset-distance 150ms ease,
+    opacity 150ms ease;
+}
+
+.td-shell-toc__panel > .td-shell-aside {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: none;
+  mask-image: linear-gradient(
+    to bottom,
+    transparent,
+    #000 12px,
+    #000 calc(100% - 12px),
+    transparent
+  );
+  -webkit-mask-image: linear-gradient(
+    to bottom,
+    transparent,
+    #000 12px,
+    #000 calc(100% - 12px),
+    transparent
+  );
+
+  &::-webkit-scrollbar {
+    display: none;
+  }
+
+  // The fade and the scroll live on the stack, not on the contents alone.
+  .td-shell-toc__body {
+    overflow: visible;
+    mask-image: none;
+    -webkit-mask-image: none;
+  }
+}
+
+/* ---------------------------------------------- relocatable rail contents */
+
+// Labelled, collapsible group around the TOC, matching the taxonomy clouds so
+// the rail reads as one stack of sections.
+.td-shell-aside-group__head {
+  width: 100%;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+}
+
+// TOC group header row: the rail collapse toggle occupies the icon column, so
+// the title starts exactly where the taxonomy group titles do, and the whole
+// row highlights as one item — the toggle just carries a special click.
+.td-shell-aside-group__row {
+  display: flex;
+  align-items: center;
+  border-radius: 10px;
+  transition: background-color 150ms ease;
+
+  &:hover {
+    background: var(--td-shell-accent);
+    transition: none;
+  }
+
+  .td-shell-aside-group__head {
+    flex: 1 1 auto;
+    min-width: 0;
+    padding-inline-start: 0; // The rail toggle supplies the icon column.
+
+    &:hover {
+      background: transparent;
+    }
+  }
+}
+
+.td-shell-aside-group__rail-toggle {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  padding: 8px 4px 8px 8px; // Icon lands on the taxonomy heads' icon column.
+  border: 0;
+  background: transparent;
+  color: var(--td-shell-muted-fg);
+  cursor: pointer;
+
+  @include media-breakpoint-up(md) {
+    padding-block: 6px;
+  }
+
+  &:hover,
+  &:focus-visible {
+    background: transparent;
+    color: var(--bs-body-color);
+  }
+
+  .td-shell-icon {
+    width: 16px;
+    height: 16px;
+  }
+}
+
+// Group icon shared by the taxonomy clouds; in the rail the TOC group's icon
+// is the rail toggle itself, so its static twin stays hidden there.
+.td-shell-aside-group__icon {
+  display: inline-flex;
+  flex: 0 0 auto;
+  justify-content: center;
+  width: 16px;
+  color: var(--td-shell-muted-fg);
+  font-size: 12px;
+  text-align: center;
+
+  .td-shell-icon {
+    width: 16px;
+    height: 16px;
+  }
+
+  &--toc {
+    display: none;
+  }
+}
+
+// Inside the drawer the rail does not exist: the toggle hides, its static
+// icon shows, and the head regains the tree indent so the "Content" group
+// lines up with the taxonomy heads below it.
+.td-shell-sidebar__aside {
+  .td-shell-aside-group__rail-toggle {
+    display: none;
+  }
+
+  .td-shell-aside-group__icon--toc {
+    display: inline-flex;
+  }
+
+  .td-shell-aside-group__row .td-shell-aside-group__head {
+    padding-inline-start: var(--td-shell-indent, 8px);
+  }
+}
+
+.td-shell-aside-group__title {
+  flex: 1 1 auto;
+  min-width: 0;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--bs-body-color);
+  text-align: start;
+}
+
+.td-shell-aside-group + .td-shell-aside-group {
+  margin-top: 8px;
+}
+
+// The whole stack scrolls as one now that every section is collapsible;
+// scrolling only the contents let the groups below squeeze it to nothing on a
+// short viewport.
+
+// Below xl the block is moved into the sidebar drawer. There it sits under the
+// navigation tree, so it borrows the tree's metrics — same row height, same
+// indent, same type — rather than keeping the narrower rail's.
+.td-shell-sidebar__aside {
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid var(--bs-border-color);
+  font-size: 14px;
+
+  &[hidden] {
+    display: none;
+  }
+
+  // Section headings read like the tree's top-level rows.
+  .td-shell-toc__title,
+  .td-shell-aside-group__title {
+    font-size: 14px;
+    font-weight: 500;
+    line-height: 20px;
+    color: var(--bs-body-color);
+  }
+
+  .td-shell-toc__title {
+    margin: 0;
+    padding: 8px;
+    padding-inline-start: var(--td-shell-indent, 8px);
+
+    .td-shell-icon {
+      color: var(--td-shell-muted-fg);
+    }
+  }
+
+  .td-shell-aside-group__head {
+    border-radius: 10px;
+
+    &:hover {
+      background: var(--td-shell-accent);
+    }
+  }
+
+  // No fixed panel to scroll within: let the contents extend the drawer's own
+  // scroller instead of nesting a second one behind a fade mask.
+  .td-shell-toc__body {
+    max-height: none;
+    overflow: visible;
+    mask-image: none;
+    -webkit-mask-image: none;
+  }
+}

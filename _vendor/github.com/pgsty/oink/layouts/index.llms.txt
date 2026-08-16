@@ -1,0 +1,93 @@
+{{ $homeMarkdownURL := .Site.Home.Permalink -}}
+{{ with .Site.Home.OutputFormats.Get "markdown" -}}
+  {{ $homeMarkdownURL = .Permalink -}}
+{{ end -}}
+
+# {{ .Site.Title -}}
+
+{{ with .Description | strings.TrimSpace }}
+
+> {{ replace . "\n" "\n> " -}}
+
+{{ end -}}
+
+{{/* Main content ------------------------------------------------------- */}}
+
+## Site index
+
+- [Home page]( {{- $homeMarkdownURL -}} )
+{{ with .Site.GetPage "AGENTS.md" -}}
+  {{ with .Permalink -}}
+    {{ $url := . -}}
+    {{ if hasSuffix $url "/" -}}
+      {{ $url = add $url "index.md" -}}
+    {{ end -}}
+    - [AGENTS.md]( {{- $url -}} ) {{- "\n" -}}
+  {{- end -}}
+{{ end -}}
+
+{{/* llms.txt indexes this site's own content. Menus routinely carry off-site
+navigation (repository, issue tracker, chat); those are chrome, not content, and
+listing them here dilutes the index and fails the markdown-link expectations
+that agent-docs tooling applies to llms.txt entries. */ -}}
+{{ $siteHost := (urls.Parse .Site.BaseURL).Host -}}
+{{ range .Site.Menus.main -}}
+  {{ $url := "" -}}
+  {{ $description := "" -}}
+  {{ $onSite := true -}}
+  {{ with .Page -}}
+    {{ $url = .Permalink -}}
+    {{ with .OutputFormats.Get "markdown" -}}
+      {{ $url = .Permalink -}}
+    {{ end -}}
+    {{ $description = .Description | strings.TrimSpace | replaceRE `\s+` " " -}}
+  {{ else -}}
+    {{ $entryHost := (urls.Parse .URL).Host -}}
+    {{ if and $entryHost (ne $entryHost $siteHost) -}}
+      {{ $onSite = false -}}
+    {{ else -}}
+      {{ $url = cond (ne $entryHost "") .URL (.URL | absLangURL) -}}
+    {{ end -}}
+  {{ end -}}
+  {{ if $onSite -}}
+  - [{{ .Name }}]({{ $url }}){{ with $description }}: {{ . }}{{ end }} {{- "\n" -}}
+  {{ end -}}
+{{ end -}}
+
+{{/* Doc Sections ------------------------------------------------------ */ -}}
+
+{{ with .Site.GetPage "docs" -}}
+  {{- if .Sections -}}
+    {{ "\n" -}}
+
+    ## Documentation index
+
+    {{- "\n\n" -}}
+    {{ range .Sections -}}
+      {{ $url := .Permalink -}}
+      {{ with .OutputFormats.Get "markdown" -}}
+        {{ $url = .Permalink -}}
+      {{ end -}}
+      - [ {{- .Title | strings.TrimSpace -}} ]( {{- $url -}} )
+        {{- "\n" -}}
+    {{ end -}}
+  {{ end -}}
+{{ end -}}
+
+{{/* Multilingual sites ------------------------------------------------------- */ -}}
+
+{{ with hugo.Sites -}}
+  {{ "\n" -}}
+
+  ## Site locales
+
+  {{- "\n\n" -}}
+  {{ range . -}}
+    {{ $home := .Home -}}
+    {{ $url := $home.Permalink -}}
+    {{ with $home.OutputFormats.Get "markdown" -}}
+      {{ $url = .Permalink -}}
+    {{ end -}}
+    - [{{ $home.Language.Label }}]({{ $url }}) {{- "\n" -}}
+  {{ end -}}
+{{ end -}}

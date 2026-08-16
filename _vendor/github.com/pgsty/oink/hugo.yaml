@@ -1,0 +1,127 @@
+# Oink theme config
+#
+# cSpell:ignore docsy fortawesome fontawesome github permalinkable twbs webfonts
+
+params:
+  # Highlight code with Chroma class names so it follows the theme's light/dark
+  # palettes. Hugo ignores `markup` set by a theme, so the theme applies this
+  # through layouts/_markup/render-codeblock.html instead. Set to false to fall
+  # back to Hugo's inline highlight styles.
+  highlight_classes: true
+  offlineSearchIndex: content
+  offlineSearchMaxResults: 10
+  time_format_blog: Monday, January 02, 2006
+  time_format_default: January 2, 2006
+  rss_sections: [blog]
+  page_width: normal
+  # Inner reading measure for Book pages: slim | norm | wide. Unlike
+  # page_width, this changes content rather than the surrounding shell.
+  content_width: norm
+  comments:
+    enable: false
+    type: giscus
+    giscus:
+      mapping: pathname
+      strict: 0
+      reactionsEnabled: 1
+      emitMetadata: 0
+      inputPosition: top
+      theme: auto
+      lightTheme: light
+      darkTheme: dark
+      loading: lazy
+  ui:
+    # The site navbar and footer render on every layout by default. Both can be
+    # overridden per page (or per section, via a front-matter cascade) with the
+    # `navbar_enabled` and `footer_style` front-matter keys.
+    navbar_enabled: true
+    footer_style: fat # fat | slim | none
+    # Non-home pages with `layout: landing` reuse the search/command palette
+    # when offlineSearch is enabled. Set false to omit it from that shell.
+    landing_search: true
+    section_index: list # list | cards
+    lastmod_commit: subject # subject | hash | none
+    # Optional local chrome data (never fetched by the browser):
+    # github_stars: 5500
+    # alt_site: { label: 中文站, url: https://example.cn/ }
+    image_zoom:
+      enable: false
+    typography:
+      preset: technical
+    shell_types: [docs, book, blog, swagger]
+    docs_section: docs
+    blog_section: blog
+    # Sequential navigation is on by default for reading-oriented content.
+    # Override this list site-wide, or set `pager: false` in front matter.
+    pager:
+      types: [docs, book, blog]
+    # Book pages may opt into an h2-h4 branch beneath the active sidebar row.
+    sidebar_headings: false
+    # Draft state is always labeled in the sidebar; this optional banner adds
+    # an explicit notice at the start of draft book pages.
+    book_draft_banner: false
+    feedback:
+      enable: false
+    sidebar_menu_compact: true
+    sidebar_menu_foldable: true
+    sidebar_menu_truncate: 2000
+    sidebar_root_enabled: true
+    sidebar_root_menu: true
+    sidebar_width_min: 220
+    sidebar_width_max: 480
+    sidebar_item_overflow: ellipsis
+    page_context_menu:
+      enable: true
+      # Opt in before exposing the built-in ChatGPT and Claude actions. When a
+      # reader activates one, the full browser URL (including query and hash)
+      # is sent to that third party; the page body is not uploaded.
+      assistant_links: false
+      # Optional external actions may use the placeholders {url}, {title}, and
+      # {markdown_url}. No custom links are enabled by default.
+      links: []
+    ul_show: 2
+    scrollSpy:
+      disable: true
+    # Single-key keyboard navigation (WASD/arrow tree focus, j/k outline
+    # jumps, q/e paging, and shell/palette toggles). Set false to drop the
+    # runtime from the bundle; pages can also opt out via front matter or a
+    # section cascade.
+    keyboard_nav:
+      enable: true
+
+outputFormats:
+  LLMS:
+    baseName: llms
+    isPlainText: true
+    mediaType: text/plain
+    notAlternative: true
+  print:
+    baseName: index
+    # FIXME: leave isHTML unset (i.e. false) until we get a Hugo fix for
+    # https://github.com/gohugoio/hugo/issues/14381
+    # isHTML: true
+    mediaType: text/html
+    path: _print
+    permalinkable: false
+
+# Needed fo KaTeX, possibly useful for others. see
+# https://github.com/google/docsy/pull/2465
+mediaTypes:
+  font/woff:
+    suffixes: [woff]
+  font/woff2:
+    suffixes: [woff2]
+
+module:
+  hugoVersion:
+    extended: true
+    min: 0.160.1
+  mounts:
+    - source: assets
+      target: assets
+    - source: i18n
+      target: i18n
+    - source: layouts
+      target: layouts
+    - source: static
+      target: static

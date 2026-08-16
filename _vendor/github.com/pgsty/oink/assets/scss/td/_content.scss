@@ -1,0 +1,213 @@
+//
+// Style Markdown content
+//
+// cSpell:ignore: katex
+
+.td-content {
+  order: 1;
+  font-family: var(--td-body-font-family);
+
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    font-family: var(--td-heading-font-family);
+  }
+
+  p,
+  li,
+  td {
+    font-weight: $td-font-weight-body-text;
+  }
+
+  > h1 {
+    font-weight: $font-weight-bold;
+    margin-bottom: 1rem;
+  }
+
+  > h2 {
+    margin-bottom: 1rem;
+  }
+
+  > h2:not(:first-child) {
+    margin-top: 3rem;
+  }
+
+  > h2 + h3 {
+    margin-top: 1rem;
+  }
+
+  > h3,
+  > h4,
+  > h5,
+  > h6 {
+    margin-bottom: 1rem;
+    margin-top: 2rem;
+  }
+
+  img {
+    @extend .img-fluid;
+  }
+
+  table {
+    @extend .td-table;
+  }
+
+  blockquote {
+    padding: 0 0 0 1rem;
+    margin-bottom: $spacer;
+    color: var(--bs-secondary-color);
+    border-left: 6px solid var(--bs-primary);
+  }
+
+  ul li,
+  ol li {
+    margin-bottom: 0.25rem;
+  }
+
+  strong {
+    font-weight: $font-weight-bold;
+  }
+
+  .footnotes,
+  > .alert,
+  > .highlight,
+  > .katex-display,
+  > .lead,
+  > .td-table,
+  > blockquote,
+  > dl dd,
+  > h1,
+  > h2,
+  > ol,
+  > p,
+  > pre,
+  > ul {
+    @extend .td-max-width-on-larger-screens;
+  }
+
+  .alert:not(:first-child) {
+    margin-top: 2 * $spacer;
+    margin-bottom: 2 * $spacer;
+  }
+
+  details {
+    &:not(:last-child) {
+      margin-bottom: $spacer;
+    }
+
+    > p:first-of-type {
+      margin-top: $spacer;
+    }
+  }
+
+  .lead {
+    margin-bottom: 1.5rem;
+  }
+
+  // Server-rendered KaTeX can be wider than the document column. Keep long
+  // equations readable without allowing them to widen the page itself.
+  .katex-display {
+    max-width: 100%;
+    overflow-x: auto;
+    overflow-y: hidden;
+    padding-block: 0.25rem;
+  }
+
+  // Hugo's table render hook owns the scroll viewport so a wide table cannot
+  // widen the page. The full-width author modifier opts out of the regular
+  // prose measure and uses the entire article canvas.
+  .td-table-scroll {
+    max-width: 100%;
+    overflow-x: auto;
+    overflow-y: hidden;
+    overscroll-behavior-inline: contain;
+    scrollbar-width: thin;
+
+    &:focus-visible {
+      outline: 2px solid var(--bs-link-color);
+      outline-offset: 3px;
+    }
+
+    > table {
+      width: max-content;
+      min-width: 100%;
+      margin-bottom: 0;
+    }
+
+    &--full {
+      width: 100%;
+      max-width: none;
+    }
+  }
+}
+
+@media print {
+  .td-content .katex-display,
+  .td-content .td-table-scroll {
+    max-width: none;
+    overflow: visible;
+  }
+}
+
+@media (forced-colors: active) {
+  .td-content .td-table-scroll:focus-visible {
+    outline-color: Highlight;
+  }
+}
+
+.td-title {
+  margin-top: 1rem;
+  margin-bottom: 0.5rem;
+
+  @include media-breakpoint-up(sm) {
+    font-size: 3rem;
+  }
+}
+
+.td-heading-self-link {
+  &::before {
+    content: '#';
+  }
+
+  font-size: 90%;
+  padding-left: 0.25em;
+  text-decoration: none;
+  visibility: hidden;
+
+  // Always visible on touch devices and small screens
+  @media (hover: none) and (pointer: coarse),
+    (max-width: map-get($grid-breakpoints, sm)) {
+    visibility: visible;
+  }
+}
+
+@for $i from 1 through 6 {
+  h#{$i}:hover > .td-heading-self-link {
+    visibility: visible;
+  }
+}
+
+// "Was this page helpful?" widget. Previously an inline <style> block emitted
+// with the markup, which a strict Content Security Policy would drop.
+.td-feedback {
+  .feedback--answer {
+    display: inline-block;
+  }
+
+  .feedback--answer-no {
+    // Logical, not `margin-left`: the buttons swap sides under RTL.
+    margin-inline-start: 1em;
+  }
+
+  .feedback--response {
+    display: none;
+    margin-top: 1em;
+  }
+
+  .feedback--response__visible {
+    display: block;
+  }
+}

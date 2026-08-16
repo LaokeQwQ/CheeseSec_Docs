@@ -1,0 +1,242 @@
+# Alert labels
+caution: 注意
+important: 重要
+note: 注記
+tip: ヒント
+warning: 警告
+
+# UI strings. Buttons and similar.
+ui_pager_prev: 前へ
+ui_pager_next: 次へ
+ui_read_more: 続きを読む
+ui_search: サイトを検索...
+
+# Used in sentences such as "Posted in News"
+ui_in: in
+
+# Footer text
+footer_all_rights_reserved: All Rights Reserved
+
+footer_privacy_policy: プライバシーポリシー
+
+# Post (blog, article, etc.)
+post_byline_by: By
+post_created: 作成
+post_last_mod: 最終更新
+post_edit_this: ページの編集
+post_view_markdown: Markdownを表示
+post_view_this: ページのソースコードを見る
+post_create_child_page: 子ページを作成
+post_create_issue: ドキュメントのissueを作成
+post_create_project_issue: プロジェクトのissueを作成
+post_posts_in: 記事一覧
+post_reading_time: minute read
+post_less_than_a_minute_read: less than a minute
+
+# Print support
+print_printable_section: これは、このセクションの複数ページの印刷可能なビューです。
+print_click_to_print: 印刷するには、ここをクリックしてください
+print_show_regular: このページの通常のビューに戻る
+print_entire_section: セクション全体を印刷
+
+# Community
+community_join: Join the {{ .Site.Title }} community
+community_introduce: >-
+  {{ .Site.Title }} is an open source project that anyone in the community can
+  use, improve, and enjoy. We'd love you to join us! Here's a few ways to find
+  out what's happening and get involved.
+community_learn: Learn and Connect
+community_using: >-
+  Using or want to use {{ .Site.Title }}? Find out more here:
+community_develop: Develop and Contribute
+community_contribute: >-
+  If you want to get more involved by contributing to {{ .Site.Title }}, join us
+  here:
+community_how_to: >-
+  You can find out how to contribute to {{ .Site.Title }} in our
+community_guideline: >-
+  Contribution Guidelines
+
+# Feedback
+feedback_title: フィードバック
+feedback_question: このページは役に立ちましたか?
+feedback_positive: 役に立った
+feedback_negative: 役に立たなかった
+
+# Explicit English fallbacks for untranslated OINK UI strings.
+# Replace these values with reviewed translations when available.
+ui_search_empty: No results found
+ui_search_loading: Loading search index…
+ui_search_results: '{count} results found'
+ui_search_nav: Navigate
+ui_search_open: Open
+ui_search_close: Close
+ui_palette_pages: Pages
+ui_palette_index_unavailable: Page index unavailable; actions still work
+ui_palette_action_failed: Action could not be completed
+ui_palette_choose: Choose an option
+ui_palette_no_commands: No matching commands
+ui_palette_quick_links: Quick links
+ui_palette_actions: Actions
+ui_palette_commands: Commands
+ui_palette_preferences: Preferences
+ui_palette_page_actions: Page actions
+ui_palette_empty_query: Quick links and actions
+ui_sidebar_nav: Section navigation
+ui_main_nav: Main navigation
+ui_home: Home
+ui_sidebar_expand: Expand sidebar
+ui_sidebar_collapse: Collapse sidebar
+ui_drawer_open: Open navigation
+ui_drawer_close: Close navigation
+ui_root_menu_label: Choose section
+ui_tags_title: Tags
+ui_tag_title: Tag
+ui_categories_title: Categories
+ui_category_title: Category
+ui_theme_toggle: Toggle color theme
+ui_language: Language
+ui_theme: Theme
+ui_theme_auto: Follow system
+ui_theme_light: Light
+ui_theme_dark: Dark
+ui_toc_hide: Hide table of contents
+ui_toc_show: Show table of contents
+ui_language_select: Choose language
+ui_language_switch: Switch language
+ui_details: Details
+ui_skip_to_content: Skip to content
+ui_page_actions: Actions
+ui_copy_markdown: Copy Markdown
+ui_copy_success: Markdown copied
+ui_copy_error: Could not copy Markdown
+ui_print_page: Print this page
+ui_sidebar_expand_section: Expand section
+ui_sidebar_collapse_section: Collapse section
+ui_doc_carousel: Document carousel
+ui_carousel_previous: Previous card
+ui_carousel_next: Next card
+ui_asciinema_timer: Playback time
+
+# Used in sentences such as "Posted in News"
+ui_all: all
+
+# Footer text
+post_upstream_attribution: Upstream source and attribution
+post_downstream_modified:
+  This page includes downstream modifications by {{ .Site.Title }}.
+toc_on_this_page: Content
+toc_top_of_page: Top of page
+
+# Error pages
+error_404_title: Page not found
+error_404_body: >-
+  Sorry, this page does not exist. Try starting again from the home page.
+error_404_home: Go to the home page
+
+# Explicit English fallbacks for untranslated OINK UI strings.
+# Replace these values with reviewed translations when available.
+ui_code_copy: Copy
+ui_code_copy_label: Copy code
+ui_code_copied: Copied
+ui_code_copy_error: Copy failed
+ui_code_show_all: Show all {{ .Count }} lines
+ui_code_collapse: Collapse code
+ui_code_group_label: Code examples
+ui_kbd_with: with
+ui_field_required: required
+ui_action_unavailable: unavailable
+
+# Explicit English fallbacks for untranslated OINK UI strings.
+# Replace these values with reviewed translations when available.
+ui_open_in_chatgpt: Open in ChatGPT
+ui_open_in_claude: Open in Claude
+ui_open_in_prompt: Read from %s so I can ask questions about it.
+
+# Explicit English fallbacks for untranslated OINK UI strings.
+# Replace these values with reviewed translations when available.
+ui_image_zoom_dialog: Image preview
+ui_image_zoom_open: Open image preview
+ui_image_zoom_close: Close image preview
+
+# Explicit English fallbacks for untranslated OINK UI strings.
+# Replace these values with reviewed translations when available.
+version_banner_archived: >-
+  Version {{ .Version }} of the documentation is no longer actively maintained.
+  The site that you are currently viewing is an archived snapshot.
+version_banner_latest: For up-to-date documentation, see the {{ .Link }}.
+version_banner_latest_link: latest version
+
+# Comments
+comments_noscript: JavaScript is required to load comments.
+comments_noscript_link: View discussions on GitHub.
+
+# Explicit English fallbacks for untranslated OINK UI strings.
+# Replace these values with reviewed translations when available.
+ui_open_in_prompt_label: Ask about this page
+ui_view_history: View edit history
+
+# Explicit English fallbacks for untranslated OINK UI strings.
+# Replace these values with reviewed translations when available.
+ui_footer_collapse: Hide footer links
+ui_footer_expand: Show footer links
+
+# Post (blog, article, etc.)
+
+# Explicit English fallbacks for untranslated OINK UI strings.
+# Replace these values with reviewed translations when available.
+ui_release_view: View release
+ui_release_source: Source
+ui_release_compare: Compare changes
+ui_release_released: Released
+ui_release_checksums: Checksums
+
+# Used in sentences such as "Posted in News"
+
+# Explicit English fallbacks for untranslated OINK UI strings.
+# Replace these values with reviewed translations when available.
+ui_assets_file: File
+ui_assets_checksum: Checksum
+ui_assets_copy: Copy checksum
+ui_assets_copied: Copied
+ui_assets_copy_all: Copy all checksums
+ui_assets_download: Download asset
+
+# Used in sentences such as "Posted in News"
+
+# Explicit English fallbacks for untranslated OINK UI strings.
+# Replace these values with reviewed translations when available.
+ui_download_channels: Download channels
+ui_download_unpublished: Pending release
+
+# Used in sentences such as "Posted in News"
+
+# Explicit English fallbacks for untranslated OINK UI strings.
+# Replace these values with reviewed translations when available.
+ui_pricing_featured: Recommended
+ui_pricing_included: Included
+ui_pricing_excluded: Not included
+
+# Explicit English fallbacks for untranslated OINK UI strings.
+# Replace these values with reviewed translations when available.
+ui_table_scroll: "Scrollable table"
+
+# Explicit English fallbacks for untranslated OINK UI strings.
+# Replace these values with reviewed translations when available.
+book_figure: Figure
+book_table: Table
+book_equation: Equation
+book_lof: List of figures
+book_lot: List of tables
+book_toc: Book contents
+book_draft: Draft
+book_draft_notice: This chapter is still being revised.
+
+# Explicit English fallbacks for untranslated OINK UI strings.
+# Replace these values with reviewed translations when available.
+ui_marquee_pause: Pause motion
+
+# Explicit English fallbacks for untranslated OINK UI strings.
+# Replace these values with reviewed translations when available.
+book_example: Example
+contributors_count: contributors

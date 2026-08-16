@@ -1,0 +1,7 @@
+# Optional Wrangler metadata for the CheeseSec docs Pages project.
+# Production publishes through Cloudflare Pages Git integration.
+# Do not Direct Upload a preview build that used $CF_PAGES_URL.
+
+name = "cheesesec-docs"
+compatibility_date = "2026-08-16"
+pages_build_output_dir = "public"

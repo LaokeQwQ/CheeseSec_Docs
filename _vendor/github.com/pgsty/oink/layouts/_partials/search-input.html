@@ -1,0 +1,42 @@
+{{/* cSpell:ignore docsearch absurlreplacer */ -}}
+
+{{ .Scratch.Set "oink-search" 0 -}}
+
+{{ if .Site.Params.gcs_engine_id -}}
+{{ .Scratch.Add "oink-search" 1 -}}
+
+<div class="td-search">
+  <div class="td-search__icon"></div>
+  <input type="search" name="q" {{/**/ -}}
+    class="td-search__input form-control td-search-input" {{/**/ -}}
+    placeholder='{{ T "ui_search" }}' {{/**/ -}}
+    aria-label='{{ T "ui_search" }}' autocomplete="off">
+</div>
+
+{{- end -}}
+
+
+{{ if and .Site.Params.search (isset .Site.Params.search "algolia") -}}
+{{ .Scratch.Add "oink-search" 1 -}}
+{{ .Scratch.Add "docsearch-id-num" 1 -}}
+
+<div class="td-search">
+  <div class="td-search--algolia" id="docsearch-{{ mod (.Scratch.Get "docsearch-id-num") 2 }}"></div>
+</div>
+
+{{- end -}}
+
+
+{{ if partial "shell/search-enabled.html" . -}}
+{{ .Scratch.Add "oink-search" 1 -}}
+<button type="button" class="td-search td-search--offline td-search--palette"
+  data-td-shell-search-open aria-controls="td-shell-search" aria-expanded="false">
+  <span class="td-search__icon" aria-hidden="true"></span>
+  <span class="td-search__input form-control">{{ T "ui_search" }}</span>
+</button>
+{{- end -}}
+
+{{ if gt (.Scratch.Get "oink-search") 1 -}}
+{{ warnf `You have more than one site-search option configured: choose only one.
+      For details, see https://oink.pgsty.com/docs/content/search.` -}}
+{{ end -}}

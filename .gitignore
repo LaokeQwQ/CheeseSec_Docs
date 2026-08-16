@@ -1,0 +1,17 @@
+# Hugo
+/public/
+/resources/_gen/
+/.hugo_build.lock
+/hugo_stats.json
+
+# Local module workspace
+/go.work
+/go.work.sum
+
+# OS and editors
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.swp
+*~

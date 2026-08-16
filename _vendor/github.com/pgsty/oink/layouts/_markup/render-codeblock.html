@@ -1,0 +1,20 @@
+{{- /* Keep the legacy Prism path byte-compatible; enhanced code is Chroma-only. */ -}}
+{{- if .Page.Site.Params.prism_syntax_highlighting -}}
+  {{- $useClasses := .Page.Param "highlight_classes" -}}
+  {{- if eq $useClasses nil }}{{ $useClasses = true }}{{ end -}}
+  {{- $options := .Options -}}
+  {{- if $useClasses }}{{ $options = merge (dict "noClasses" false) $options }}{{ end -}}
+  {{- transform.Highlight (strings.TrimRight "\n" .Inner) .Type $options -}}
+{{- else -}}
+  {{- $config := partial "code/normalize.html" (dict
+    "page" .Page
+    "position" .Position
+    "code" .Inner
+    "language" .Type
+    "attributes" .Attributes
+    "options" .Options
+    "key" (printf "fence-%d" .Ordinal)
+  ) -}}
+  {{- $highlighted := partial "code/highlight.html" $config -}}
+  {{- partial "code/render.html" (dict "config" $config "highlighted" $highlighted) -}}
+{{- end -}}
