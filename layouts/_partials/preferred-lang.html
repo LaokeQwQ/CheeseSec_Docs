@@ -1,0 +1,95 @@
+{{- /* First visit: follow the browser language. A language click is remembered. */ -}}
+{{- if ne (lower (.Store.Get "tdOutputFormat" | default "html")) "html" -}}
+{{- else -}}
+{{- $pages := dict -}}
+{{- range .AllTranslations -}}
+  {{- $pages = merge $pages (dict .Language.Lang .RelPermalink) -}}
+{{- end -}}
+{{- if gt (len $pages) 1 -}}
+<script>
+(function () {
+  var KEY = 'td-preferred-lang';
+  var COOKIE = 'cheesec-locale';
+  var current = {{ .Language.Lang | jsonify | safeJS }};
+  var pages = {{ $pages | jsonify | safeJS }};
+
+  function siteLang(tag) {
+    if (!tag) return '';
+    tag = String(tag).toLowerCase().replace(/_/g, '-');
+    if (tag === 'zh' || tag.indexOf('zh-') === 0) return 'zh';
+    if (tag === 'en' || tag.indexOf('en-') === 0) return 'en';
+    return '';
+  }
+
+  function storedLang() {
+    try {
+      return localStorage.getItem(KEY) || '';
+    } catch (_) {
+      return '';
+    }
+  }
+
+  function cookieLang() {
+    try {
+      var parts = document.cookie ? document.cookie.split(';') : [];
+      for (var i = 0; i < parts.length; i++) {
+        var part = parts[i].trim();
+        if (part.indexOf(COOKIE + '=') !== 0) continue;
+        return siteLang(decodeURIComponent(part.slice(COOKIE.length + 1)));
+      }
+    } catch (_) {}
+    return '';
+  }
+
+  function remember(lang) {
+    if (!lang || !pages[lang]) return;
+    try {
+      localStorage.setItem(KEY, lang);
+    } catch (_) {}
+    try {
+      var value = COOKIE + '=' + (lang === 'zh' ? 'zh-CN' : 'en') +
+        '; Max-Age=31536000; Path=/; SameSite=Lax';
+      var host = location.hostname || '';
+      if (host === 'cheesesec.com' || host.slice(-14) === '.cheesesec.com') {
+        value += '; Domain=.cheesesec.com';
+      }
+      document.cookie = value;
+    } catch (_) {}
+  }
+
+  function preferredLang() {
+    var stored = storedLang();
+    if (stored && pages[stored]) return stored;
+    var fromCookie = cookieLang();
+    if (fromCookie && pages[fromCookie]) return fromCookie;
+    var list = (navigator.languages && navigator.languages.length)
+      ? navigator.languages
+      : [navigator.language];
+    for (var i = 0; i < list.length; i++) {
+      var lang = siteLang(list[i]);
+      if (lang && pages[lang]) return lang;
+    }
+    return '';
+  }
+
+  var want = preferredLang();
+  if (want && want !== current && pages[want]) {
+    var dest = pages[want];
+    if (location.search) dest += location.search;
+    if (location.hash) dest += location.hash;
+    location.replace(dest);
+    return;
+  }
+
+  document.addEventListener('click', function (ev) {
+    var el = ev.target;
+    if (!el || !el.closest) return;
+    var link = el.closest('a[href]');
+    if (!link) return;
+    var lang = siteLang(link.getAttribute('data-td-lang') || link.getAttribute('hreflang') || '');
+    remember(lang);
+  }, true);
+})();
+</script>
+{{- end -}}
+{{- end -}}

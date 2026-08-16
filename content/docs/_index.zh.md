@@ -1,6 +1,6 @@
 ---
-title: 文档
-linkTitle: 文档
+title: 产品
+linkTitle: 产品
 weight: 1
 description: CheeseSec 产品手册。
 ---

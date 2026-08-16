@@ -1,0 +1,115 @@
+{{/* Site overlay of the OINK head partial. Adds per-page language detection
+     before CSS so the first paint can switch locale. Keep the rest aligned
+     with the theme file. */ -}}
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+{{ partial "preferred-lang.html" . }}
+
+{{ $darkMode := partialCached "dark-mode-config.html" "dark-mode-global" -}}
+{{ if $darkMode.enable -}}
+<meta name="color-scheme" content="light dark">
+<meta name="theme-color" media="(prefers-color-scheme: light)" content="#ffffff">
+<meta name="theme-color" media="(prefers-color-scheme: dark)"  content="#000000">
+
+<style>
+  html { background: Canvas; color: CanvasText; }
+  @media (prefers-color-scheme: dark) {
+    html { background: #0b0d12; color: #e6e6e6; }
+  }
+  html[data-theme-init] * { transition: none !important; }
+  [data-td-theme-toggle] > .td-shell-icon--sun { display: none !important; }
+  [data-td-theme-toggle] > [hidden] { display: none !important; }
+  html[data-bs-theme='dark'] [data-td-theme-toggle] > .td-shell-icon--moon { display: none !important; }
+  html[data-bs-theme='dark'] [data-td-theme-toggle] > .td-shell-icon--sun { display: inline-block !important; }
+</style>
+
+<script>
+  (function() {
+    const themeKey = 'td-color-theme';
+    let storedTheme = null;
+    try {
+      storedTheme = localStorage.getItem(themeKey);
+      if (!storedTheme) {
+        localStorage.setItem(themeKey, 'auto');
+        storedTheme = 'auto';
+      }
+    } catch (_) {}
+    let theme = storedTheme || (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+
+    if (theme === 'auto') {
+      theme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+    }
+
+    document.documentElement.setAttribute('data-bs-theme', theme);
+  })();
+</script>
+{{ end -}}
+
+{{ range .AlternativeOutputFormats -}}
+<link rel="{{ .Rel }}" type="{{ .MediaType.Type }}" href="{{ .Permalink | safeURL }}">
+{{ end -}}
+{{- $pager := partial "pager-state.html" . -}}
+{{- with $pager.prev }}
+<link rel="prev" href="{{ .RelPermalink }}">
+{{- end -}}
+{{- with $pager.next }}
+<link rel="next" href="{{ .RelPermalink }}">
+{{- end -}}
+
+{{ $outputFormat := lower (.Store.Get "tdOutputFormat" | default "html") -}}
+{{ if and hugo.IsProduction (ne $outputFormat "print") (ne .Site.Language.Name "xx") -}}
+<meta name="robots" content="index, follow">
+{{ else -}}
+<meta name="robots" content="noindex, nofollow">
+{{ end -}}
+
+{{ partialCached "favicons.html" . }}
+<title>
+  {{- if .IsHome -}}
+    {{ .Site.Title -}}
+  {{ else -}}
+    {{ with .Title }}{{ . }} | {{ end -}}
+    {{ .Site.Title -}}
+  {{ end -}}
+</title>
+<meta name="description" content="{{ partial "page-description.html" . }}">
+{{ partial "seo-alternates.html" . -}}
+{{ partial "opengraph.html" . -}}
+{{ partial "schema.html" . -}}
+{{ partial "twitter_cards.html" . -}}
+{{ partialCached "head-css.html" . (printf "head-css-%s" .Site.Language.Direction) -}}
+{{ partial "shell/prepaint.html" . -}}
+{{ if partial "shell/search-enabled.html" . -}}
+{{ $lunr := resources.Get "js/third_party/lunr.min.js" -}}
+{{ if hugo.IsProduction }}{{ $lunr = $lunr | fingerprint }}{{ end -}}
+<script defer src="{{ $lunr.RelPermalink }}"
+  {{- with $lunr.Data.Integrity }} integrity="{{ . }}" crossorigin="anonymous"{{ end }}></script>
+{{ end -}}
+
+{{ if .Site.Params.prism_syntax_highlighting -}}
+<link rel="stylesheet" href="{{ "css/prism.css" | relURL }}"/>
+{{ end -}}
+
+{{ template "algolia/head" . -}}
+
+{{ partial "hooks/head-end.html" . -}}
+
+{{ if hugo.IsProduction -}}
+  {{ partial "google_analytics.html" . -}}
+{{ end -}}
+
+{{ define "algolia/head" -}}
+
+{{ if and .Site.Params.search (isset .Site.Params.search "algolia") -}}
+{{ $docsearchCSS := resources.Get "third_party/docsearch/docsearch.css" -}}
+{{ if hugo.IsProduction }}{{ $docsearchCSS = $docsearchCSS | fingerprint }}{{ end -}}
+<link rel="stylesheet" href="{{ $docsearchCSS.RelPermalink }}"
+  {{- with $docsearchCSS.Data.Integrity }} integrity="{{ . }}" crossorigin="anonymous"{{ end }}>
+{{ end -}}
+
+{{ if ne .Site.Params.algolia_docsearch nil -}}
+{{ warnf `Config 'params.algolia_docsearch' is deprecated: use 'params.search.algolia'
+      For details, see https://oink.pgsty.com/docs/content/search/#algolia-docsearch.` -}}
+{{ end -}}
+
+{{ end -}}

@@ -1,6 +1,6 @@
 ---
-title: Docs
-linkTitle: Docs
+title: Product
+linkTitle: Product
 weight: 1
 description: CheeseSec product manuals.
 ---

@@ -4,7 +4,6 @@ linkTitle: 首页
 description: CheeseSec 产品手册。目前收录 CheeseWAF。
 cascade:
   type: docs
-notoc: true
 no_list: true
 ---
 

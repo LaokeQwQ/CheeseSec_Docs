@@ -1,0 +1,16 @@
+// Empty TOC rail: hide the stray collapse button and the reserved column.
+@media (min-width: 1200px) {
+  .td-shell-layout--no-toc > .td-shell-toc {
+    display: none;
+    flex: 0 0 0px;
+    width: 0;
+  }
+
+  .td-shell-layout--no-toc > .td-shell-toc > .td-shell-toc__panel {
+    display: none;
+  }
+}
+
+.td-shell-layout--no-toc > .td-shell-toc-float {
+  display: none;
+}

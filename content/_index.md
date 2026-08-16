@@ -4,7 +4,6 @@ linkTitle: Home
 description: Product manuals for CheeseSec. CheeseWAF is documented here.
 cascade:
   type: docs
-notoc: true
 no_list: true
 ---
 

@@ -40,7 +40,7 @@ languages:
     menus:
       main:
         - identifier: docs
-          name: Docs
+          name: Product
           pageRef: /docs
           weight: 10
         - identifier: cheesewaf
@@ -70,7 +70,7 @@ languages:
     menus:
       main:
         - identifier: docs
-          name: 文档
+          name: 产品
           pageRef: /docs
           weight: 10
         - identifier: cheesewaf
