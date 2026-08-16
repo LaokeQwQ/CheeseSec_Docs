@@ -5,8 +5,7 @@ title: CheeseSec Docs
 baseURL: https://docs.cheesesec.com/
 defaultContentLanguage: en
 enableRobotsTXT: true
-# Turn on after the first git commit if you want “last modified” from git.
-enableGitInfo: false
+enableGitInfo: true
 enableEmoji: true
 
 ignoreLogs:

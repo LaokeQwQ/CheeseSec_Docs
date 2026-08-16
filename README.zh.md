@@ -30,7 +30,7 @@ hugo --gc --minify
 
 产物在 `public/`。不要把这个目录提交进 git。
 
-`enableGitInfo` 现在是关的，因为仓库还没有第一次提交。你推上去之后，如果要显示 git 的最后修改时间，可以把 `hugo.yaml` 里这项改成 `true`。
+`enableGitInfo` 已打开。页面可以显示 git 的最后修改时间。
 
 ## Cloudflare Pages（控制台要填的项）
 

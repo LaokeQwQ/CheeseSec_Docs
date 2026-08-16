@@ -30,7 +30,7 @@ hugo --gc --minify
 
 Output is `public/`. Do not commit that directory.
 
-`enableGitInfo` is off until this repo has at least one commit. After you push, you can set it to `true` in `hugo.yaml` if you want last-modified dates from git.
+`enableGitInfo` is on, so pages can show last-modified dates from git.
 
 ## Cloudflare Pages (fill these in)
 
