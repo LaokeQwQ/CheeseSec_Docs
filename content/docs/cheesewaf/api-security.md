@@ -1,23 +1,25 @@
 ---
-title: API security
-linkTitle: API security
+title: API Security & Governance
+linkTitle: API Security
 weight: 70
-description: Endpoint discovery, schema checks, JWT / JWKS, per-route rate limits, and RBAC.
+description: Automated API asset discovery, request schema structure validation, JWT/JWKS authentication, route-level rate limiting, and RBAC policies.
 ---
 
-Console: **API security**.
-Config: `apisec`.
-REST: `/api/apisec/*` plus the permission tables used by every other `/api` route.
+With the widespread adoption of single-page applications and microservices, API endpoints represent a primary attack surface. CheeseWAF's API Security module delivers automatic endpoint discovery, strict contract schema validation, stateless JWT authentication, and route-level rate limiting.
 
-## Discovery {#discovery}
+Configure settings visually in the Web console under **API Security**, or define them in configuration files under the `apisec` block.
 
-When `apisec.discovery.enabled` is true, CheeseWAF samples recent traffic (`sample_limit`, `window`) and lists endpoints.
-`ignore_prefixes` skips static assets.
+## 1. Automated API Asset Discovery {#discovery}
 
-`GET /api/apisec/endpoints` returns the current map.
-`POST /api/apisec/validate` checks one request against a schema.
+When `apisec.discovery.enabled: true` is active, CheeseWAF samples live request streams across `window` intervals up to `sample_limit` volumes, automatically clustering URI paths into an API asset inventory:
 
-## Validation {#validation}
+- **Static Path Filtering**: Configure `ignore_prefixes` to exclude static assets (such as `/static`, `*.css`, or image paths).
+- **Asset Query Endpoint**: Invoke `GET /api/apisec/endpoints` to retrieve the current inventory of discovered endpoints and traffic statistics.
+- **Contract Testing**: Invoke `POST /api/apisec/validate` to validate a test request against registered schemas.
+
+## 2. Request Schema Validation {#validation}
+
+Schema validation enforces strict structural contracts on incoming requests, preventing unauthorized parameter injection and parameter pollution:
 
 ```yaml
 apisec:
@@ -30,18 +32,22 @@ apisec:
         required_params: ["q"]
         required_headers: []
         max_body_bytes: 0
-        enabled: false
+        enabled: true
 ```
 
-Enable a schema only after you have confirmed the path and required fields.
+Supports validation of HTTP methods, path regular expressions, mandatory query/body parameters, mandatory HTTP headers, and maximum allowable body payload sizes (`max_body_bytes`).
 
-## JWT {#jwt}
+## 3. JWT & JWKS Authentication {#jwt}
 
-`apisec.auth` can require JWT issuers, audiences, scopes, and algorithms.
-Keys can come from a shared secret, a PEM file, inline PEM, a JWKS file, inline JWKS, or a remote `jwks_url`.
-Remote JWKS is cached in `jwks_cache_file` and refreshed every `jwks_refresh_interval`.
+Enforce stateless JSON Web Token authentication at the proxy layer via `apisec.auth`:
 
-## API rate limits {#rate}
+- **Claim Verification**: Validates cryptographic signatures, token issuers (`iss`), audiences (`aud`), timestamps (`exp`/`nbf`), and allowed signing algorithms.
+- **Key Providers**: Supports symmetric shared secrets, local PEM certificate files, inline PEM strings, local JWKS files, and remote `jwks_url` endpoints.
+- **Automated Caching & Rotation**: Remote JWKS keys are cached locally in `jwks_cache_file` and automatically refreshed according to `jwks_refresh_interval`.
+
+## 4. Route-Level Precision Rate Limiting {#rate}
+
+Unlike global [Data Plane Token Bucket Limiting](../protection/ratelimit/), API rate limiting applies strictly to specific HTTP method and path combinations (such as sensitive authentication or SMS dispatch endpoints):
 
 ```yaml
 apisec:
@@ -54,9 +60,9 @@ apisec:
       enabled: true
 ```
 
-This is per discovered API route, not the global [data-plane bucket](../protection/ratelimit/).
+## 5. RBAC Permission Matrix {#permissions}
 
-## Permissions {#permissions}
+`apisec.permissions` defines role-based access control mappings for the management plane:
 
 ```yaml
 apisec:
@@ -65,5 +71,4 @@ apisec:
     readonly: ["read:*", "read:cluster"]
 ```
 
-Management routes use names such as `read:sites`, `write:protection`, `use:ai`, `approve:ai`, `manage:api_tokens`.
-See [REST API](../api/) for the route-to-permission map.
+For the mapping between permission identifiers (such as `read:sites`, `write:protection`, `manage:api_tokens`) and REST API endpoints, see [RESTful API Reference](../api/).

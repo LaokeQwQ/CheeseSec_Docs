@@ -1,29 +1,27 @@
 ---
-title: CheeseSec Docs
+title: CheeseSec Documentation
 linkTitle: Home
-description: Product manuals for CheeseSec. CheeseWAF is documented here.
+description: Official product manuals and engineering guides for CheeseSec security solutions, covering deployment, configuration, and operations.
 cascade:
   type: docs
 no_list: true
 ---
 
-This site is the CheeseSec product manual.
-CheeseWAF is documented here: install, configure, and operate it.
+Welcome to the official CheeseSec product documentation. This site provides architectural overviews, deployment guides, security policy configurations, and operational manuals for CheeseSec security components and services.
 
-Source and release packages are in the [CheeseWAF repository](https://github.com/LaokeQwQ/CheeseWAF).
-The license is [Apache License 2.0](https://github.com/LaokeQwQ/CheeseWAF/blob/master/LICENSE).
+The primary product currently documented is **CheeseWAF**. Source code and pre-built binaries are hosted in the [CheeseWAF repository](https://github.com/LaokeQwQ/CheeseWAF) under the [Apache License 2.0](https://github.com/LaokeQwQ/CheeseWAF/blob/master/LICENSE).
 
-## CheeseWAF {#cheesewaf}
+## Products {#cheesewaf}
 
 {{< nav-cards cols="1" >}}
-{{< nav-card title="CheeseWAF" link="/docs/cheesewaf/" icon="fa-solid fa-shield-halved" desc="Self-hosted Web Application Firewall. Install, configure, and operate it." />}}
+{{< nav-card title="CheeseWAF" link="/docs/cheesewaf/" icon="fa-solid fa-shield-halved" desc="Commercial-grade self-hosted Web Application Firewall featuring AST semantic analysis, bot mitigation, API security, and asynchronous LLM-driven threat review." />}}
 {{< /nav-cards >}}
 
-## Start here {#start}
+## Quick Navigation {#start}
 
-| What you want | Where to go |
+| Scenario | Recommended Documentation |
 | --- | --- |
-| Install and run it | [Install](/docs/cheesewaf/install/), [Quick start](/docs/cheesewaf/tutorial/) |
-| How requests are inspected | [Introduction](/docs/cheesewaf/intro/), [Concepts](/docs/cheesewaf/concepts/) |
-| Sites and protection | [Sites](/docs/cheesewaf/sites/), [Protection](/docs/cheesewaf/protection/) |
-| API and config keys | [REST API](/docs/cheesewaf/api/), [Config](/docs/cheesewaf/config/) |
+| Deployment & Initial Setup | [System Installation](/docs/cheesewaf/install/) · [Quick Start](/docs/cheesewaf/tutorial/) |
+| Core Architecture & Pipeline | [Architecture & Overview](/docs/cheesewaf/intro/) · [Core Concepts](/docs/cheesewaf/concepts/) |
+| Site Configuration & Protection | [Sites & Reverse Proxy](/docs/cheesewaf/sites/) · [Protection Policies](/docs/cheesewaf/protection/) |
+| API & Configuration Reference | [RESTful API Reference](/docs/cheesewaf/api/) · [Configuration Reference](/docs/cheesewaf/config/) |

@@ -1,32 +1,33 @@
 ---
-title: Operations
+title: System Operations & Account Security
 linkTitle: Operations
 weight: 180
-description: Users, 2FA, time sync, OTA updates, and system maintenance.
+description: Administrator credentials, TOTP two-factor authentication (2FA), NTP time synchronization, and OTA automated software updates.
 ---
 
-Console: **Users**, **System**, **Updates**.
+CheeseWAF provides comprehensive administrative and operational capabilities to ensure long-term stability and account security. Configure these settings visually under **Users**, **System**, and **Updates** in the Web console.
 
-## Users {#users}
+## 1. User Accounts & Multi-Factor Authentication (2FA) {#users}
 
-`GET/POST /api/users`, `PUT /api/users/{id}`.
-Each user can enable TOTP: `/api/users/{id}/2fa/setup`, `enable`, `disable`, `recover`.
+- **User Lifecycle**: Manage administrative and operator accounts via `GET/POST /api/users` and `PUT /api/users/{id}`.
+- **Two-Factor Authentication (TOTP)**: Users can configure TOTP authenticator apps (such as Google Authenticator) via `/api/users/{id}/2fa/setup`, `enable`, `disable`, and `recover`.
+- **Terminal User Management**: Manage accounts, passwords, and 2FA secrets directly in the terminal using `cheesewaf user`.
 
-CLI: `cheesewaf user`.
+{{% pageinfo color="tip" %}}
+Do not share root administrator credentials among team members. Provision dedicated user accounts assigned the `readonly` role for operational staff who only require log querying and dashboard viewing privileges.
+{{% /pageinfo %}}
 
-Do not share the first admin password.
-Create a `readonly` role account for people who only need logs.
+## 2. NTP Time Synchronization {#time}
 
-## Time sync {#time}
+Accurate system time is critical for TOTP two-factor verification, JWT token timestamp validation (`exp`/`nbf`), and distributed cluster consensus:
 
-`GET /api/system/time-sync` shows the current clock source.
-`POST /api/system/time-sync/reselect` picks again.
-`POST /api/system/time-sync/sync` syncs now.
+- **Check Clock Status**: Query current clock synchronization state via `GET /api/system/time-sync`.
+- **Clock Source Reselection**: Trigger clock source reselection via `POST /api/system/time-sync/reselect`.
+- **Manual Force Sync**: Trigger immediate time synchronization via `POST /api/system/time-sync/sync`.
 
-JWT and TOTP break when the host clock is wrong.
-Fix time before you debug “invalid token”.
+If users encounter unexpected "Invalid Token" or TOTP verification failures, verify host NTP synchronization before troubleshooting other components.
 
-## Updates {#updates}
+## 3. Automated OTA Software Updates {#updates}
 
 ```yaml
 update:
@@ -40,12 +41,13 @@ update:
     verify_signature: true
 ```
 
-Keep `auto_update_binary` false until you trust the OTA server and the public key.
-`verify_signature` must stay true.
+- **Rule Hot-Updates**: Setting `auto_update_rules: true` allows the daemon to automatically download updated threat signatures and intelligence feeds without service restarts.
+- **Binary Upgrades**: Keep `auto_update_binary: false` in production environments until the update channel and distribution server are thoroughly verified.
+- **Cryptographic Verification**: Always enforce `verify_signature: true` to prevent unauthorized firmware or tampering.
 
-## System {#system}
+## 4. System Settings & Version Queries {#system}
 
-`GET /api/system` and `PUT /api/system` read and write system settings.
-`GET /api/version` prints the running version.
+- **System Preferences**: Read and update runtime parameters via `GET /api/system` and `PUT /api/system`.
+- **Version Query**: Query software build version, release channel, and Git commit hash via `GET /api/version`.
 
-See also [Storage and scheduler](../storage/) for backup and cleanup.
+For automated backup routines and disk space reclamation, see [Storage Sinks & Task Scheduling](../storage/).

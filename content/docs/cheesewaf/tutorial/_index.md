@@ -1,17 +1,18 @@
 ---
-title: Quick start
-linkTitle: Quick start
+title: Quick Start Guide
+linkTitle: Quick Start
 weight: 30
-description: Initialize CheeseWAF, add the first site, and connect a model for ALAP.
+description: Three steps to complete initial system setup, onboard your first reverse proxy site, and configure asynchronous LLM threat review.
 ---
 
-Do these three steps after the process is running.
+Once the daemon is up and running, follow these three essential steps to establish comprehensive web protection:
 
 {{< nav-cards cols="1" >}}
-{{< nav-card title="1. Initialize" link="/docs/cheesewaf/tutorial/setup/" icon="fa-solid fa-key" desc="Open /setup, create the first admin, store the generated secrets." />}}
-{{< nav-card title="2. Add a site" link="/docs/cheesewaf/tutorial/first-site/" icon="fa-solid fa-globe" desc="Domain, upstream, paranoia level 3." />}}
-{{< nav-card title="3. Connect a model" link="/docs/cheesewaf/tutorial/connect-llm/" icon="fa-solid fa-robot" desc="OpenAI-compatible endpoint for ALAP. Optional at first." />}}
+{{< nav-card title="1. System Initialization" link="/docs/cheesewaf/tutorial/setup/" icon="fa-solid fa-key" desc="Access the /setup wizard, create your initial administrator account, securely archive master keys, and verify management boundaries." />}}
+{{< nav-card title="2. Onboard Your First Site" link="/docs/cheesewaf/tutorial/first-site/" icon="fa-solid fa-globe" desc="Configure public domain names, backend upstream server addresses, and set the baseline paranoia level to Level 3 (Smart Protection)." />}}
+{{< nav-card title="3. Connect LLM Threat Review" link="/docs/cheesewaf/tutorial/connect-llm/" icon="fa-solid fa-robot" desc="Connect OpenAI- or Anthropic-compatible APIs to enable asynchronous ALAP threat reasoning and closed-loop rule synthesis." />}}
 {{< /nav-cards >}}
 
-The data plane works without a model.
-ALAP review stays empty until you configure `ai`.
+{{% pageinfo color="info" %}}
+CheeseWAF's Data Plane provides deterministic AST semantic protection immediately upon startup, even without an LLM connected. Before configuring the `ai` block, the ALAP review queue simply remains idle.
+{{% /pageinfo %}}

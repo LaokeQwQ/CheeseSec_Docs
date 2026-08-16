@@ -1,15 +1,15 @@
 ---
-title: 监控、日志和攻击地图
+title: 监控、日志与攻击态势大屏
 linkTitle: 监控
 weight: 110
-description: 仪表盘统计、访问日志、Prometheus、告警、通知和攻击地图。
+description: 访问日志轮转、Prometheus 指标导出、自定义告警通知及实时攻击态势大屏。
 ---
 
-控制台：**仪表盘**、**日志**、**监控**、**攻击地图**。
-配置：`logging`、`monitor`。
-REST：`/api/stats`、`/api/logs`、`/api/monitor`、`/api/metrics`、`/api/notifications`、`/api/audit`。
+CheeseWAF 提供了全链路的可观测性支持，包括结构化访问日志、Prometheus 标准指标输出、多渠道告警推送及可视化攻击态势大屏。
 
-## 日志 {#logs}
+在 Web 管理控制台中对应 **仪表盘**、**日志检索**、**监控告警** 与 **攻击态势大屏** 模块，底层配置项对应 `logging` 与 `monitor`。
+
+## 1. 结构化访问日志 {#logs}
 
 ```yaml
 logging:
@@ -23,12 +23,11 @@ logging:
       max_backups: 10
 ```
 
-`GET /api/logs` 列出事件。
-控制台的 `/logs/{traceId}` 打开单条请求。
+- **日志轮转与切割**：支持按文件大小（`max_size`）与保留备份数量（`max_backups`）自动执行安全轮转。
+- **Trace ID 全链路定位**：每条日志均包含全局唯一的 `traceId`。在控制台访问 `/logs/{traceId}` 可直达该请求的完整命中断言详情。
+- **日志外发**：支持将日志外发至 ClickHouse、PostgreSQL 或 VictoriaLogs 等外部存储，详见 [存储与调度管理](../storage/)。
 
-可选外发：PostgreSQL、ClickHouse、VictoriaLogs。见 [存储](../storage/)。
-
-## Prometheus {#prometheus}
+## 2. Prometheus 指标导出 {#prometheus}
 
 ```yaml
 monitor:
@@ -38,19 +37,20 @@ monitor:
     public: false
 ```
 
-`public` 为假时，用管理令牌抓 `/api/metrics`。
-`public` 为真时，同一路径挂在路由根上。不要把它暴露到公网。
+- **指标采集端点**：当 `public: false` 时，需携带具备权限的管理令牌请求 `/api/metrics` 抓取指标；若设为 `public: true`，指标端点直接挂载于路由根路径（建议结合网络 ACL 限制内网监控系统访问）。
+- **Prometheus Remote Write**：支持通过 `monitor.remote_write` 将时序指标主动推送到兼容 Prometheus Remote Write 协议的监控中心。
 
-`monitor.remote_write` 可以推到兼容 Prometheus 的远程地址。
+## 3. 告警规则与通知渠道 {#alerts}
 
-## 告警 {#alerts}
+系统支持配置拦截率突增（`high-block-rate`）与磁盘空间预警（`disk-usage`）等规则：
 
-示例定义了 `high-block-rate` 和 `disk-usage`。
-通知器支持 webhook（`monitor.notifiers`）。
-站内通知走 `/api/notifications`。
+- **通知渠道（Notifiers）**：在 `monitor.notifiers` 中可配置 Webhook、邮件或企业即时通讯机器人（如钉钉、企业微信、飞书等）。
+- **站内消息中心**：所有告警事件同时写入站内通知系统，可通过 `/api/notifications` 端点拉取。
 
-## 攻击地图 {#map}
+## 4. 实时攻击态势大屏 {#map}
 
-`/attack-map` 和 `/attack-map/screen` 画出最近的阻断。
-`console.map.china_boundary` 可以加载一份经过审阅的中国边界文件。
-不要把 `source` 指到不可信的 URL（`allow_insecure` / `allow_private` 保持 false，除非你清楚原因）。
+访问控制台的 `/attack-map` 或全屏模式 `/attack-map/screen`，可实时渲染全球威胁攻击来源、拦截频次与攻击类型分布。
+
+{{% pageinfo color="info" %}}
+通过配置 `console.map.china_boundary` 可加载规范审阅的中国国界线地图数据文件。引用外部地图源时，建议保持 `allow_insecure: false` 与 `allow_private: false`，避免潜在的未授权网络探测。
+{{% /pageinfo %}}

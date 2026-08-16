@@ -1,12 +1,13 @@
 ---
-title: Rate limit
-linkTitle: Rate limit
+title: Rate Limiting & Traffic Shaping
+linkTitle: Rate Limiting
 weight: 50
-description: Token-bucket limits on the data plane. API-specific limits live under apisec.
+description: High-performance token bucket rate limiting on the Data Plane with queueing and rejection handling.
 ---
 
-Config: `protection.ratelimit`.
-REST: `PUT /api/protection/ratelimit`.
+CheeseWAF integrates a high-performance token bucket rate limiting algorithm on the Data Plane to smooth out traffic spikes and mitigate HTTP flood / CC attacks. Configuration is located under `protection.ratelimit`, and can be updated dynamically via `PUT /api/protection/ratelimit`.
+
+## Base Configuration Example {#config}
 
 ```yaml
 protection:
@@ -18,13 +19,22 @@ protection:
       burst: 20
 ```
 
-This is a token bucket on the **data plane**.
-It is not the same as `apisec.rate_limits`, which match one method + path on discovered APIs.
+| Parameter | Type | Description |
+| --- | --- | --- |
+| `enabled` | Boolean | Master switch for Data Plane rate limiting |
+| `requests` | Integer | Baseline request quota permitted within the rolling window |
+| `window` | Duration | Calculation time window (e.g., `60s`, `1m`) |
+| `burst` | Integer | Extra burst capacity accommodating temporary traffic surges |
 
-When the bucket is empty, CheeseWAF can:
+{{% pageinfo color="info" %}}
+This module enforces **global/client-level traffic shaping on the Data Plane**. For fine-grained rate limits targeting specific API endpoints (HTTP method + path), see [API Security Rate Limits](../../api-security/#rate).
+{{% /pageinfo %}}
 
-- return a 429-style block page
-- or send the client to the [waiting room](../bot-captcha/#waiting-room) when that is enabled
+## Limit Exceeded Actions {#actions}
 
-Start with the sample numbers.
-Lower `requests` only after you have a week of logs.
+When a client's request rate exceeds the token bucket capacity, the system executes one of the following actions:
+
+1. **HTTP 429 Block Page**: Responds immediately with HTTP 429 Too Many Requests and a customized error page.
+2. **Waiting Room Scheduling**: If [Waiting Room Mechanism](../bot-captcha/#waiting-room) is active, excess requests are smoothly queued rather than dropped.
+
+During initial rollout, use generous limits and observe 1–2 weeks of production traffic before tightening `requests` and `burst` thresholds.

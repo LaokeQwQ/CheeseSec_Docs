@@ -1,49 +1,56 @@
 ---
-title: Bot 挑战与验证码
+title: Bot 挑战与人机验证码
 linkTitle: Bot 与验证码
 weight: 40
-description: JS 放行、PoW、滑块、图形验证码、登录验证码和排队室。
+description: 配置无感 JavaScript 挑战、PoW 工作量证明、滑块与图形验证码、管理端登录防护及排队室削峰机制。
 ---
 
-控制台：**Bot 挑战**。设计挑战的人还可以用 **验证码实验室**。
-配置：`protection.bot` 和 `console.login.captcha`。
+现代网络中的复杂请求中，往往可能伴随着AI爬虫、撞库攻击及自动化扫描工具等恶意流量，CheeseWAF 提供了多层次的人机识别与流量挑战机制。可通过 Web 控制台的 **Bot 挑战** 与 **验证码实验室** 进行可视化调试，或通过 `protection.bot` 与 `console.login.captcha` 进行配置。
 
-示例里 `protection.bot.enabled` 默认是 `false`。
-站点能完成浏览器挑战之后，再打开它。
+## 业务流量挑战配置 {#traffic}
 
-## 流量挑战 {#traffic}
+```yaml
+protection:
+  bot:
+    enabled: false
+    js_challenge: true
+    captcha: true
+    captcha_type: "slider"
+    cookie_name: "cheesewaf_js_clearance"
+    path_prefixes: ["/login", "/register", "/api/order"]
+    exempt_path_prefixes: ["/health", "/static"]
+    suspicious_user_agents: ["curl", "sqlmap", "nuclei"]
+```
 
-| 键 | 作用 |
+| 配置参数 | 说明 |
 | --- | --- |
-| `js_challenge` | 下发 JS 放行 Cookie |
-| `captcha` | JS 之后再加验证码 |
-| `captcha_type` | `pow`、`image` 或 `slider` |
-| `cookie_name` | 默认 `cheesewaf_js_clearance` |
-| `path_prefixes` | 哪些路径要挑战 |
-| `exempt_path_prefixes` | 跳过，示例含 `/health` |
-| `suspicious_user_agents` | 对 curl、sqlmap、nuclei 等更严 |
+| `js_challenge` | 启用无感 JavaScript 挑战，验证通过后下发 Clearance Cookie |
+| `captcha` | 在 JS 挑战基础上叠加显式人机验证码 |
+| `captcha_type` | 验证码形态，支持 `PoW`（工作量证明）、`Slider`（滑动拼图）或 `Image`（图形字符） |
+| `cookie_name` | 验证通过后写入客户端的 Cookie 名称，默认为 `cheesewaf_js_clearance` |
+| `path_prefixes` | 强制触发挑战的 URI 路径前缀列表 |
+| `exempt_path_prefixes` | 豁免挑战的白名单路径前缀（如健康检查接口 `/health`） |
+| `suspicious_user_agents` | 严格匹配的可疑客户端标识，命中后直接升级为人机验证 |
 
-不要把 `secret` 写进 git。
-让进程在数据目录里生成。
+{{% pageinfo color="warning" %}}
+请勿将挑战签名的 `secret` 密钥提交至版本控制系统，系统首次运行将在运行时数据目录中自动安全生成。
+{{% /pageinfo %}}
 
-## 挑战种类 {#kinds}
+## 验证码类型与交互形式 {#kinds}
 
-- **PoW / Altcha。** 默认请求头是 `X-CheeseWAF-Altcha`。
-- **滑块。** 几何和最短拖动时间在 `slider_captcha_*`。
-- **图形。** 长度、尺寸、语音次数限制。
-- **行为包。** 曲线描绘、刮开、点图标等实验室类型。先在实验室验证，再放到生产流量上。
+- **工作量证明（PoW / Altcha）**：客户端后台在浏览器中执行哈希碰撞计算并通过请求头 `X-CheeseWAF-Altcha` 提交结果，对合法用户完全无感且大幅增加攻击者并发成本。
+- **滑动拼图（Slider）**：包含几何轨迹分析与最短拖动时间校验（由 `slider_captcha_*` 参数定义），有效防御机械脚本。
+- **图形验证码（Image）**：支持自定义字符长度、干扰线密度、图片尺寸及语音辅助验证次数限制。
+- **实验性行为验证**：包括轨迹绘制、刮刮卡与图标点选等实验室题型，建议在控制台 **验证码实验室** 中验证业务适配性后再推向生产。
 
-自定义素材上传到 `/api/captcha/assets`。
-配额和远程源测试在同一页控制台。
+通过 `/api/captcha/assets` 端点支持上传企业定制背景图与图标素材。
 
-## 登录验证码 {#login}
+## 管理端登录防护 {#login}
 
-`console.login.captcha` 保护的是 **管理端** 登录，不是数据平面。
-示例用滑块，可选再加 PoW。
+配置项 `console.login.captcha` 专用于保护 **Web 管理控制台登录入口**（与数据平面业务隔离），支持滑块验证码与二次 PoW 校验。
 
-`console.login.security_entry` 可以用秘密路径和 Cookie 把登录页藏起来。
+此外，可启用 `console.login.security_entry` 为管理登录配置隐藏的混淆路径与前置 Cookie 密钥，防止管理端被公网自动化探测。
 
-## 排队室 {#waiting-room}
+## 排队室机制（Waiting Room） {#waiting-room}
 
-`waiting_room` 加上 `waiting_room_max_active`，人太多时先排队，而不是立刻丢掉。
-另见 [限流](../ratelimit/)。
+通过配置 `waiting_room: true` 并设定 `waiting_room_max_active` 活跃用户上限，在突发秒杀或流量激增时，将超出承载能力的客户端优雅调度至排队等待页面，避免直接丢弃请求或击穿后端。详见 [流量限流](../ratelimit/)。

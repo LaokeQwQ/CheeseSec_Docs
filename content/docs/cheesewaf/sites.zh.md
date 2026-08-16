@@ -1,57 +1,59 @@
 ---
-title: 站点与反向代理
+title: 站点管理与反向代理
 linkTitle: 站点
 weight: 50
-description: 域名、上游、负载均衡、健康检查，以及每个站点自己的 WAF 开关。
+description: 配置业务域名、上游源站负载均衡、健康检查探测、路径重写及站点专属防护策略。
 ---
 
-一个 **站点** 是一组对外主机名，加上一个或多个源站。
-CheeseWAF 站在这些源站前面做反向代理。
+在 CheeseWAF 中，**站点（Site）** 是业务反向代理与安全策略的基本组织单元。一个站点由一组对外绑定的域名（Host）与一个或多个后端上游源站（Upstream）构成。
 
-## 创建和修改 {#create}
+## 管理与导入方式 {#create}
 
-控制台：**站点**。
-REST：`GET/POST /api/sites`，`GET/PUT/DELETE /api/sites/{id}`。
-也可以用 `POST /api/nginx/import` 导入 Nginx 的 server 块。
+- **Web 控制台**：进入 **站点管理** 模块进行可视化新增、编辑与策略调试。
+- **RESTful API**：支持通过 `GET/POST /api/sites` 与 `GET/PUT/DELETE /api/sites/{id}` 接口进行自动化管理。
+- **Nginx 配置导入**：支持调用 `POST /api/nginx/import` 解析并导入现有的 Nginx `server` 块配置。
 
-## 常用字段 {#fields}
+## 站点配置字段说明 {#fields}
 
-| 字段 | 配置键 | 说明 |
+| 属性名称 | 配置键路径 | 类型与取值说明 |
 | --- | --- | --- |
-| 站点 id | `sites[].id` | 稳定编号，出现在 URL 里 |
-| 名称 | `sites[].name` | 显示名 |
-| 域名 | `sites[].domains` | 匹配 Host |
-| 上游 | `sites[].upstreams[].address` | `主机:端口`，可选 `weight` |
-| 监听端口 | `sites[].listen_port` | 可选的额外监听 |
-| 负载均衡 | `sites[].loadbalance` | 默认 `round_robin` |
-| 启用 | `sites[].enabled` | 关掉就跳过这个站点 |
-| 打开 WAF | `sites[].waf.enabled` | |
-| 模式 | `sites[].waf.mode` | 一般是 `block` |
-| 防护等级 | `sites[].waf.paranoia_level` | 0～5 |
-| 引擎 | `sites[].waf.semantic_engines` | `sql`、`xss`、`rce`、`lfi`、`xxe`、`ssrf`、`nosql`、`ssti` |
-| 自定义规则 | `sites[].waf.custom_rules` | 在 URI 等位置上的正则 |
-| 改写 | `sites[].waf.rewrite` | 路径改写或重定向 |
-| 健康检查 | `sites[].waf.health_check` | 路径、间隔、阈值 |
-| 可信网段 | `sites[].waf.access_control.trusted_cidrs` | 前面还有一层代理时用来取真实客户端 IP |
+| **站点标识** | `sites[].id` | 站点全局唯一标识字符串 |
+| **站点名称** | `sites[].name` | 便于识别的可读名称 |
+| **匹配域名** | `sites[].domains` | 字符串数组，用于精确匹配入站 HTTP `Host` 请求头 |
+| **上游源站** | `sites[].upstreams[].address` | 后端源站地址（格式为 `主机:端口`），支持配置 `weight` 权重 |
+| **独立监听端口** | `sites[].listen_port` | 可选配置，为该站点分配独立的监听端口 |
+| **负载均衡策略** | `sites[].loadbalance` | 负载均衡算法，默认为轮询 `round_robin` |
+| **站点启用状态** | `sites[].enabled` | 布尔值，设为 `false` 则暂停该站点的流量转发 |
+| **WAF 防护开关** | `sites[].waf.enabled` | 是否对该站点的请求执行安全过滤 |
+| **处置模式** | `sites[].waf.mode` | `block`（拦截模式）或 `log`（仅记录模式） |
+| **防护等级** | `sites[].waf.paranoia_level` | 防护等级取值范围 0～5，默认为 3 |
+| **语义分析引擎** | `sites[].waf.semantic_engines` | 支持独立开启 `sql`、`xss`、`rce`、`lfi`、`xxe`、`ssrf`、`nosql`、`ssti` |
+| **自定义规则** | `sites[].waf.custom_rules` | 站点级自定义正则匹配规则列表 |
+| **路径改写** | `sites[].waf.rewrite` | URI 路径内部重写或 HTTP 3xx 重定向规则 |
+| **上游健康检查** | `sites[].waf.health_check` | 包含探测路径、检测间隔与健康/不健康阈值 |
+| **可信代理网段** | `sites[].waf.access_control.trusted_cidrs` | 前置 CDN 或负载均衡器 CIDR 网段，用于解析真实源 IP |
 
-## 健康检查 {#health}
+## 上游健康检查探测 {#health}
 
-`health_check.enabled` 为真时，CheeseWAF 探测每个上游的 `health_check.path`。
-连续失败达到 `unhealthy_threshold` 后，这个源站离开池子。
+当开启 `health_check.enabled: true` 时，CheeseWAF 会定期向各后端源站发起 HTTP 探测请求（路径由 `health_check.path` 指定）：
 
-## 路径改写 {#rewrites}
+- 当源站连续探测失败次数达到 `unhealthy_threshold` 时，该节点将被暂时标记为不健康并移出负载均衡池。
+- 当节点恢复正常且连续成功达到阈值后，系统将自动恢复其流量分发。
 
-改写规则有 `pattern`、`replacement`，以及可选的 `redirect_code`。
-`redirect_code: 0` 表示内部改写。
-填 3xx 则把客户端重定向到新路径。
+## 路径重写与重定向 {#rewrites}
 
-## 站点策略覆盖 {#policy}
+路径改写规则支持配置 `pattern`（匹配正则）、`replacement`（替换目标）以及 `redirect_code`：
 
-`sites[].waf.protection_policy` 可以覆盖全局 `protection.policy` 里的键：
+- **内部静默改写**：当 `redirect_code: 0` 时，系统在转发给源站前在内存中改写 URI 路径，客户端对此无感知。
+- **外部重定向**：当 `redirect_code` 设为 `301` 或 `302` 时，直接向客户端返回 HTTP 重定向响应。
 
-- `web_attack`
-- `api_security`
-- `bot_cc`
-- `threat_intel`
+## 站点级防护策略覆盖 {#policy}
 
-空字符串继承全局值（示例里是 `smart`）。
+通过 `sites[].waf.protection_policy` 可覆盖全局 `protection.policy` 的预设策略：
+
+- `web_attack`：Web 应用通用攻击防护策略
+- `api_security`：API 接口安全策略
+- `bot_cc`：Bot 与防刷防护策略
+- `threat_intel`：威胁情报协同策略
+
+若字段值留空，站点将自动继承全局策略基线（系统预设为 `smart`）。

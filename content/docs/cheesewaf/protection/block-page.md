@@ -1,13 +1,13 @@
 ---
-title: Block pages
-linkTitle: Block pages
+title: Block Response Pages
+linkTitle: Block Pages
 weight: 70
-description: Built-in templates, custom HTML, and a preview window.
+description: Configure built-in block templates, upload branded custom HTML pages, and utilize Trace ID tracking mechanisms.
 ---
 
-Config: `block_page`.
-Console: **Block pages**.
-REST: `/api/block-pages/*`.
+When client requests are blocked by IP access controls, ACLs, Bot challenges, or the AST semantic engine, CheeseWAF renders a structured block response page. Configure settings under `block_page`, or manage templates visually in the Web console under **Block Pages**.
+
+## Base Configuration {#config}
 
 ```yaml
 block_page:
@@ -16,12 +16,13 @@ block_page:
   custom_html: ""
 ```
 
-`GET /api/block-pages/templates` lists built-in templates.
-`POST /api/block-pages/preview` and the `/block-pages/preview` window show the rendered page without publishing it.
+## Template Management & Live Sandbox Preview {#templates}
 
-Upload custom HTML with `POST /api/block-pages/upload`.
-Delete it with `DELETE /api/block-pages/custom`.
+- **Built-in Templates**: Query pre-bundled responsive block templates via `GET /api/block-pages/templates`.
+- **Sandbox Preview**: Invoke `POST /api/block-pages/preview` to render and inspect block layouts within an isolated preview modal before publishing globally.
+- **Custom HTML**: Upload custom branded HTML templates via `POST /api/block-pages/upload`, or revert to factory defaults using `DELETE /api/block-pages/custom`.
 
-A block page can include a **trace id**.
-Give that id to the operator when you open a [log detail](../../monitor/).
-Do not put origin hostnames or internal IPs in custom HTML.
+## Request Trace ID & Security Best Practices {#trace-id}
+
+- **Global Trace ID Embedding**: Block pages automatically embed a unique `traceId`. When users report false-positive blockages, operators can search this ID directly in [Monitoring & Logs](../../monitor/) to view exact rule trigger chains.
+- **Data Leak Prevention**: When authoring custom HTML block templates, never hardcode origin server hostnames, internal IP addresses, or expose infrastructure topology.

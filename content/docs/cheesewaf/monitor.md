@@ -1,15 +1,15 @@
 ---
-title: Monitor, logs, and attack map
-linkTitle: Monitor
+title: "Observability: Logs, Prometheus & Threat Map"
+linkTitle: Monitoring
 weight: 110
-description: Dashboard stats, access logs, Prometheus, alerts, notifications, and the attack map.
+description: Access log rotation, Prometheus metrics exporter, custom alert notifications, and real-time geographic threat visualizer.
 ---
 
-Console: **Dashboard**, **Logs**, **Monitor**, **Attack map**.
-Config: `logging`, `monitor`.
-REST: `/api/stats`, `/api/logs`, `/api/monitor`, `/api/metrics`, `/api/notifications`, `/api/audit`.
+CheeseWAF delivers end-to-end observability out of the box, including structured access logs, standard Prometheus metric outputs, multi-channel alert dispatching, and a real-time global threat visualizer.
 
-## Logs {#logs}
+Access these tools visually under **Dashboard**, **Logs**, **Monitor**, and **Attack Map** in the Web console, or configure them under `logging` and `monitor`.
+
+## 1. Structured Access Logging {#logs}
 
 ```yaml
 logging:
@@ -23,12 +23,11 @@ logging:
       max_backups: 10
 ```
 
-`GET /api/logs` lists events.
-`/logs/{traceId}` in the console opens one request.
+- **Log Rotation & Retention**: Automatically rotates log files based on size (`max_size`) and retains a configurable number of historical backups (`max_backups`).
+- **Trace ID End-to-End Tracking**: Every request log entry contains a globally unique `traceId`. Accessing `/logs/{traceId}` in the console displays the complete rule evaluation and AST assertion chain for that transaction.
+- **Log Sinks**: Stream logs to ClickHouse, PostgreSQL, or VictoriaLogs for long-term retention. See [Storage Sinks & Task Scheduling](../storage/).
 
-Optional sinks: PostgreSQL, ClickHouse, VictoriaLogs. See [Storage](../storage/).
-
-## Prometheus {#prometheus}
+## 2. Prometheus Metrics Export {#prometheus}
 
 ```yaml
 monitor:
@@ -38,19 +37,20 @@ monitor:
     public: false
 ```
 
-When `public` is false, scrape `/api/metrics` with a management token.
-When `public` is true, the same path is exposed on the router root. Do not do that on the internet.
+- **Metric Scrape Endpoints**: When `public: false`, scrape `/api/metrics` using an authorized Bearer token. When set to `public: true`, metrics are exposed on the root router path without authentication (recommended only on isolated internal monitoring networks).
+- **Prometheus Remote Write**: Use `monitor.remote_write` to actively push time-series metrics to Prometheus Remote Write-compatible backends.
 
-`monitor.remote_write` can push to a remote Prometheus-compatible endpoint.
+## 3. Alerting Rules & Notification Channels {#alerts}
 
-## Alerts {#alerts}
+CheeseWAF includes built-in alert definitions for blocking rate anomalies (`high-block-rate`) and disk space limits (`disk-usage`):
 
-The sample defines `high-block-rate` and `disk-usage` rules.
-Notifiers support webhook endpoints (`monitor.notifiers`).
-In-app notifications use `/api/notifications`.
+- **Notification Channels**: Configure Webhook endpoints, emails, or enterprise chat bots (DingTalk, WeChat Work, Lark) under `monitor.notifiers`.
+- **In-App Notifications**: Internal operational alerts are stored in the system and queryable via `/api/notifications`.
 
-## Attack map {#map}
+## 4. Real-Time Geographic Threat Map {#map}
 
-`/attack-map` and `/attack-map/screen` plot recent blocks.
-`console.map.china_boundary` can load a reviewed China boundary file.
-Do not point `source` at an untrusted URL (`allow_insecure` / `allow_private` stay false unless you know why).
+Navigate to `/attack-map` or the fullscreen visualizer at `/attack-map/screen` in the Web console to view real-time geographic attack origin maps, blocking frequencies, and threat classification charts.
+
+{{% pageinfo color="info" %}}
+Set `console.map.china_boundary` to load official national boundary data files. When configuring external map source URLs, maintain `allow_insecure: false` and `allow_private: false` to prevent SSRF security issues.
+{{% /pageinfo %}}

@@ -1,49 +1,56 @@
 ---
-title: Bot challenge and CAPTCHA
-linkTitle: Bot and CAPTCHA
+title: Bot Challenges & CAPTCHA Mitigation
+linkTitle: Bot & CAPTCHA
 weight: 40
-description: JS clearance, PoW, slider, image CAPTCHA, login CAPTCHA, and the waiting room.
+description: Configure silent JavaScript challenges, Proof of Work (Altcha), slider and image CAPTCHAs, management console defense, and waiting room scheduling.
 ---
 
-Console: **Bot challenge**, plus **CAPTCHA lab** for operators who design challenges.
-Config: `protection.bot` and `console.login.captcha`.
+Modern web applications constantly face malicious automated traffic, including AI web scrapers, credential stuffing attacks, and automated vulnerability scanners. CheeseWAF provides multi-layered bot mitigation and challenge capabilities. Configure policies in the Web console under **Bot Challenge** and **CAPTCHA Lab**, or declare them in `protection.bot` and `console.login.captcha`.
 
-The sample starts with `protection.bot.enabled: false`.
-Turn it on only after you have a site that can complete a browser challenge.
+## Traffic Challenge Configuration {#traffic}
 
-## Traffic challenge {#traffic}
+```yaml
+protection:
+  bot:
+    enabled: false
+    js_challenge: true
+    captcha: true
+    captcha_type: "slider"
+    cookie_name: "cheesewaf_js_clearance"
+    path_prefixes: ["/login", "/register", "/api/order"]
+    exempt_path_prefixes: ["/health", "/static"]
+    suspicious_user_agents: ["curl", "sqlmap", "nuclei"]
+```
 
-| Key | Role |
+| Configuration Parameter | Description |
 | --- | --- |
-| `js_challenge` | Issue a JS clearance cookie |
-| `captcha` | Extra CAPTCHA after JS |
-| `captcha_type` | `pow`, `image`, or `slider` |
-| `cookie_name` | Default `cheesewaf_js_clearance` |
-| `path_prefixes` | Where the challenge applies |
-| `exempt_path_prefixes` | Skip, sample includes `/health` |
-| `suspicious_user_agents` | Extra scrutiny for curl, sqlmap, nuclei, and similar |
+| `js_challenge` | Issues silent JavaScript challenge and sets clearance cookie upon validation |
+| `captcha` | Overlays interactive CAPTCHA validation on top of JS challenge |
+| `captcha_type` | Challenge mechanism: `pow` (Proof of Work), `slider` (sliding puzzle), or `image` (character glyphs) |
+| `cookie_name` | Name of the authorization clearance cookie; defaults to `cheesewaf_js_clearance` |
+| `path_prefixes` | List of URI path prefixes where challenges are strictly enforced |
+| `exempt_path_prefixes` | Whitelist of URI prefixes exempt from challenges (e.g., `/health`) |
+| `suspicious_user_agents` | User-Agent substring matches that immediately escalate to full human verification |
 
-Keep `secret` out of git.
-Let the process generate it into the data directory.
+{{% pageinfo color="warning" %}}
+Do not check challenge signing `secret` tokens into version control. CheeseWAF generates them securely into your runtime data directory upon first launch.
+{{% /pageinfo %}}
 
-## Challenge kinds {#kinds}
+## Challenge Types & Interaction Mechanisms {#kinds}
 
-- **PoW / Altcha.** Header `X-CheeseWAF-Altcha` by default.
-- **Slider.** Geometry and min-drag live under `slider_captcha_*`.
-- **Image.** Length, size, and audio-limit knobs.
-- **Behavior pack.** Curve draw, scratch, icon click, and related lab types. Use the lab before you enable them on production traffic.
+- **Proof of Work (PoW / Altcha)**: Clients compute a cryptographic hash challenge in the browser background and submit the nonce via the `X-CheeseWAF-Altcha` request header. This is fully frictionless for real users while making automated concurrent scraping computationally prohibitive.
+- **Sliding Puzzle (Slider)**: Analyzes mouse drag trajectories and validates minimum drag timing thresholds (configured via `slider_captcha_*`).
+- **Character Image (Image)**: Supports configurable string lengths, distortion line densities, image dimensions, and audio assistance limits.
+- **Experimental Behavioral Tests**: Includes gesture curves, scratch-off, and icon point-and-click puzzles. Verify user experience in the console **CAPTCHA Lab** before rolling out to production traffic.
 
-Upload custom assets under `/api/captcha/assets`.
-Quota and remote source tests are on the same console page.
+Custom background images and iconography can be uploaded via `/api/captcha/assets`.
 
-## Login CAPTCHA {#login}
+## Management Console Login Defense {#login}
 
-`console.login.captcha` protects the **management** login, not the data plane.
-The sample uses a slider with an optional PoW.
+`console.login.captcha` protects the **Web Management Console login endpoint** (completely isolated from business data plane traffic), supporting slider puzzles with optional PoW verification.
 
-`console.login.security_entry` can hide the login behind a secret path and cookie.
+Additionally, enable `console.login.security_entry` to obscure the management portal behind an obfuscated path and pre-shared authorization cookie.
 
-## Waiting room {#waiting-room}
+## Waiting Room Queue Scheduling {#waiting-room}
 
-`waiting_room` plus `waiting_room_max_active` queues excess clients instead of dropping them immediately.
-See also [Rate limit](../ratelimit/).
+Enable `waiting_room: true` and specify `waiting_room_max_active` to gracefully hold excess concurrent clients in an organized queue during flash sales or traffic surges, preventing origin resource exhaustion. See [Rate Limiting](../ratelimit/).

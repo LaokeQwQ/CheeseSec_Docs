@@ -1,57 +1,59 @@
 ---
-title: Sites and reverse proxy
+title: Site Management & Reverse Proxying
 linkTitle: Sites
 weight: 50
-description: Domains, upstreams, load balancing, health checks, and per-site WAF switches.
+description: Configure public domain bindings, upstream server load balancing, health check probes, URL rewrites, and per-site security policies.
 ---
 
-A **site** is one public hostname set plus one or more origins.
-CheeseWAF is the reverse proxy in front of those origins.
+In CheeseWAF, a **Site** represents the primary organizational unit for reverse proxying and security enforcement. Each site associates a set of public domain hostnames (`Host` headers) with one or more backend upstream servers.
 
-## Create and edit {#create}
+## Management & Import Interfaces {#create}
 
-Console: **Sites**.
-REST: `GET/POST /api/sites`, `GET/PUT/DELETE /api/sites/{id}`.
-You can also import an Nginx server block with `POST /api/nginx/import`.
+- **Web Console**: Navigate to **Sites** to visually create, edit, and tune reverse proxy definitions.
+- **RESTful API**: Manage sites programmatically via `GET/POST /api/sites` and `GET/PUT/DELETE /api/sites/{id}`.
+- **Nginx Configuration Import**: Automatically parse and import existing Nginx `server` configuration blocks via `POST /api/nginx/import`.
 
-## Fields that matter {#fields}
+## Site Configuration Schema {#fields}
 
-| Field | Config key | Notes |
+| Attribute | Configuration Key | Type & Description |
 | --- | --- | --- |
-| Site id | `sites[].id` | Stable id, used in URLs |
-| Name | `sites[].name` | Display name |
-| Domains | `sites[].domains` | Host header match |
-| Upstreams | `sites[].upstreams[].address` | `host:port`, optional `weight` |
-| Listen port | `sites[].listen_port` | Optional extra listener |
-| Load balance | `sites[].loadbalance` | Default `round_robin` |
-| Enabled | `sites[].enabled` | Off = skip this site |
-| WAF on | `sites[].waf.enabled` | |
-| Mode | `sites[].waf.mode` | Usually `block` |
-| Paranoia | `sites[].waf.paranoia_level` | 0–5 |
-| Engines | `sites[].waf.semantic_engines` | `sql`, `xss`, `rce`, `lfi`, `xxe`, `ssrf`, `nosql`, `ssti` |
-| Custom rules | `sites[].waf.custom_rules` | Regex on URI or other locations |
-| Rewrite | `sites[].waf.rewrite` | Path rewrite or redirect |
-| Health check | `sites[].waf.health_check` | Path, interval, thresholds |
-| Trusted CIDRs | `sites[].waf.access_control.trusted_cidrs` | Real client IP behind another proxy |
+| **Site ID** | `sites[].id` | Globally unique identifier string for the site |
+| **Site Name** | `sites[].name` | Human-readable site label for console and log identification |
+| **Domains** | `sites[].domains` | Array of strings matched against incoming HTTP `Host` headers |
+| **Upstreams** | `sites[].upstreams[].address` | Upstream origin address (`host:port`), supporting optional `weight` values |
+| **Dedicated Port** | `sites[].listen_port` | Optional dedicated listening port for this site |
+| **Load Balancing** | `sites[].loadbalance` | Upstream distribution algorithm; defaults to `round_robin` |
+| **Site Status** | `sites[].enabled` | Boolean toggle; setting to `false` disables traffic forwarding for this site |
+| **WAF Protection** | `sites[].waf.enabled` | Enables active security inspection for incoming traffic |
+| **Action Mode** | `sites[].waf.mode` | Enforcement mode: `block` (blocking) or `log` (monitoring only) |
+| **Paranoia Level** | `sites[].waf.paranoia_level` | Paranoia level (0–5); defaults to 3 |
+| **Semantic Engines** | `sites[].waf.semantic_engines` | Toggles for `sql`, `xss`, `rce`, `lfi`, `xxe`, `ssrf`, `nosql`, and `ssti` |
+| **Custom Rules** | `sites[].waf.custom_rules` | Site-scoped custom regex matching rules |
+| **URL Rewrites** | `sites[].waf.rewrite` | URI path internal rewrites or HTTP 3xx redirects |
+| **Health Checks** | `sites[].waf.health_check` | Probe paths, intervals, and health/unhealthy thresholds |
+| **Trusted CIDRs** | `sites[].waf.access_control.trusted_cidrs` | CIDR blocks of upstream load balancers/CDNs for extracting real client IPs |
 
-## Health checks {#health}
+## Upstream Health Checking {#health}
 
-When `health_check.enabled` is true, CheeseWAF probes `health_check.path` on each upstream.
-Unhealthy origins leave the pool after `unhealthy_threshold` failures.
+When `health_check.enabled: true` is active, CheeseWAF periodically sends HTTP health probes to `health_check.path` across all upstream servers:
 
-## Rewrites {#rewrites}
+- Origins that fail consecutive probes exceeding `unhealthy_threshold` are automatically evicted from the load balancing pool.
+- Once an unhealthy node recovers and passes consecutive probes, it is dynamically restored to the active pool.
 
-A rewrite rule has `pattern`, `replacement`, and optional `redirect_code`.
-`redirect_code: 0` rewrites internally.
-A 3xx code sends the client to the new path.
+## URL Rewrites & Redirects {#rewrites}
 
-## Per-site policy overlay {#policy}
+Rewrite rules support defining `pattern` (matching regex), `replacement` (target substitution), and `redirect_code`:
 
-`sites[].waf.protection_policy` can override the global `protection.policy` keys:
+- **Internal Silent Rewrite**: When `redirect_code: 0`, CheeseWAF rewrites the URI path internally in memory before forwarding upstream; the client is unaware of the transformation.
+- **External Redirect**: When `redirect_code` is set to `301` or `302`, the WAF responds directly with an HTTP redirect.
 
-- `web_attack`
-- `api_security`
-- `bot_cc`
-- `threat_intel`
+## Granular Policy Overrides {#policy}
 
-Empty strings inherit the global value (`smart` in the sample).
+Use `sites[].waf.protection_policy` to override baseline policies defined in global `protection.policy`:
+
+- `web_attack`: Web application vulnerability defense baseline
+- `api_security`: API security and schema validation profile
+- `bot_cc`: Bot mitigation and anti-scraping policy
+- `threat_intel`: Threat intelligence lookup profile
+
+Empty strings automatically inherit the global profile baseline (`smart` in default configurations).

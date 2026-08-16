@@ -1,37 +1,32 @@
 ---
-title: Add the first site
-linkTitle: First site
+title: Onboard Your First Site
+linkTitle: First Site
 weight: 20
-description: Point CheeseWAF at a domain and an upstream, then pick paranoia level 3.
+description: Configure public domain names, backend upstream origin servers, and baseline paranoia protection in CheeseWAF.
 ---
 
-In the console open **Sites** → **New site**.
+Log in to the Web console and navigate to **Sites** → **New Site** to configure your first reverse proxy service:
 
 {{% steps %}}
 
-### Domain {#domain}
+### 1. Configure Public Domains {#domain}
 
-Enter the hostname clients already use, for example `app.example.com`.
-CheeseWAF matches `sites[].domains`.
+Enter the public hostnames used by your clients (e.g., `app.example.com`). CheeseWAF matches incoming HTTP `Host` headers against the configured `sites[].domains` list.
 
-### Upstream {#upstream}
+### 2. Configure Backend Upstream Origins {#upstream}
 
-Enter the origin address, for example `10.0.0.10:8000`.
-More than one upstream uses the site `loadbalance` policy (`round_robin` by default).
+Specify the origin server address and port (e.g., `10.0.0.10:8000`). When multiple upstreams are defined, the system distributes traffic according to the configured load balancing policy (`round_robin` by default).
 
-### Paranoia {#paranoia}
+### 3. Set Baseline Paranoia Level {#paranoia}
 
-Use level **3** for a first production site.
-Level 3 blocks isolated attack values and allows embedded hits for later ALAP review.
+For new production sites, set the paranoia level to **3 (Smart Standard Mode)**. In this mode, the system blocks high-confidence standalone payloads while allowing embedded features through to asynchronous ALAP review, ensuring business continuity while collecting threat data.
 
-### Save {#save}
+### 4. Save & Hot-Reload {#save}
 
-Save the site.
-The process reloads the site list without a full restart.
+Click **Save Site**. CheeseWAF dynamically reloads site definitions in memory without terminating the main daemon or interrupting active connections.
 
 {{% /steps %}}
 
-Point DNS or the local hosts file at the CheeseWAF data-plane address.
-Confirm the origin still answers through CheeseWAF before you raise the level.
+After saving, update your DNS records or local `hosts` file to point the domain to the CheeseWAF Data Plane listener (`http://127.0.0.1:8080` by default) to verify end-to-end reverse proxy forwarding.
 
-Details: [Sites and reverse proxy](../../sites/).
+For health checks, automatic SSL issuance, and path rewrite configurations, see [Sites & Reverse Proxy](../../sites/).

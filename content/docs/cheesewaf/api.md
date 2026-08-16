@@ -1,58 +1,70 @@
 ---
-title: REST API
+title: RESTful Management API Reference
 linkTitle: REST API
 weight: 160
-description: Health endpoints, session login, management tokens, CSRF, and the permission map.
+description: Management API authentication mechanics, public unauthenticated endpoint inventory, granular RBAC permission matrix, and standard error formats.
 ---
 
-The management API lives under `/api` on the **admin listener**, not on the data plane.
+CheeseWAF's management API is hosted strictly on the **Control Plane** (default port `9443`) under the `/api` route prefix, maintaining complete physical and logical isolation from business traffic on the Data Plane.
 
-## Auth {#auth}
+## Authentication & Authorization Schemes {#auth}
 
-Two ways in after setup:
+The system supports two primary authentication models:
 
-1. **Session.** `POST /api/auth/login`, then send the session cookie. State-changing calls need the CSRF middleware.
-2. **Management token.** Create one at `POST /api/system/api-tokens` (`manage:api_tokens`). Send it as a bearer token on later calls.
+1. **Session-Based Authentication**: Call `POST /api/auth/login` to authenticate; clients must include the returned Session Cookie in subsequent requests. All non-idempotent state-changing requests (POST, PUT, DELETE, PATCH) are verified by double-submit CSRF protection middleware.
+2. **Bearer Management Tokens**: Invoke `POST /api/system/api-tokens` (requiring `manage:api_tokens` privileges) to generate scoped API Tokens. Pass the token via the standard HTTP header: `Authorization: Bearer <TOKEN>`.
 
-Public before login:
+### Public Unauthenticated Endpoints
 
-| Method | Path |
+The following endpoints can be accessed without prior authentication:
+
+| HTTP Method | Route Path | Description & Purpose |
+| --- | --- | --- |
+| `GET` | `/health`, `/health/live`, `/health/ready`, `/health/cluster` | System and cluster health diagnostic probes |
+| `GET` | `/api/auth/login-options` | Retrieves login security settings (e.g., CAPTCHA/2FA requirements) |
+| `POST` | `/api/auth/captcha`, `/api/auth/captcha/verify` | Generates and verifies login CAPTCHA challenges |
+| `POST` | `/api/auth/login` | Administrator authentication endpoint |
+| `POST` | `/api/setup`, `/api/setup/probe` | Initial deployment setup and environment probing |
+| `GET/PATCH` | `/api/setup/draft` | Draft initialization state storage and querying |
+| `POST` | `/api/cluster/join` | Node onboarding request endpoint for cluster membership |
+| `POST` | `/api/cluster/nodes/{id}/heartbeat` | Cluster member node heartbeat reporting |
+
+## RBAC Permission Matrix Reference {#permissions}
+
+Router middleware validates token permissions against the following identifiers:
+
+| Permission Prefix | Functional Area & Covered Capabilities |
 | --- | --- |
-| GET | `/health`, `/health/live`, `/health/ready`, `/health/cluster` |
-| GET | `/api/auth/login-options` |
-| POST | `/api/auth/captcha`, `/api/auth/captcha/verify`, `/api/auth/login` |
-| POST | `/api/setup`, `/api/setup/probe` |
-| GET/PATCH | `/api/setup/draft` |
-| POST | `/api/cluster/join` |
-| POST | `/api/cluster/nodes/{id}/heartbeat` |
+| `read:sites` / `write:sites` | Query, create, update, and delete site definitions; issue ACME certificates |
+| `read:rules` / `write:rules` | Custom regex security rule management |
+| `read:protection` / `write:protection` | IP access lists, ACL rules, bot challenge policies, and ALAP decisions |
+| `read:threat_intel` / `write:threat_intel` | Threat intelligence feed management, synchronization, and IP lookups |
+| `read:edge` / `write:edge` | Edge response headers, static caching rules, and compression profiles |
+| `read:ai` / `write:ai` / `use:ai` / `approve:ai` | AI LLM configurations, assistant conversations, and high-risk tool approvals |
+| `read:cluster` / `write:cluster` | Cluster node monitoring, join token issuance, and rolling upgrades |
+| `read:system` / `write:system` | Software version queries, NTP time synchronization, and backup/restore |
+| `manage:api_tokens` | Create, query, and revoke management API tokens |
+| `read:users` / `write:users` | Administrator user accounts, roles, and TOTP 2FA configuration |
+| `read:logs` | Query access logs and retrieve ALAP review queue items |
+| `read:monitor` | System performance metrics, Prometheus scraping, and notification channels |
+| `read:audit` | Query operational audit logs |
+| `read:realtime` | Server-Sent Events stream (`/api/realtime/events`) and WebSocket feeds |
+| `read:ops` / `write:ops` | Built-in task scheduler and automated maintenance routines |
+| `read:storage` / `write:storage` | Storage status, external log sink configuration, and disk cleanup |
+| `read:apisec` | Discovered API asset inventory and OpenAPI schema definitions |
 
-## Permission map {#permissions}
+Roles assigned `admin: ["*"]` possess unrestricted global API access.
 
-Common `require("…")` names from the router:
+## Standard Error Formats {#errors}
 
-| Prefix | Examples |
-| --- | --- |
-| `read:` / `write:` `sites` | List and edit sites, ACME issue |
-| `read:` / `write:` `rules` | Custom rules |
-| `read:` / `write:` `protection` | IP, ACL, bot, rate limit, review decide |
-| `read:` / `write:` `threat_intel` | Import, sync, lookup |
-| `read:` / `write:` `edge` | Header / cache / compression policy |
-| `read:` / `write:` `ai`, `use:ai`, `approve:ai` | Config, analyze, assistant, approvals |
-| `read:` / `write:` `cluster` | Nodes, join tokens, rolling upgrade |
-| `read:` / `write:` `system` | Version, time sync, backup |
-| `manage:api_tokens` | Create and revoke tokens |
-| `read:` / `write:` `users` | Local users and 2FA |
-| `read:` `logs` | Access logs and review list |
-| `read:` `monitor` | Stats, metrics, notifications |
-| `read:` `audit` | Audit log |
-| `read:` `realtime` | SSE `/api/realtime/events`, WebSocket `/api/realtime/ws` |
-| `read:` / `write:` `ops` | Scheduler |
-| `read:` / `write:` `storage` | Stats and cleanup |
-| `read:` `apisec` | Discovered endpoints |
+API failures return appropriate HTTP status codes accompanied by a structured JSON error response:
 
-`admin: ["*"]` in the sample bypasses individual checks.
+```json
+{
+  "code": 40001,
+  "message": "Invalid request parameter",
+  "details": "Field 'domain' is required"
+}
+```
 
-## Errors {#errors}
-
-Failed calls return JSON with an error field and an HTTP status.
-Do not retry login blindly after a CAPTCHA failure — request a new challenge.
+If a login attempt fails due to CAPTCHA validation (HTTP 401/403), request a new challenge context via `/api/auth/captcha` before re-submitting credentials.

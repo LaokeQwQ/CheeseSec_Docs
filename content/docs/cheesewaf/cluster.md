@@ -1,16 +1,17 @@
 ---
-title: Cluster
+title: High Availability Clustering & Node Synchronization
 linkTitle: Cluster
 weight: 120
-description: Join tokens, mTLS interconnect, builtin consensus, rolling upgrade, and traffic peers.
+description: Node join tokens, mutual TLS (mTLS) inter-node communication, embedded consensus, automated rolling upgrades, and cluster state synchronization.
 ---
 
-Console: **Cluster**.
-Config: `cluster`.
-CLI: `cheesewaf cluster`.
-REST: `/api/cluster/*`.
+In multi-node, large-scale deployments, CheeseWAF supports clustering across distributed nodes. Nodes synchronize site configurations, IP access lists, and defensive rules via secure mutual TLS (mTLS) channels, backed by an embedded consensus engine and rolling upgrade orchestration.
 
-The sample is a single node:
+Manage clusters visually in the Web console under **Cluster**, via terminal commands using `cheesewaf cluster`, or programmatically via `/api/cluster/*`.
+
+## 1. Baseline Configuration & Standalone vs. Cluster Mode {#enable}
+
+The default standalone configuration is defined as follows:
 
 ```yaml
 deployment:
@@ -23,35 +24,36 @@ cluster:
     mtls_required: true
 ```
 
-## Turn clustering on {#enable}
+To enable multi-node clustering:
 
-1. Set `cluster.enabled: true` and pick a `cluster_id`.
-2. Give every node a unique `node_id`.
-3. Point `interconnect.advertise_addr` at an address other nodes can reach.
-4. Keep `mtls_required: true`. Fill `ca_file`, `cert_file`, `key_file`.
+1. Set `cluster.enabled` to `true` and define a shared `cluster_id`.
+2. Assign a globally unique `node_id` to each physical/virtual host.
+3. Configure `interconnect.advertise_addr` with an address reachable by all other cluster members.
+4. Maintain `mtls_required: true` and configure trusted `ca_file`, `cert_file`, and `key_file` paths on each node.
 
-`cluster.protection.freeze_writes_without_majority` stops config writes without a majority.
-`allow_traffic_in_protection_mode` decides whether the data plane still forwards during that freeze.
+### Split-Brain & Protection Mode Policies
 
-## Join {#join}
+- `cluster.protection.freeze_writes_without_majority`: Freezes configuration write mutations during network partitions when a quorum majority cannot be reached, preventing state divergence.
+- `allow_traffic_in_protection_mode`: Determines whether Data Plane instances continue proxying traffic while the cluster is in protected freeze mode.
 
-`POST /api/cluster/join-tokens` mints a token (`token_ttl`, default 15m).
-A new node calls `POST /api/cluster/join`.
-`require_approval: true` waits for an operator.
+## 2. Node Onboarding & Approval Mechanism {#join}
 
-## Operations {#ops}
+- **Issue Join Tokens**: The primary node invokes `POST /api/cluster/join-tokens` to generate temporary join tokens (validity configured by `token_ttl`; defaults to 15 minutes).
+- **Node Join Request**: A candidate node submits its join token to `POST /api/cluster/join`.
+- **Administrative Approval**: When `require_approval: true` is configured, joining nodes require manual operator confirmation in the console before cluster synchronization begins.
 
-| Action | Route |
-| --- | --- |
-| Status | `GET /api/cluster/status` |
-| Nodes | `GET /api/cluster/nodes` |
-| Heartbeat | `POST /api/cluster/nodes/{id}/heartbeat` |
-| Rotate cert | `POST /api/cluster/nodes/{id}/rotate-certificate` |
-| Revoke node | `POST /api/cluster/nodes/{id}/revoke` |
-| Ansible pack | `POST /api/cluster/deploy/ansible` |
-| Rolling upgrade | `POST /api/cluster/orchestrate/rolling-upgrade` |
-| Rollback | `POST /api/cluster/orchestrate/rolling-upgrade/{id}/rollback` |
-| Consensus | `GET /api/cluster/consensus` |
+## 3. Cluster Operations API Reference {#ops}
 
-`cluster.consensus.provider` is `builtin` in the sample.
-`etcd_endpoints` is reserved for an external provider and stays empty unless you switch.
+| Operation | REST API Endpoint | Description |
+| --- | --- | --- |
+| **Cluster Status** | `GET /api/cluster/status` | Queries overall cluster health, node counts, and quorum status |
+| **Node List** | `GET /api/cluster/nodes` | Lists member nodes, IP addresses, software versions, and status |
+| **Heartbeat** | `POST /api/cluster/nodes/{id}/heartbeat` | Regular heartbeat status reporting from nodes |
+| **Rotate Certificate** | `POST /api/cluster/nodes/{id}/rotate-certificate` | Automated rotation of inter-node mTLS communication certificates |
+| **Revoke Node** | `POST /api/cluster/nodes/{id}/revoke` | Revokes node authorization and removes it from cluster membership |
+| **Ansible Bundle** | `POST /api/cluster/deploy/ansible` | Exports automated Ansible playbooks for bulk node provisioning |
+| **Rolling Upgrade** | `POST /api/cluster/orchestrate/rolling-upgrade` | Initiates zero-downtime rolling upgrades across all nodes |
+| **Upgrade Rollback** | `POST /api/cluster/orchestrate/rolling-upgrade/{id}/rollback` | Rolls back to the previous stable release upon upgrade failure |
+| **Consensus State** | `GET /api/cluster/consensus` | Queries state for embedded Raft consensus or external etcd |
+
+The system uses an embedded consensus provider by default (`cluster.consensus.provider: builtin`). If an existing etcd cluster is available, define `etcd_endpoints` to connect an external consensus backend.

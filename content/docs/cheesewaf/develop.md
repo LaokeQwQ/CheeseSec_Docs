@@ -1,43 +1,49 @@
 ---
-title: Build from source
-linkTitle: Develop
+title: Building from Source & Developer Guide
+linkTitle: Development
 weight: 190
-description: Go and Node versions, frontend build, tests, and the attack corpus tool.
+description: Go and Node.js toolchain requirements, compiling frontend and backend assets, running automated test suites, and regression testing with attack corpora.
 ---
 
-You only need this page if you compile CheeseWAF yourself.
-Operators should use [Releases](https://github.com/LaokeQwQ/CheeseWAF/releases).
+This guide is intended for developers contributing code or building CheeseWAF directly from source. For standard production deployments, using official pre-compiled releases from [GitHub Releases](https://github.com/LaokeQwQ/CheeseWAF/releases) is strongly recommended.
 
-## Toolchain {#toolchain}
+## 1. Development Toolchain Requirements {#toolchain}
 
-- Go **1.26** or newer
-- Node.js **24.x** and npm
+- **Go Compiler**: Go **1.26** or higher
+- **Frontend Environment**: Node.js **24.x** LTS and `npm` package manager
 
-## Build {#build}
+## 2. Compile Frontend Assets & Main Daemon {#build}
 
 ```bash
+# Clone the repository
 git clone https://github.com/LaokeQwQ/CheeseWAF.git
 cd CheeseWAF
 
+# Build static assets for the React Web console
 cd web
 npm ci
 npm run build
 cd ..
 
+# Compile the Go single-binary executable
 go build -o bin/cheesewaf ./cmd/cheesewaf
+
+# Launch the newly compiled instance
 ./bin/cheesewaf serve --config ./configs/cheesewaf.yaml
 ```
 
-## Tests {#tests}
+## 3. Running Automated Tests & Code Quality Checks {#tests}
 
 ```bash
+# Execute Go unit tests and static analysis
 go test -v ./cmd/... ./internal/...
 go vet ./cmd/... ./internal/...
 
+# Run frontend TypeScript type checking and test suites
 cd web && npm run typecheck && npm test && cd ..
 
+# Execute AST semantic engine regression benchmarks against attack corpora
 go run ./cmd/cheesewaf-corpus --mode analyzer
 ```
 
-`cheesewaf-corpus` runs the built-in attack corpus against the analyzer.
-It is a development check, not a production daemon.
+`cheesewaf-corpus` runs built-in attack samples and false-positive corpora against the AST semantic analyzer, ensuring high detection rates without regression.

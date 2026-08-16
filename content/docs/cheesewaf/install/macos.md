@@ -1,29 +1,33 @@
 ---
-title: macOS
+title: macOS Deployment
 linkTitle: macOS
 weight: 40
-description: Install CheeseWAF from a DMG, or run the tar.gz CLI.
+description: Install CheeseWAF via DMG desktop image or run from a standalone command-line archive.
 ---
 
-## DMG {#dmg}
+On macOS, CheeseWAF can be deployed either as a desktop application with a status bar controller or as a standalone terminal daemon:
 
-1. Download `cheesewaf-*-darwin-arm64.dmg` (Apple Silicon) or `cheesewaf-*-darwin-amd64.dmg` (Intel).
-2. Open the image and drag **CheeseWAF** into **Applications**.
+## 1. DMG Desktop Installer {#dmg}
+
+Ideal for local testing and workstation environments:
+
+1. Download the disk image for your processor architecture: `cheesewaf-*-darwin-arm64.dmg` for Apple Silicon (M-series) or `cheesewaf-*-darwin-amd64.dmg` for Intel-based Macs.
+2. Double-click the DMG image and drag **CheeseWAF** into the **Applications** folder.
 3. Launch CheeseWAF from Launchpad or Applications.
 
-The app starts the local controller.
-Use it to start, stop, and open the Web console.
+Upon startup, the application runs the local controller in the menu bar, enabling one-click service start/stop, status inspection, and direct access to the Web console. Runtime configuration and data are stored under `~/Library/Application Support/CheeseWAF`.
 
-Runtime data is under `~/Library/Application Support/CheeseWAF`.
+## 2. Command-Line Archive (tar.gz) {#tarball}
 
-## CLI tarball {#tarball}
-
-If you only want the command line:
+Ideal for automated workflows or headless macOS instances:
 
 ```bash
+# Unpack the archive matching your architecture
 tar -xzf cheesewaf-*-darwin-arm64.tar.gz
 cd cheesewaf-*
+
+# Launch the daemon
 ./cheesewaf serve --config ./configs/cheesewaf.yaml --data-dir ./data
 ```
 
-Then open `http://127.0.0.1:9443/setup`.
+Once running, navigate to `http://127.0.0.1:9443/setup` in your browser to complete the initialization wizard.

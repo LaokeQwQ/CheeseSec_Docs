@@ -1,38 +1,39 @@
 ---
-title: Configuration reference
-linkTitle: Config
+title: Configuration File Reference
+linkTitle: Configuration
 weight: 170
-description: Top-level keys in cheesewaf.yaml and where this manual explains each block.
+description: Complete structure navigation for cheesewaf.yaml, top-level key index, timeout controls, and hot-reload scopes.
 ---
 
-First start writes `cheesewaf.yaml` into the data directory.
-The template is [`configs/cheesewaf.yaml`](https://github.com/LaokeQwQ/CheeseWAF/blob/master/configs/cheesewaf.yaml) in the product repo.
+CheeseWAF automatically generates a default `cheesewaf.yaml` configuration file within its runtime data directory upon first launch. A baseline template is maintained in the source repository at [`configs/cheesewaf.yaml`](https://github.com/LaokeQwQ/CheeseWAF/blob/master/configs/cheesewaf.yaml).
 
-| Key | Manual |
-| --- | --- |
-| `server` | [TLS](../tls/), [Intro](../intro/) |
-| `tls` | [TLS](../tls/) |
-| `setup` | [Initialize](../tutorial/setup/), [Storage](../storage/) |
-| `deployment` / `cluster` | [Cluster](../cluster/) |
-| `console` | [Bot and CAPTCHA](../protection/bot-captcha/), [Monitor](../monitor/) |
-| `sites` | [Sites](../sites/) |
-| `protection` | [Protection](../protection/) |
-| `block_page` | [Block pages](../protection/block-page/) |
-| `storage` | [Storage](../storage/) |
-| `logging` | [Monitor](../monitor/) |
-| `ai` | [ALAP](../alap/) |
-| `update` | [Operations](../operations/) |
-| `scheduler` | [Storage](../storage/) |
-| `edge` | [Edge](../edge/) |
-| `monitor` | [Monitor](../monitor/) |
-| `apisec` | [API security](../api-security/) |
+## Top-Level Configuration Index {#top-level-keys}
 
-## Timeouts {#timeouts}
+| Top-Level Key | Functional Area & Role | Documentation Reference |
+| --- | --- | --- |
+| `server` | Network listener sockets, management endpoints, and connection timeouts | [Architecture & Overview](../intro/) · [TLS & Certificates](../tls/) |
+| `tls` | Data Plane TLS/HTTPS certificates and HSTS enforcement | [TLS & Certificates](../tls/) |
+| `setup` | Initialization state tracking and runtime data directory path | [System Initialization](../tutorial/setup/) · [Storage & Scheduling](../storage/) |
+| `deployment` / `cluster` | Deployment topology (standalone vs. HA cluster) and interconnects | [High Availability Clustering](../cluster/) |
+| `console` | Web console UI preferences and administrative login security | [Bot & CAPTCHA](../protection/bot-captcha/) · [Monitoring & Logs](../monitor/) |
+| `sites` | Reverse proxy sites, domain bindings, and upstream origin pools | [Site Management](../sites/) |
+| `protection` | Global security baseline (AST engines, IP, Bot, rate limiting, ACL) | [Security Protection Policies](../protection/) |
+| `block_page` | Block response templates and custom HTML branding | [Block Response Pages](../protection/block-page/) |
+| `storage` | Embedded SQLite storage, external log sinks, and database backups | [Storage & Scheduling](../storage/) |
+| `logging` | Access log verbosity, structured JSON formats, and log rotation | [Monitoring & Logs](../monitor/) |
+| `ai` | ALAP LLM provider endpoints and asynchronous review parameters | [ALAP Review & Self-Learning](../alap/) |
+| `update` | OTA automated rule updates and cryptographic signature verification | [System Operations](../operations/) |
+| `scheduler` | Automated log cleanup, database backups, and daily security reports | [Storage & Scheduling](../storage/) |
+| `edge` | Edge response header manipulation, static caching, and Brotli compression | [Edge Features](../edge/) |
+| `monitor` | Prometheus metrics export, health probes, and alert notifiers | [Monitoring & Logs](../monitor/) |
+| `apisec` | API asset discovery, request schema contracts, and RBAC matrix | [API Security & Governance](../api-security/) |
 
-`server.read_timeout`, `write_timeout`, and `idle_timeout` apply to the HTTP servers.
-`sites[].waf.performance.proxy_timeout` applies to the origin.
+## Network Timeout Controls {#timeouts}
 
-## Reload {#reload}
+- **Ingress Connection Timeouts**: `server.read_timeout`, `server.write_timeout`, and `server.idle_timeout` govern the lifecycle of HTTP connections between clients and the WAF.
+- **Reverse Proxy Timeouts**: `sites[].waf.performance.proxy_timeout` defines the maximum allowable duration when connecting and streaming responses to/from backend origin servers.
 
-Saving a site or a protection policy in the console hot-reloads that slice.
-A change to listen addresses still needs a process restart (`cheesewaf restart` or systemd).
+## Dynamic Hot-Reload Scopes {#reload}
+
+- **Atomic In-Memory Hot Reload**: Modifying site definitions, custom regex rules, IP access lists, bot challenge policies, or ACL rules via the Web console or REST API takes effect immediately in memory without process restarts.
+- **Restart Required**: Alterations to physical socket listeners (such as `server.listen_http` or `server.admin_listen`) require restarting the daemon process via `cheesewaf restart` or systemd.

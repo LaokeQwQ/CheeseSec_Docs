@@ -1,14 +1,13 @@
 ---
-title: ACL
+title: 访问控制列表（ACL）
 linkTitle: ACL
 weight: 60
-description: 按 HTTP 方法、路径前缀和请求头允许或拒绝。
+description: 基于 HTTP 请求方法、URI 路径前缀及请求头的快速放行与阻断控制。
 ---
 
-配置：`protection.acl`。
-REST：`PUT /api/protection/acl`。
+访问控制列表（ACL）位于流量处理流水线的前端，用于以极低的计算开销快速拦截已知无用的调试路由、探测路径或强制校验指定请求头。配置位于 `protection.acl`，支持通过 REST API `PUT /api/protection/acl` 进行热更新。
 
-示例拒绝 `/debug`：
+## 配置示例 {#config}
 
 ```yaml
 protection:
@@ -26,9 +25,17 @@ protection:
         enabled: true
 ```
 
-`method` 为空表示任意方法。
-同时填 `header` 和 `header_value`，可以要求或拒绝某个请求头。
+## 匹配字段说明 {#fields}
 
-ACL 很靠前。
-已知的垃圾路径用它。
-需要正则而不是前缀时，用 [自定义规则](../custom-rules/)。
+| 字段 | 说明 |
+| --- | --- |
+| `method` | 目标 HTTP 方法（如 `GET`、`POST`）；留空表示匹配任意方法 |
+| `path_prefix` | 匹配的 URI 路径前缀（如 `/debug`、`/actuator`） |
+| `header` | 待检查的 HTTP 请求头名称；留空表示不限制 |
+| `header_value` | 对应请求头的期望值或排斥值 |
+| `action` | 命中后的动作，通常为 `block`（拦截）或 `allow`（放行） |
+| `severity` | 记录在告警日志与审计事件中的威胁等级 |
+
+{{% pageinfo color="info" %}}
+ACL 采用前缀树高效匹配，适合确定性的固定路径阻断。若匹配规则需要复杂的正则表达式支持，请使用 [自定义正则规则](../custom-rules/)。
+{{% /pageinfo %}}

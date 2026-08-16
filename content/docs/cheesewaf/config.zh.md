@@ -1,38 +1,39 @@
 ---
-title: 配置参考
+title: 配置文件参考
 linkTitle: 配置
 weight: 170
-description: cheesewaf.yaml 的顶层键，以及本手册里解释每一段的位置。
+description: cheesewaf.yaml 主配置文件结构导航、顶层键解析、超时控制与热重载范围说明。
 ---
 
-第一次启动会在数据目录写出 `cheesewaf.yaml`。
-模板是产品仓库里的 [`configs/cheesewaf.yaml`](https://github.com/LaokeQwQ/CheeseWAF/blob/master/configs/cheesewaf.yaml)。
+CheeseWAF 在首次启动时会在运行数据目录中自动生成 `cheesewaf.yaml` 主配置文件。预设配置模板可参考源码库中的 [`configs/cheesewaf.yaml`](https://github.com/LaokeQwQ/CheeseWAF/blob/master/configs/cheesewaf.yaml)。
 
-| 键 | 手册 |
-| --- | --- |
-| `server` | [TLS](../tls/)、[介绍](../intro/) |
-| `tls` | [TLS](../tls/) |
-| `setup` | [初始化](../tutorial/setup/)、[存储](../storage/) |
-| `deployment` / `cluster` | [集群](../cluster/) |
-| `console` | [Bot 与验证码](../protection/bot-captcha/)、[监控](../monitor/) |
-| `sites` | [站点](../sites/) |
-| `protection` | [防护](../protection/) |
-| `block_page` | [拦截页](../protection/block-page/) |
-| `storage` | [存储](../storage/) |
-| `logging` | [监控](../monitor/) |
-| `ai` | [ALAP](../alap/) |
-| `update` | [运维](../operations/) |
-| `scheduler` | [存储](../storage/) |
-| `edge` | [边缘](../edge/) |
-| `monitor` | [监控](../monitor/) |
-| `apisec` | [API 安全](../api-security/) |
+## 顶层配置块索引 {#top-level-keys}
 
-## 超时 {#timeouts}
+| 顶层配置键 | 功能模块与定位 | 详细参考章节 |
+| --- | --- | --- |
+| `server` | 基础网络监听、管理端口与网络层超时 | [架构介绍](../intro/) · [TLS 与证书](../tls/) |
+| `tls` | 数据平面 TLS/HTTPS 证书与 HSTS 配置 | [TLS 与证书](../tls/) |
+| `setup` | 初始化状态与运行时数据目录定义 | [系统初始化](../tutorial/setup/) · [存储与调度](../storage/) |
+| `deployment` / `cluster` | 部署形态（单机/集群）与高可用协同参数 | [集群高可用](../cluster/) |
+| `console` | Web 控制台个性化与管理端登录安全 | [Bot 与验证码](../protection/bot-captcha/) · [监控与日志](../monitor/) |
+| `sites` | 业务反向代理站点、域名与上游配置 | [站点管理](../sites/) |
+| `protection` | 全局安全基线（语义引擎、IP、Bot、限流等） | [安全防护策略](../protection/) |
+| `block_page` | 阻断拦截页模板与自定义响应 HTML | [拦截响应页](../protection/block-page/) |
+| `storage` | 内置 SQLite、外部外发 Sink 与数据备份 | [存储与调度](../storage/) |
+| `logging` | 访问日志输出级别、格式与文件轮转 | [监控与日志](../monitor/) |
+| `ai` | ALAP 大语言模型连接与异步研判参数 | [ALAP 异步审查](../alap/) |
+| `update` | OTA 自动更新与签名校验 | [系统运维](../operations/) |
+| `scheduler` | 自动化清理与定时报表任务调度器 | [存储与调度](../storage/) |
+| `edge` | 边缘响应头注入、静态缓存与 Gzip/Brotli 压缩 | [边缘特性](../edge/) |
+| `monitor` | Prometheus 指标导出与告警通知器 | [监控与日志](../monitor/) |
+| `apisec` | API 资产发现、Schema 校验与 RBAC 权限矩阵 | [API 接口安全](../api-security/) |
 
-`server.read_timeout`、`write_timeout` 和 `idle_timeout` 作用于 HTTP 服务。
-`sites[].waf.performance.proxy_timeout` 作用于源站。
+## 超时机制配置 {#timeouts}
 
-## 重载 {#reload}
+- **接入层超时**：`server.read_timeout`、`server.write_timeout` 与 `server.idle_timeout` 控制客户端与 WAF 之间的 HTTP 连接生命周期。
+- **反向代理超时**：`sites[].waf.performance.proxy_timeout` 控制 WAF 向后端上游源站发起请求与等待响应的最大超时时间。
 
-在控制台保存站点或防护策略时，对应片段会热加载。
-改监听地址仍需要重启进程（`cheesewaf restart` 或 systemd）。
+## 动态热重载范围 {#reload}
+
+- **即时热生效**：在 Web 控制台或通过 REST API 保存站点配置、自定义规则、IP 黑白名单、Bot 挑战策略及 ACL 规则时，系统会在内存中实时原子热重载，无需重启服务进程。
+- **需重启生效**：修改 `server.listen_http`、`server.admin_listen` 等底层物理监听端口或网络驱动层参数后，须重启服务进程（通过 `cheesewaf restart` 或 systemd 服务管理器）。

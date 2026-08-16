@@ -1,34 +1,35 @@
 ---
-title: Paranoia levels
-linkTitle: Paranoia levels
+title: Paranoia Level Mechanism
+linkTitle: Paranoia Levels
 weight: 20
-description: Per-site levels 0–5. Default is 3. Level 4 can rise to 5 for a timed window.
+description: Understand paranoia levels 0 through 5, differential actions for isolated vs. embedded payloads, and dynamic time-windowed promotion.
 ---
 
-Set `sites[].waf.paranoia_level` per site.
-Legal values are **0–5**.
-The default is **3**.
+CheeseWAF allows configuring the paranoia level independently for each reverse proxy site via `sites[].waf.paranoia_level`. Supported values range from **0 to 5**, with **3 (Standard Smart Protection)** recommended as the production baseline.
 
-The engine looks at **one decoded parameter value** at a time.
-Path and parameter names stay visible.
+The paranoia level mechanism balances high threat detection rates with false-positive suppression. When inspecting decoded parameter values, the AST semantic engine executes tiered responses based on payload morphology (Isolated vs. Embedded).
 
-| Level | Name | Isolated | Embedded | Timed rise |
+## Paranoia Levels Comparison {#levels}
+
+| Level | Policy Profile | Isolated Payload | Embedded Payload | Auto-Promotion |
 | :---: | --- | --- | --- | :---: |
-| **0** | Record only | Log, allow | Log, allow | No |
-| **1** | Low monitor | Log, allow | Log, allow | No |
-| **2** | Low-medium | **Block** | **Allow**, review later | No |
-| **3** | Standard | **Block** | **Allow**, review later | No |
-| **4** | Medium-high | **Block** | **Allow**, review later | **Yes** (rise to 5) |
-| **5** | Strict | **Block** | **Block**, then review | Already max |
+| **0** | **Record Only** | Log alert & allow | Log alert & allow | No |
+| **1** | **Observation Mode** | Log alert & allow | Log alert & allow | No |
+| **2** | **Basic Defense** | **Block immediately** | **Allow**, enqueue for ALAP review | No |
+| **3** | **Smart Standard (Recommended)** | **Block immediately** | **Allow**, enqueue for ALAP review | No |
+| **4** | **Active Defense** | **Block immediately** | **Allow**, trigger auto-promotion & review | **Yes** (promotes to 5) |
+| **5** | **Strict Defense** | **Block immediately** | **Block immediately**, enqueue for review | Already maximum |
 
-## Temporary rise {#promote}
+## Dynamic Auto-Promotion Mechanism {#promote}
 
-At level 4, an embedded hit can raise the site to level 5 for `promote_seconds` (for example 300 seconds).
-The deadline is stored in SQLite.
-A process restart does not clear it.
+At **Paranoia Level 4**, when suspicious embedded payloads are detected within live traffic, the system proactively promotes the site to **Level 5 (Strict Mode)** for a configurable duration defined by `promote_seconds` (e.g., 300 seconds) to prevent reconnaissance-stage exploitation.
 
-## Level 5 review {#level-5}
+- **State Persistence**: The promotion deadline timestamp is stored in the embedded SQLite database, persisting across daemon restarts.
+- **Automatic Decay**: Once the promotion window elapses without subsequent suspicious triggers, the site seamlessly reverts to its baseline Level 4 configuration.
 
-A sample blocked at level 5 still enters the review queue with a `blocked` mark.
-You cannot flip it to allow.
-You can save a lasting deny rule (feature, URL, IP, or fingerprint).
+## Level 5 Review Constraints {#level-5}
+
+Samples blocked under Paranoia Level 5 are submitted to the ALAP review queue with a `blocked` status tag:
+
+- **Non-Retroactive Release**: Because the connection was physically terminated, operators cannot mutate the sample status to "Allowed".
+- **Rule Synthesis**: Upon review, confirmed threats can be exported into permanent global defense rules (including signature patterns, URL path filters, IP blacklists, or client soft-fingerprints).

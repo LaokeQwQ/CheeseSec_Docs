@@ -1,31 +1,30 @@
 ---
-title: Initialize
-linkTitle: Initialize
+title: System Initialization Wizard
+linkTitle: Initialization
 weight: 10
-description: Create the first administrator at /setup and lock down the management listener.
+description: Access the /setup wizard to provision your initial administrator account, archive security credentials, and configure management network boundaries.
 ---
+
+Upon launching CheeseWAF for the first time, complete the setup wizard to establish security baselines and administrative credentials:
 
 {{% steps %}}
 
-### Open the wizard {#open-wizard}
+### 1. Access the Initialization Wizard {#open-wizard}
 
-On a local install open `http://127.0.0.1:9443/setup`.
-On Docker open `https://<host>:9443/setup` and accept the self-signed certificate.
+- **Local / Bare-Metal Deployment**: Open `http://127.0.0.1:9443/setup` in your browser.
+- **Docker Container Deployment**: Open `https://<SERVER_IP>:9443/setup` (accept the self-signed certificate in your browser during initial access).
 
-If the process prints a setup token, paste it when the wizard asks.
+If a setup token was emitted in your service logs or stdout, paste it into the prompt to verify administrative ownership.
 
-### Create the admin {#create-admin}
+### 2. Provision Admin Account & Archive Master Secrets {#create-admin}
 
-Set a username and a password that meets the console password policy.
-Save every generated secret the wizard shows.
-CheeseWAF will not print them again in clear text.
+Enter the initial administrator username and configure a strong password compliant with the password complexity policy. The wizard will display generated system master keys and recovery credentials; securely record and archive these secrets, as CheeseWAF will not display them in clear text again.
 
-### Confirm the listener {#confirm-listener}
+### 3. Verify Management Plane Boundaries {#confirm-listener}
 
-Leave `server.admin_listen` on loopback for a single-host install.
-Set `server.admin_public` to `true` only with TLS and a network policy in front.
+- For standalone or single-host deployments, maintain `server.admin_listen` on the local loopback address (`127.0.0.1:9443`).
+- Set `server.admin_public: true` only if a trusted TLS certificate is installed and strict network-level Access Control Lists (ACLs) are enforced.
 
 {{% /steps %}}
 
-After setup, the same URL becomes the login page.
-CLI users can also run `waf-cli` (TUI) or `cheesewaf user`.
+After completing the wizard, navigating to the management address will automatically redirect to the Web console login screen. Alternatively, administrative users can be managed via the `waf-cli` TUI panel or the `cheesewaf user` command.

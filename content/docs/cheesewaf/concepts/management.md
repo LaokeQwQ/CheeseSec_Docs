@@ -1,23 +1,32 @@
 ---
-title: Three management surfaces
-linkTitle: Management
+title: Unified Management Surfaces & Authorization
+linkTitle: Management Surfaces
 weight: 40
-description: Web console, CLI / TUI, and REST share one user, session, and audit model.
+description: Understand the shared RBAC authorization model, unified user identity, session management, and audit pipeline across the Web console, TUI, and REST API.
 ---
 
-| Surface | When to use | How to reach it |
+CheeseWAF provides three dedicated management surfaces tailored for visual operations, headless terminal maintenance, and automated CI/CD workflows:
+
+| Management Surface | Role & Intended Scenarios | Access & Invocation |
 | --- | --- | --- |
-| Web console | Daily ops, rules, logs, attack map | `http://127.0.0.1:9443/` after setup |
-| CLI / TUI | Headless hosts, scripts | `waf-cli` or `cheesewaf panel` |
-| REST | Automation, CI | `/api/...` with a session cookie or a management API token |
+| **Web Console** | Visual operations, security policy management, real-time log querying, and attack map visualization | Access `http://127.0.0.1:9443/` in a browser after completing initial setup |
+| **CLI / TUI** | Headless server administration, jump boxes, and rapid interactive terminal troubleshooting | Execute `waf-cli` or `cheesewaf panel` to launch the interactive terminal interface |
+| **RESTful API** | CI/CD automation, external monitoring integration, and orchestration pipelines | Invoke `/api/...` endpoints using Session Cookie or Bearer API token authentication |
 
-`setup.three_end_unified` is on in the sample config.
-A user created in the console can use the CLI.
-A token created under **System** can call REST with the same RBAC permissions.
+## Unified Identity & RBAC Matrix {#unified-auth}
 
-Permissions live under `apisec.permissions`.
-The sample grants `admin: ["*"]` and `readonly: ["read:*", "read:cluster"]`.
+When `setup.three_end_unified: true` is configured, CheeseWAF synchronizes identity and authorization across all three surfaces:
 
-Audit events write to `apisec.audit.path` when `apisec.audit.enabled` is true.
+- **Universal User Credentials**: Administrator and operator accounts provisioned in the Web console can be used directly for TUI login and API authentication.
+- **Consistent RBAC Enforcement**: API Tokens created in the console's System Management section inherit the exact RBAC permission matrix defined in `apisec.permissions`.
+- **Granular Roles**: Built-in default roles include `admin` (holding full `["*"]` permissions) and `readonly` (scoped to `["read:*", "read:cluster"]`).
 
-See [Console](../../console/), [CLI](../../cli/), and [REST API](../../api/).
+## Operational Audit Trail {#audit}
+
+When `apisec.audit.enabled: true` is active, all configuration mutations, policy changes, and user management operations initiated via the Web Console, TUI, or REST API are written to the structured audit log specified by `apisec.audit.path`, ensuring enterprise-grade auditability.
+
+## Related Documentation {#references}
+
+- [Web Console Guide](../../console/)
+- [CLI & TUI Operations Manual](../../cli/)
+- [REST API Reference & Permission Matrix](../../api/)

@@ -1,20 +1,15 @@
 ---
-title: Docker Compose
+title: Docker Compose 部署
 linkTitle: Docker
 weight: 20
-description: 用 Compose 跑 CheeseWAF。根文件系统只读，进程用非 root 用户。
+description: 使用 Docker Compose 编排部署 CheeseWAF，支持容器只读根文件系统与非 root 安全运行。
 ---
 
-容器主机用这条路径。
-`docker compose build` 会按宿主机 CPU 编出 `linux/amd64` 或 `linux/arm64`。
+本方案适用于容器化基础设施。CheeseWAF 官方镜像遵循安全加固规范，默认以非 root 用户（UID `10001`）运行，并启用只读根文件系统。
 
-镜像以 UID `10001` 运行。
-根文件系统只读。
+## 编排配置（Compose 文件） {#compose-file}
 
-## Compose 文件 {#compose-file}
-
-仓库里的文件是 `deploy/docker/docker-compose.yml`。
-最小副本：
+参考项目仓库中的 `deploy/docker/docker-compose.yml`：
 
 ```yaml
 services:
@@ -49,18 +44,19 @@ volumes:
   cheesewaf-logs:
 ```
 
-用仓库里的 Dockerfile 时，构建上下文必须是 CheeseWAF 仓库根目录。
+{{% pageinfo color="info" %}}
+本地构建镜像时，构建上下文（context）须指向 CheeseWAF 项目的根目录。
+{{% /pageinfo %}}
 
-## 启动 {#start}
+## 启动与初始化 {#start}
+
+执行以下命令在后台启动服务并查看日志：
 
 ```bash
 docker compose up -d
 docker compose logs -f cheesewaf
 ```
 
-打开 `https://<主机>:9443/setup`。
-容器默认给管理端用自签名证书。
-首次初始化令牌在启动日志里。
+容器在启动时会为管理平面自动生成自签名 TLS 证书，并在标准输出日志中打印首次初始化的 Token 令牌。使用浏览器访问 `https://<服务器IP>:9443/setup`，根据向导提示完成初始化。
 
-`docker compose down` 不会删命名卷。
-站点配置和 SQLite 在 `cheesewaf-data` 里。
+执行 `docker compose down` 停止容器时，持久化命名卷 `cheesewaf-data`（保存 SQLite 数据库与站点配置）与 `cheesewaf-logs` 均会被完整保留。

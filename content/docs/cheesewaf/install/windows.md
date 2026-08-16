@@ -1,57 +1,59 @@
 ---
-title: Windows
+title: Windows Deployment
 linkTitle: Windows
 weight: 30
-description: Single-file CLI, portable zip, or NSIS installer. The GUI controller listens on loopback only.
+description: "Three deployment options on Windows: Single-file CLI, Portable Zip archive, and NSIS graphical installer with local helper controller."
 ---
 
-Windows has three shapes. They are not three different WAFs.
+CheeseWAF offers three distribution formats on Windows, all sharing the identical core engine, security capabilities, and feature set:
 
-## A. Single-file CLI {#cli}
+## 1. Single-File CLI Mode {#cli}
 
-1. Download `cheesewaf-*-windows-amd64.exe` or the `arm64` file.
-2. Run:
+Ideal for automated scripts, CI runners, or lightweight environments:
+
+1. Download the standalone executable matching your architecture (e.g., `cheesewaf-*-windows-amd64.exe`).
+2. Execute the following commands in PowerShell or Command Prompt:
 
 ```powershell
+# Start WAF data and management planes
 .\cheesewaf-*-windows-amd64.exe serve --config .\cheesewaf.yaml --data-dir .\data
+
+# Query daemon execution status
 .\cheesewaf-*-windows-amd64.exe status
+
+# Terminate the running instance
 .\cheesewaf-*-windows-amd64.exe stop
 ```
 
-The forwarding process does not need the installer.
-The Web UI assets live in `web/dist` next to the executable in zip / DMG / tar packages.
+## 2. Portable Zip Archive {#zip}
 
-## B. Portable zip {#zip}
+Contains pre-bundled configuration templates and static assets:
 
-1. Unpack `cheesewaf-*-windows-amd64.zip` to a directory such as `D:\CheeseWAF`.
-2. Run:
+1. Extract `cheesewaf-*-windows-amd64.zip` to your target directory (e.g., `D:\CheeseWAF`).
+2. Run the executable from within that directory:
 
 ```powershell
 .\cheesewaf.exe serve --config .\configs\cheesewaf.yaml --data-dir .\data
-.\cheesewaf.exe status
-.\cheesewaf.exe stop
 ```
 
-## C. NSIS installer {#nsis}
+## 3. NSIS Graphical Installer (Recommended) {#nsis}
 
-1. Run `CheeseWAF-*-windows-amd64-setup.exe` or the `arm64` setup.
-2. Follow the wizard.
-3. Uninstall keeps `data\` by default.
+Provides an intuitive installation wizard, desktop shortcuts, and Windows Service registration:
 
-The installer may register a Windows service (`sc.exe create CheeseWAF …`). Treat that as best-effort.
+1. Launch the `CheeseWAF-*-windows-*-setup.exe` installer.
+2. Follow the setup wizard to select the target installation directory. The installer can automatically register CheeseWAF as a Windows background service (`CheeseWAF`).
+3. During uninstallation, user data and databases in `data\` are preserved by default.
 
-## Local controller {#gui}
+## Local Helper Controller (GUI) {#gui}
 
-`cheesewaf-gui` is **not** a second admin console.
-It only starts, stops, and opens the real management UI.
+`cheesewaf-gui` is a lightweight desktop utility designed to manage the daemon lifecycle on workstation environments:
 
-- Bind address: `127.0.0.1:17943`
-- Shows PID and running state
-- Opens the Web console and the config folder
-- Optional current-user autostart (`HKCU\Run`)
+- **Strict Network Boundary**: Binds strictly to the local loopback address `127.0.0.1:17943`.
+- **Core Functionality**: Displays current process PID and health status, toggles service start/stop, opens the Web management console, and provides direct access to configuration directories.
+- **Autostart**: Supports registering an autostart entry for the current user (`HKCU\Run`).
 
 ```powershell
 .\cheesewaf-gui.exe --config .\configs\cheesewaf.yaml --data-dir .\data
 ```
 
-The browser opens `http://127.0.0.1:17943/`.
+Once running, navigate to `http://127.0.0.1:17943/` in your browser to access the controller interface.

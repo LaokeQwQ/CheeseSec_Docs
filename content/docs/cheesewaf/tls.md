@@ -1,15 +1,15 @@
 ---
-title: TLS and certificates
+title: TLS & Certificate Management
 linkTitle: TLS
 weight: 90
-description: Admin TLS, site certificates, ACME issuance, HTTP/3, and HSTS.
+description: Management plane TLS encryption, business site HTTPS certificate configuration, ACME automated issuance, HTTP/3, and HSTS policies.
 ---
 
-Console: **SSL**.
-Config: `server.admin_tls`, `tls`, and per-site ACME calls.
-REST: `/api/acme/providers`, `POST /api/sites/{id}/acme/issue`.
+CheeseWAF provides comprehensive TLS/HTTPS cryptographic capabilities, covering secure transport encryption for the management plane as well as automated certificate provisioning, renewal, and HTTP/3 support for business traffic.
 
-## Admin listener {#admin}
+Manage certificates visually in the Web console under **SSL**, or configure settings under `server.admin_tls` and `tls`.
+
+## 1. Management Plane TLS Configuration {#admin}
 
 ```yaml
 server:
@@ -20,25 +20,29 @@ server:
     self_signed: true
 ```
 
-Docker images turn admin TLS on with a self-signed cert.
-A public admin listener must use a real certificate.
+- **Container Default Behavior**: The Docker deployment image enables management TLS by default, generating a self-signed certificate upon initial container launch.
+- **Production Requirements**: If the management plane is exposed over public networks, replace self-signed certificates with a trusted CA-signed certificate.
 
-## Site TLS {#site}
+## 2. Business Site TLS & HTTP/3 Configuration {#site}
 
 ```yaml
 tls:
   auto_cert: false
-  cert_file: "./data/certs/admin.crt"
-  key_file: "./data/certs/admin.key"
+  cert_file: "./data/certs/site.crt"
+  key_file: "./data/certs/site.key"
   min_version: "1.3"
   hsts: true
 ```
 
-`server.listen_tls` and `server.listen_http3` bind the data plane.
-HTTP/3 needs `server.http3.enabled` and a TLS listener.
+- **Data Plane Listeners**: Configure `server.listen_tls` (default `443`) and `server.listen_http3` to enable HTTPS and HTTP/3 ingress for business traffic.
+- **TLS Version Constraints**: Use `min_version` to enforce minimum protocol versions (e.g., `1.2` or `1.3`).
+- **HSTS Enforcement**: Setting `hsts: true` automatically injects the `Strict-Transport-Security` header into outbound responses.
+- **HTTP/3 (QUIC) Support**: Set `server.http3.enabled: true` to enable UDP-based HTTP/3 support (requires an active TLS listener).
 
-## ACME {#acme}
+## 3. ACME Automated Certificate Issuance & Renewal {#acme}
 
-The console lists DNS providers at `GET /api/acme/providers`.
-`POST /api/sites/{id}/acme/issue` requests a certificate for that site.
-Keep account keys in the data directory, not in the git repo.
+CheeseWAF natively supports the ACME protocol for automated certificate management (e.g., Let's Encrypt):
+
+1. **Query DNS Providers**: Call `GET /api/acme/providers` to list supported DNS API challenge plugins (e.g., Cloudflare, Aliyun).
+2. **Issue Certificates**: Invoke `POST /api/sites/{id}/acme/issue` for a site to automatically perform DNS challenge verification and bind the issued certificate.
+3. **Secure Key Storage**: ACME account private keys and generated certificates are persisted securely in the runtime data directory; do not commit them to Git.

@@ -1,20 +1,15 @@
 ---
-title: Docker Compose
+title: Docker Compose Deployment
 linkTitle: Docker
 weight: 20
-description: Run CheeseWAF in Compose with a read-only root filesystem and a non-root user.
+description: Deploy CheeseWAF with Docker Compose featuring a read-only root filesystem and unprivileged non-root execution.
 ---
 
-Use this path in a container host.
-`docker compose build` produces `linux/amd64` or `linux/arm64` for the host CPU.
+This deployment guide is intended for containerized infrastructures. The official CheeseWAF Docker image adheres to strict container hardening practices, running as an unprivileged user (UID `10001`) with a read-only root filesystem.
 
-The image runs as UID `10001`.
-The root filesystem is read-only.
+## Compose Orchestration File {#compose-file}
 
-## Compose file {#compose-file}
-
-The repository file is `deploy/docker/docker-compose.yml`.
-A minimal copy:
+Reference the production Compose file located at `deploy/docker/docker-compose.yml` in the project repository:
 
 ```yaml
 services:
@@ -49,18 +44,19 @@ volumes:
   cheesewaf-logs:
 ```
 
-Build context must be the CheeseWAF repository root when you use that Dockerfile.
+{{% pageinfo color="info" %}}
+When building the image locally from source, ensure the build context is set to the root directory of the CheeseWAF repository.
+{{% /pageinfo %}}
 
-## Start {#start}
+## Service Launch & Initialization {#start}
+
+Execute the following commands to launch the service in detached mode and follow the container output:
 
 ```bash
 docker compose up -d
 docker compose logs -f cheesewaf
 ```
 
-Open `https://<host>:9443/setup`.
-The container uses a self-signed admin certificate by default.
-The first-run token is in the startup log.
+During the initial startup, the container generates a self-signed TLS certificate for the Control Plane and prints the one-time initialization Token to stdout. Open `https://<SERVER_IP>:9443/setup` in your browser to complete the setup wizard.
 
-`docker compose down` keeps the named volumes.
-Site config and SQLite live in `cheesewaf-data`.
+Stopping the container with `docker compose down` will preserve persistent named volumes (`cheesewaf-data` storing SQLite data/certificates and `cheesewaf-logs` storing access logs).

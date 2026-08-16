@@ -1,38 +1,55 @@
 ---
-title: 流量路径
+title: 流量处理路径
 linkTitle: 流量路径
 weight: 10
-description: 实线是毫秒级转发。虚线是响应返回之后的 ALAP。
+description: 详细解析入站请求的同步检测转发链路与响应交付后的异步 ALAP 旁路研判链路。
 ---
+
+CheeseWAF 的流量处理链路分为**同步检测链路**与**异步旁路研判链路**两大部分。下图展示了一个 HTTP/HTTPS/HTTP3 请求进入系统后的完整流转过程：
 
 ```mermaid
 flowchart TB
-  Client[客户端] --> Ingress[HTTP / HTTPS / HTTP3]
-  Ingress --> IP{IP / 地理 / 指纹}
-  IP -->|黑名单| Block[拦截页]
-  IP -->|放行| Bot{Bot / 限流 / 排队室}
-  Bot -->|挑战| Challenge[验证码或排队]
-  Challenge -->|通过| Sem
-  Bot -->|放行| Sem[语义引擎]
-  Sem --> Shape{独立或夹杂}
-  Shape -->|独立 2-5| Block
-  Shape -->|夹杂 5| Block
-  Shape -->|夹杂 2-4| Pass[放行并入队]
-  Shape -->|干净| Origin[上游]
+  Client[客户端请求] --> Ingress[网络接入层 HTTP / HTTPS / HTTP3]
+  Ingress --> IP{IP / 地理位置 / 软指纹}
+  IP -->|命中黑名单| Block[返回拦截页]
+  IP -->|放行| Bot{Bot 挑战 / 限流 / 排队室}
+  Bot -->|触发挑战| Challenge[验证码校验 / 排队等待]
+  Challenge -->|挑战通过| Sem
+  Bot -->|无需挑战/放行| Sem[AST 语义分析引擎]
+  Sem --> Shape{特征形态判断}
+  Shape -->|独立特征 2~5 级| Block
+  Shape -->|夹杂特征 5 级| Block
+  Shape -->|夹杂特征 2~4 级| Pass[放行并投递异步队列]
+  Shape -->|无异常| Origin[转发至上游源站]
   Pass --> Origin
-  Pass -.-> Queue[ALAP 队列]
-  Sem -.->|5 级阻断| Queue
-  Queue --> LLM[配置的模型]
-  LLM --> Review{研判}
-  Review -->|high / critical| Rule[长期规则]
-  Review -->|低危或误报| Dismiss[归档或白名单]
+  Pass -.-> Queue[ALAP 异步审查队列]
+  Sem -.->|5 级阻断样本| Queue
+  Queue --> LLM[调用配置的大语言模型]
+  LLM --> Review{研判判定}
+  Review -->|高危 / 严重| Rule[沉淀为长期规则]
+  Review -->|低危 / 误报| Dismiss[归档忽略 / 加入白名单]
   Rule -.-> IP
 ```
 
-实线箭头在请求路径上。
-虚线箭头在客户端已经拿到响应之后才跑。
+## 链路详解 {#pipeline-details}
 
-站点级 `waf.mode` 可以是 `block`。
-等级 0 和 1 不会因为语义命中而阻断。
+### 1. 同步转发链路（实线部分） {#sync-path}
 
-图里每一层过滤器见 [防护](../../protection/)。
+同步链路直接承载客户端与源站之间的实时通信，核心要求为高吞吐与低时延：
+
+- **接入与网络层过滤**：请求到达接入层后，首先经过 IP 白名单、黑名单、GeoIP 国家/地区封禁及客户端软指纹校验。命中黑名单将直接返回拦截页。
+- **访问控制与防刷**：通过 IP 校验后，进入 Bot 挑战验证、令牌桶限流及排队室模块。异常客户端需完成 JS 挑战或验证码后方可通行。
+- **语义分析与策略判定**：通过参数解码与 AST 语法树解析，引擎识别请求中的攻击特征，并结合站点当前的防护等级（Paranoia Level）决定执行当场阻断（Block）还是放行（Pass）。
+- **源站反向代理**：合法流量经负载均衡策略转发至健康的后端源站。
+
+### 2. 异步旁路研判链路（虚线部分） {#async-path}
+
+异步链路完全独立于实时转发流程，在客户端完成响应接收后于后台触发：
+
+- **样本投递**：在防护等级 2～4 下被放行的夹杂特征样本，以及在等级 5 下被阻断的高危样本，均会被投递至 ALAP 审查队列。
+- **模型智能分析**：后台 Worker 异步调用大模型提取攻击意图并输出置信度评估。
+- **闭环规则沉淀**：判定为高危（`high`）或严重（`critical`）的威胁，可通过人工审核或自动采纳机制，实时回写为 IP 黑名单或特征规则，实现自适应安全加固。
+
+{{% pageinfo color="info" %}}
+当站点的 `waf.mode` 设为 `block` 时，防护等级 2～5 将按规则执行拦截；若处于等级 0（仅记录）或等级 1（监控），系统仅记录日志而不会中断请求。各层过滤器的具体配置请参考 [安全防护](../../protection/)。
+{{% /pageinfo %}}

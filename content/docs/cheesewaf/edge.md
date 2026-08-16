@@ -1,15 +1,13 @@
 ---
-title: Edge headers, cache, and compression
-linkTitle: Edge
+title: "Edge Optimization: Headers, Caching & Compression"
+linkTitle: Edge Features
 weight: 80
-description: Set or delete response headers, cache static prefixes, and compress JSON or HTML.
+description: Edge HTTP header rewriting, static resource proxy caching, and Brotli/Gzip response payload compression.
 ---
 
-Console: **Edge**.
-Config: `edge`.
-REST: `GET/PUT /api/edge`.
+CheeseWAF provides edge acceleration capabilities at the reverse proxy layer to optimize response latency and reduce origin bandwidth consumption. Manage these settings visually under **Edge** in the Web console, or define them in configuration files under the `edge` block.
 
-## Headers {#headers}
+## 1. HTTP Response Header Rewriting {#headers}
 
 ```yaml
 edge:
@@ -27,10 +25,10 @@ edge:
         enabled: true
 ```
 
-Use `set` to add a marker.
-Use `delete` to strip origin-only headers before they reach the client.
+- **Set Headers (`set`)**: Appends custom tracking or security headers (e.g., `X-Content-Type-Options: nosniff`).
+- **Strip Headers (`delete`)**: Removes sensitive internal origin response headers (such as `Server`, `X-Powered-By`, or internal debug tokens) before responses reach the public internet.
 
-## Cache {#cache}
+## 2. Static Asset Proxy Caching {#cache}
 
 ```yaml
 edge:
@@ -43,10 +41,10 @@ edge:
     max_body_bytes: 2097152
 ```
 
-Only cache prefixes you know are static.
-Do not cache authenticated HTML.
+- **Path Targeting**: Specify path prefixes in `path_prefixes` strictly for purely static assets (e.g., CSS, JS, fonts, images).
+- **Security Caution**: Never configure caching rules for authenticated dynamic API endpoints or personalized HTML pages.
 
-## Compression {#compression}
+## 3. High-Efficiency Response Compression {#compression}
 
 ```yaml
 edge:
@@ -57,4 +55,5 @@ edge:
     min_bytes: 1024
 ```
 
-`content_types` in the sample covers `text/`, JSON, JavaScript, XML, and SVG.
+- **Compression Algorithms**: Supports Brotli (`br`) and standard Gzip (`gzip`) algorithms.
+- **Trigger Conditions**: Responses are compressed only when payload sizes exceed `min_bytes` (e.g., 1024 bytes) and match defined MIME types (`text/*`, `application/json`, `application/javascript`, `image/svg+xml`).

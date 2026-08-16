@@ -1,52 +1,60 @@
 ---
-title: CLI and TUI
-linkTitle: CLI
+title: Command-Line Interface & Interactive TUI
+linkTitle: CLI & TUI
 weight: 150
-description: cheesewaf and waf-cli share one binary. Default commands depend on the executable name.
+description: Unified single-binary CLI distribution for cheesewaf and waf-cli, global flags, subcommand reference, and terminal UI operations.
 ---
 
-The same binary answers to two names.
+CheeseWAF utilizes a unified single-binary architecture. The execution mode is determined automatically based on the invocation command name:
 
-| Invoked as | Default command |
+| Executable Name | Default Execution Behavior |
 | --- | --- |
-| `cheesewaf` | `serve` |
-| `waf-cli` | interactive TUI (`panel`) |
+| `cheesewaf` | Executes the `serve` command by default, launching both Data Plane and Control Plane listeners |
+| `waf-cli` | Launches the interactive Terminal User Interface (TUI, equivalent to `panel`) |
 
-Global flags:
+## Global Command-Line Flags {#global-flags}
 
 ```text
--c, --config     path to cheesewaf.yaml (default ./data/cheesewaf.yaml)
-    --data-dir   runtime data directory (default ./data)
-    --lang       en or zh-CN
+-c, --config string     Path to configuration file (default ./data/cheesewaf.yaml)
+    --data-dir string   Path to runtime data directory (default ./data)
+    --lang string       UI language preference (en or zh-CN)
 ```
 
-Language order: flag, then environment, then data-dir, then the OS locale.
+The language resolution hierarchy is: CLI `--lang` flag > Environment variable `CHEESEWAF_LANG` > Saved setting in data directory > Host operating system locale.
 
-## Commands {#commands}
+## Subcommand Reference Table {#commands}
 
-| Command | Purpose |
+| Subcommand | Functionality & Description |
 | --- | --- |
-| `serve` | Start the WAF |
-| `panel` | TUI |
-| `status` | Is the process up |
-| `healthcheck` | Exit non-zero when unhealthy (Compose uses this) |
-| `stop` | Stop a running process |
-| `restart` | Stop then serve |
-| `user` | Manage local users |
-| `cluster` | Join, certs, runtime |
-| `version` | Version, channel, build time |
-| `lang` | Persist CLI language |
-| `logs` | Pack or inspect logs |
+| `serve` | Launches the full WAF daemon (Data Plane reverse proxy + Control Plane API and Web console) |
+| `panel` | Launches the interactive TUI terminal management panel |
+| `status` | Checks daemon health and outputs process PID and memory usage |
+| `healthcheck` | Executes local diagnostic probes (exits non-zero on failure; used in container healthchecks) |
+| `stop` | Gracefully terminates the running local daemon process |
+| `restart` | Gracefully stops and restarts the local daemon |
+| `user` | Manages local administrator user accounts, passwords, and 2FA credentials |
+| `cluster` | Manages cluster node joining, mTLS certificates, and runtime node operations |
+| `version` | Displays software version, build Git commit, release channel, and build timestamp |
+| `lang` | Configures and persists the default CLI interface language |
+| `logs` | Streams live logs or archives logs into a compressed bundle |
 
-Examples:
+## Operational Examples {#examples}
 
 ```bash
+# Launch with custom configuration and data paths
 cheesewaf serve --config /etc/cheesewaf/cheesewaf.yaml --data-dir /var/lib/cheesewaf
+
+# Check process execution status
 cheesewaf status
+
+# Launch the interactive terminal UI
 waf-cli
-cheesewaf user
-cheesewaf cluster
+
+# Manage users and cluster nodes
+cheesewaf user list
+cheesewaf cluster status
 ```
 
-On Windows, copy `cheesewaf.exe` to `waf-cli.exe` if you want the TUI name.
-The desktop controller is a **separate** binary: [Windows install](../install/windows/#gui).
+{{% pageinfo color="info" %}}
+On Windows systems, if you wish to run `waf-cli` directly by name, copy or create an alias from `cheesewaf.exe` to `waf-cli.exe`.
+{{% /pageinfo %}}

@@ -1,58 +1,70 @@
 ---
-title: REST API
+title: RESTful 管理接口
 linkTitle: REST API
 weight: 160
-description: 健康检查、会话登录、管理令牌、CSRF，以及权限对照。
+description: 管理 API 鉴权机制、公开免密端点清单、RBAC 细粒度权限对照表与错误响应格式。
 ---
 
-管理 API 在 **管理监听** 的 `/api` 下，不在数据平面上。
+CheeseWAF 的管理 API 统一部署于 **管理平面**（默认端口 `9443`）的 `/api` 路径下，与承载业务流量的数据平面完全隔离。
 
-## 认证 {#auth}
+## 认证与鉴权方式 {#auth}
 
-初始化之后有两种进法：
+系统支持两种鉴权模式：
 
-1. **会话。** `POST /api/auth/login`，然后带上会话 Cookie。改状态的请求要过 CSRF 中间件。
-2. **管理令牌。** 用 `POST /api/system/api-tokens` 创建（需要 `manage:api_tokens`）。之后用 Bearer 发送。
+1. **Session 会话认证**：调用 `POST /api/auth/login` 完成登录后，客户端携带返回的 Session Cookie 进行后续请求。所有引发状态变更的非幂等请求（POST/PUT/DELETE/PATCH）均须通过 CSRF 中间件防御校验。
+2. **Bearer 管理令牌**：调用 `POST /api/system/api-tokens` 创建具有指定权限范围的长期或临时 API Token（需要具备 `manage:api_tokens` 权限），在 HTTP 请求头中以 `Authorization: Bearer <TOKEN>` 发起调用。
 
-登录前公开的接口：
+### 公开免密端点清单
 
-| 方法 | 路径 |
+以下接口无需鉴权即可访问：
+
+| HTTP 方法 | 接口路径 | 用途说明 |
+| --- | --- | --- |
+| `GET` | `/health`、`/health/live`、`/health/ready`、`/health/cluster` | 探针健康检查端点 |
+| `GET` | `/api/auth/login-options` | 获取登录配置（如是否启用验证码、2FA 等） |
+| `POST` | `/api/auth/captcha`、`/api/auth/captcha/verify` | 登录人机验证码获取与预校验 |
+| `POST` | `/api/auth/login` | 管理员登录接口 |
+| `POST` | `/api/setup`、`/api/setup/probe` | 首次初始化与环境探测接口 |
+| `GET/PATCH` | `/api/setup/draft` | 初始化草稿数据暂存与查询 |
+| `POST` | `/api/cluster/join` | 集群新节点注册加入端点 |
+| `POST` | `/api/cluster/nodes/{id}/heartbeat` | 节点集群心跳上报 |
+
+## RBAC 细粒度权限对照表 {#permissions}
+
+后端路由中间件通过权限标识符对 API 调用进行细粒度鉴权：
+
+| 权限标识前缀 | 覆盖功能模块与操作范围 |
 | --- | --- |
-| GET | `/health`、`/health/live`、`/health/ready`、`/health/cluster` |
-| GET | `/api/auth/login-options` |
-| POST | `/api/auth/captcha`、`/api/auth/captcha/verify`、`/api/auth/login` |
-| POST | `/api/setup`、`/api/setup/probe` |
-| GET/PATCH | `/api/setup/draft` |
-| POST | `/api/cluster/join` |
-| POST | `/api/cluster/nodes/{id}/heartbeat` |
+| `read:sites` / `write:sites` | 站点列表查询、站点增删改查及 ACME 证书申请 |
+| `read:rules` / `write:rules` | 自定义正则表达式防护规则管理 |
+| `read:protection` / `write:protection` | IP 黑白名单、ACL 访问控制、Bot 挑战策略及威胁审查研判 |
+| `read:threat_intel` / `write:threat_intel` | 威胁情报库导入、自动化同步与 IP 威胁查询 |
+| `read:edge` / `write:edge` | 边缘响应头改写、静态缓存与内容压缩策略 |
+| `read:ai` / `write:ai` / `use:ai` / `approve:ai` | AI 大模型连接配置、智能助手对话发起与高危工具审批 |
+| `read:cluster` / `write:cluster` | 集群节点监控、加入令牌签发与滚动升级编排 |
+| `read:system` / `write:system` | 系统版本查询、NTP 时间同步与数据备份还原 |
+| `manage:api_tokens` | 管理 API Token 的创建、查询与吊销 |
+| `read:users` / `write:users` | 管理员账号增删改查及 TOTP 双因素认证配置 |
+| `read:logs` | 访问日志查询与威胁审查列表拉取 |
+| `read:monitor` | 监控指标查询、Prometheus Metrics 导出与通知渠道配置 |
+| `read:audit` | 系统操作审计日志检索 |
+| `read:realtime` | SSE 实时事件流（`/api/realtime/events`）与 WebSocket 连接 |
+| `read:ops` / `write:ops` | 定时任务调度器与日常维护任务管理 |
+| `read:storage` / `write:storage` | 存储状态查询、日志 Sink 配置与磁盘空间清理 |
+| `read:apisec` | API 资产发现列表与 Schema 结构定义查询 |
 
-## 权限对照 {#permissions}
+拥有 `admin: ["*"]` 权限的角色具备全量接口调用权限。
 
-路由里常见的 `require("…")` 名字：
+## 错误响应规范 {#errors}
 
-| 前缀 | 例子 |
-| --- | --- |
-| `read:` / `write:` `sites` | 列出和修改站点、签发 ACME |
-| `read:` / `write:` `rules` | 自定义规则 |
-| `read:` / `write:` `protection` | IP、ACL、Bot、限流、审查决定 |
-| `read:` / `write:` `threat_intel` | 导入、同步、查询 |
-| `read:` / `write:` `edge` | 响应头 / 缓存 / 压缩策略 |
-| `read:` / `write:` `ai`、`use:ai`、`approve:ai` | 配置、分析、助手、审批 |
-| `read:` / `write:` `cluster` | 节点、加入令牌、滚动升级 |
-| `read:` / `write:` `system` | 版本、时间同步、备份 |
-| `manage:api_tokens` | 创建和吊销令牌 |
-| `read:` / `write:` `users` | 本地用户和 2FA |
-| `read:` `logs` | 访问日志和审查列表 |
-| `read:` `monitor` | 统计、指标、通知 |
-| `read:` `audit` | 审计日志 |
-| `read:` `realtime` | SSE `/api/realtime/events`、WebSocket `/api/realtime/ws` |
-| `read:` / `write:` `ops` | 调度器 |
-| `read:` / `write:` `storage` | 统计和清理 |
-| `read:` `apisec` | 已发现的接口 |
+API 调用失败时，将返回对应的 HTTP 状态码与标准 JSON 错误响应体：
 
-示例里的 `admin: ["*"]` 会跳过单项检查。
+```json
+{
+  "code": 40001,
+  "message": "Invalid request parameter",
+  "details": "Field 'domain' is required"
+}
+```
 
-## 错误 {#errors}
-
-失败时返回带错误字段的 JSON 和对应 HTTP 状态。
-验证码失败后不要盲目重试登录，先重新申请挑战。
+在遇到登录验证码校验失败（401/403）时，请先调用 `/api/auth/captcha` 刷新挑战上下文，再重新提交登录凭据。

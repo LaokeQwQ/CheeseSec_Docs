@@ -1,14 +1,13 @@
 ---
-title: ACL
+title: Access Control Lists (ACL)
 linkTitle: ACL
 weight: 60
-description: Deny or allow by HTTP method, path prefix, and header.
+description: Rapid request filtering and denial based on HTTP methods, URI path prefixes, and request headers.
 ---
 
-Config: `protection.acl`.
-REST: `PUT /api/protection/acl`.
+Access Control Lists (ACL) execute at the front of the traffic processing pipeline, offering ultra-low overhead filtering to immediately reject known diagnostic endpoints, probe paths, or enforce mandatory request headers. Configure ACLs under `protection.acl`, or update them dynamically via `PUT /api/protection/acl`.
 
-The sample denies `/debug`:
+## Configuration Example {#config}
 
 ```yaml
 protection:
@@ -26,9 +25,17 @@ protection:
         enabled: true
 ```
 
-Empty `method` means any method.
-Set `header` + `header_value` to require or reject a header.
+## Schema Attributes {#fields}
 
-ACL runs early.
-Use it for operator-known junk paths.
-Use [custom rules](../custom-rules/) when you need a regex, not a prefix.
+| Field | Description |
+| --- | --- |
+| `method` | Target HTTP method (e.g., `GET`, `POST`); leave empty to match any method |
+| `path_prefix` | Matching URI path prefix (e.g., `/debug`, `/actuator`) |
+| `header` | HTTP header key to evaluate; leave empty if unconstrained |
+| `header_value` | Expected or rejected value for the specified header |
+| `action` | Action on match: `block` (terminate request) or `allow` (permit passage) |
+| `severity` | Threat severity recorded in security logs and audit events |
+
+{{% pageinfo color="info" %}}
+ACL uses high-performance prefix-tree matching optimized for fixed path boundaries. For complex regex-based pattern matching, use [Custom Regex Rules](../custom-rules/).
+{{% /pageinfo %}}

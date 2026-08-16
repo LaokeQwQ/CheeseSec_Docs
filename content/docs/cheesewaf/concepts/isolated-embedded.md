@@ -1,35 +1,36 @@
 ---
-title: Isolated vs embedded
-linkTitle: Isolated vs embedded
+title: Isolated vs. Embedded Payloads
+linkTitle: Isolated vs. Embedded
 weight: 30
-description: Isolated payloads are almost only attack text. Embedded payloads sit inside long ordinary text.
+description: In-depth analysis of semantic engine payload morphology evaluation, contextual boundary detection, and targeted gadget isolation coverage.
 ---
 
-The semantic engine classifies each decoded value as **isolated** or **embedded**.
-Paranoia levels treat the two shapes differently.
+In modern web applications, user submissions vary widely in structure. In community forums, developer blogs, or technical support tickets, legitimate users frequently submit code snippets, SQL queries, or log entries. Applying strict signature matching to such content inevitably causes widespread false positives.
 
-## Isolated {#isolated}
+To resolve this challenge, CheeseWAF's AST semantic engine evaluates the contextual proportion and structural wrapping of decoded parameter values, categorizing detections into **Isolated Payloads** or **Embedded Payloads**.
 
-The value is almost entirely an attack payload.
-Weak wrappers such as `@`, a trailing semicolon, or `/{${...}}` still count as isolated.
+## Payload Morphologies {#definitions}
 
-Example: a search box that contains `UNION SELECT 1,2,3`.
+### 1. Isolated Payloads {#isolated}
 
-## Embedded {#embedded}
+An isolated payload indicates that the parameter value consists almost entirely of an attack pattern without legitimate surrounding business text.
 
-Attack-like tokens sit inside a long article, a product description, or a technical discussion.
+- **Typical Scenario**: Direct inputs into search boxes or login fields such as `UNION SELECT 1,2,3` or `' OR 1=1 --`.
+- **Wrapping Evaluation**: Even when attackers prepend/append light obfuscation—such as `@`, trailing semicolons, or `${...}` wrappers—the engine still classifies the value as isolated if the payload dominates the syntax tree.
+- **Enforcement**: Under Paranoia Levels 2 through 5, isolated payload detections trigger an **immediate block**.
 
-Example: a forum post that quotes a SQL snippet.
+### 2. Embedded Payloads {#embedded}
 
-Levels 2–4 **allow** embedded hits and enqueue them for ALAP.
-Level 5 **blocks** them.
+An embedded payload occurs when suspicious syntax constructs are enclosed within larger natural language text, documentation, or product descriptions.
 
-## Current isolation scope {#scope}
+- **Typical Scenario**: A user posting in a technical forum discussing database tuning by quoting an example SQL query, or an article referencing a Log4j JNDI string.
+- **Enforcement**: Under standard paranoia levels (2–4), the engine **allows the request and asynchronously enqueues the sample to ALAP**, preserving user experience while maintaining vigilance. Under strict mode (Level 5), embedded hits are blocked immediately.
 
-This is an implementation fact, not a marketing promise:
+## Gadget Coverage & Engineering Scope {#scope}
 
-- Isolated gadget coverage includes **PHP/JSP live shells**, **Log4j JNDI**, and **short quoted/predicate SQL** (at most 96 runes).
-- **XSS**, command/RCE, **SSTI**, **SSRF**, and **XXE** use the document-shape guard. They are not on that gadget list.
-- Hits marked **embedded** skip the block below level 5.
-- **Unclassified** hits still follow `blockableHit` evidence. They are **not** auto-treated as embedded.
-- Isolation lowers false positives on covered gadgets. It is **not** a free pass for every technical article.
+To ensure complete operational clarity, the following outlines the exact engineering boundaries of the current feature isolation implementation:
+
+- **Targeted Gadgets**: Dedicated gadget isolation analyzers currently cover **PHP/JSP dynamic webshells**, **Log4j JNDI injection**, and **short quoted/predicate SQL injection** (constrained to fragments under 96 runes/characters).
+- **Document Shape Guards**: Attack vectors such as **XSS**, **Remote Code Execution (RCE)**, **Server-Side Template Injection (SSTI)**, **Server-Side Request Forgery (SSRF)**, and **XML External Entity (XXE)** are evaluated by specialized Document Shape Guards, operating independently of the short-gadget analyzer.
+- **Evidence Fallback**: Detections classified as `embedded` bypass inline blocking below Level 5. Unclassified or ambiguous hits adhere strictly to deterministic `blockableHit` evidence rules and are never silently downgraded to embedded status.
+- **Operational Guidance**: Isolation mitigates false positives on known gadgets in rich-text workflows. For strictly structured API endpoints, enabling higher paranoia levels or schema validation remains recommended.
