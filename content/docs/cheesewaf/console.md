@@ -1,38 +1,38 @@
 ---
 title: Web Management Console
-linkTitle: Web Console
+linkTitle: Console
 weight: 140
-description: Modern React single-page console navigation, functional route mappings, and secure operational mechanisms.
+description: Modern React-based single-page management console navigation, module routing matrix, and security mechanisms.
 ---
 
-CheeseWAF embeds a modern single-page Web management console built with React and hosted directly by the Control Plane. After completing [System Initialization](../tutorial/setup/), navigate to the management address (default `http://127.0.0.1:9443/`) to access the dashboard.
+CheeseWAF includes a modern single-page visual management console built with React and hosted directly by the control plane daemon. After completing [System Setup](../tutorial/setup/), navigate to the management endpoint (default `http://127.0.0.1:9443/`) to log in.
 
-The console enforces secure session cookie management alongside strict double-submit CSRF mitigation, with optional [Login CAPTCHA Protection](../protection/bot-captcha/#login) on the authentication screen.
+The console enforces session cookie statefulness with strict double-submit CSRF defenses (dynamically adjusting `Secure` flags when running on unencrypted local loops and enforcing them under HTTPS), and supports enabling [CAPTCHA challenges on login](../protection/bot-captcha/#login).
 
-## Console Route Mapping Reference {#pages}
+## Console Routing Matrix {#pages}
 
-| Frontend Route | Functional Module & Role | Documentation Reference |
+| Frontend Route | Module Scope & Capabilities | Documentation Reference |
 | --- | --- | --- |
-| `/` | Dashboard: Real-time QPS, block counts, and threat status cards | [Monitoring & Logs](../monitor/) |
-| `/sites` | Site Management: Domain bindings, upstreams, and load balancing | [Site Management](../sites/) |
-| `/ssl` | SSL Certificates: Manual certificate uploads and ACME automation | [TLS & Certificates](../tls/) |
-| `/rules` | Custom Rules: Regular expression matching rule management | [Custom Regex Rules](../protection/custom-rules/) |
-| `/review` | Threat Review: ALAP out-of-band sample analysis and rule commitment | [ALAP Review & Self-Learning](../alap/) |
+| `/` | Dashboard: Real-time QPS, drop statistics, and security summaries | [Monitoring & Logs](../monitor/) |
+| `/sites` | Sites: Domain mappings, upstream origins, 4 load balancing algorithms, and health checks | [Site Management](../sites/) |
+| `/ssl` | SSL Certificates: Certificate upload and automated ACME renewals | [TLS & Certificates](../tls/) |
+| `/rules` | Rules: Site custom regex rules, YAML/JSON batch import/export, and live RE2 validation | [Custom Rules](../protection/custom-rules/) |
+| `/review` | Threat Review: ALAP offline threat triage, decision claims, and rule promotion | [ALAP Review](../alap/) |
 | `/logs` | Log Explorer: Trace ID lookups and multi-dimensional query filters | [Monitoring & Logs](../monitor/) |
-| `/ip` | IP Management: IP access lists, GeoIP country bans, and threat feeds | [IP, GeoIP & Fingerprints](../protection/ip-geo-fingerprint/) |
-| `/protection` | Protection: AST semantic engines and policy baseline configuration | [Security Protection Policies](../protection/) |
-| `/bot-challenge` | Bot Challenge: JS challenges, slider puzzles, and waiting rooms | [Bot & CAPTCHA](../protection/bot-captcha/) |
-| `/edge` | Edge Optimization: Header rewrites, static caching, and compression | [Edge Features](../edge/) |
-| `/ai` | AI Settings: LLM connectivity parameters and auto-agreement | [ALAP Review & Self-Learning](../alap/) |
-| `/monitor` | Monitoring & Alerts: Prometheus metrics export and Webhooks | [Monitoring & Logs](../monitor/) |
-| `/apisec` | API Security: Asset discovery, schema contracts, and rate limiting | [API Security & Governance](../api-security/) |
-| `/users` | User Management: Administrative credentials, RBAC roles, and 2FA | [System Operations](../operations/) |
-| `/ops` | Operations & Scheduling: Automated tasks, cleanup, and maintenance | [Storage & Scheduling](../storage/) |
-| `/updates` | Updates: Software version checks and OTA rule updates | [System Operations](../operations/) |
-| `/block-pages` | Block Pages: Template customization and sandbox live previews | [Block Response Pages](../protection/block-page/) |
-| `/attack-map` | Threat Map: Global geographic threat visualization and metrics | [Monitoring & Logs](../monitor/) |
-| `/cluster` | Cluster Management: Node status, certificate rotation, and upgrades | [High Availability Clustering](../cluster/) |
-| `/system` | System Configuration: Runtime settings, NTP, and backup/restore | [System Operations](../operations/) |
-| `/captcha-lab` | CAPTCHA Lab: Interactive puzzle debugging and custom branding | [Bot & CAPTCHA](../protection/bot-captcha/) |
+| `/ip` | IP Management: IP allow/denylists, GeoIP restrictions, and threat feeds | [IP, Geo & Fingerprints](../protection/ip-geo-fingerprint/) |
+| `/protection` | Protection: AST semantic engine toggles and paranoia levels | [Security Policies](../protection/) |
+| `/bot-challenge` | Bot Protection: JS challenges, slider CAPTCHAs, and waiting room policies | [Bot & CAPTCHA](../protection/bot-captcha/) |
+| `/edge` | Edge: Header rewriting, static caching, and Gzip/Brotli compression | [Edge Features](../edge/) |
+| `/ai` | AI Settings: Model connectivity, self-learning jobs, and automated adoption | [ALAP Review](../alap/) |
+| `/monitor` | Monitoring & Alerts: Prometheus metrics, Remote Write, and Webhook alerts | [Monitoring & Logs](../monitor/) |
+| `/apisec` | API Security: Endpoint discovery, schema validation, and rate limiting | [API Security](../api-security/) |
+| `/users` | User Management: Administrator accounts, role scopes, and 2FA credentials | [Operations](../operations/) |
+| `/ops` | Operations & Cron: Automated task scheduler and log maintenance | [Storage & Scheduling](../storage/) |
+| `/updates` | Updates: Version checks and signed OTA release updates | [Operations](../operations/) |
+| `/block-pages` | Block Pages: Response templates, HTML sanitization, and sandboxed preview | [Block Pages](../protection/block-page/) |
+| `/attack-map` | Threat Map: Global attack visualization with official borders and 100% offline 3D Earth | [Monitoring & Logs](../monitor/) |
+| `/cluster` | Cluster: Node health, token issuance, certificate rotation, Ansible playbooks, and rolling upgrades | [Cluster HA](../cluster/) |
+| `/system` | System: Runtime configurations, NTP synchronization, and backup/restore | [Operations](../operations/) |
+| `/captcha-lab` | CAPTCHA Lab: Interactive puzzle testing and asset debugging | [Bot & CAPTCHA](../protection/bot-captcha/) |
 
-UI themes (Light, Dark, and custom accent palettes) are persisted in local browser storage and have no effect on Data Plane request inspection.
+The console provides light, dark, and custom color accents. Visual preferences are stored locally in the browser and do not impact data plane operations.

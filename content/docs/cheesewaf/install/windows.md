@@ -2,58 +2,65 @@
 title: Windows Deployment
 linkTitle: Windows
 weight: 30
-description: "Three deployment options on Windows: Single-file CLI, Portable Zip archive, and NSIS graphical installer with local helper controller."
+description: "Three Windows deployment modes: Single-file CLI, Portable Zip archive, and NSIS graphical installer, plus native Windows Service integration and local controller usage."
 ---
 
-CheeseWAF offers three distribution formats on Windows, all sharing the identical core engine, security capabilities, and feature set:
+CheeseWAF offers three distribution options for Windows, each utilizing the identical core engine and protection capabilities:
 
-## 1. Single-File CLI Mode {#cli}
+## 1. Single-File CLI & Native Windows Service {#cli}
 
-Ideal for automated scripts, CI runners, or lightweight environments:
-
-1. Download the standalone executable matching your architecture (e.g., `cheesewaf-*-windows-amd64.exe`).
-2. Execute the following commands in PowerShell or Command Prompt:
+Designed for rapid testing, automated scripts, or native Windows Service hosting:
 
 ```powershell
-# Start WAF data and management planes
-.\cheesewaf-*-windows-amd64.exe serve --config .\cheesewaf.yaml --data-dir .\data
+# Start WAF forwarder and management plane interactively
+.\cheesewaf.exe serve --config .\configs\cheesewaf.yaml --data-dir .\data
 
-# Query daemon execution status
-.\cheesewaf-*-windows-amd64.exe status
+# Query running daemon status and PID lease
+.\cheesewaf.exe status
 
-# Terminate the running instance
-.\cheesewaf-*-windows-amd64.exe stop
+# Gracefully terminate the running daemon
+.\cheesewaf.exe stop
 ```
+
+### Native Windows Service Awareness
+
+`cheesewaf serve` includes native Windows Service state machine integration (`golang.org/x/sys/windows/svc`):
+- When invoked by the Windows Service Control Manager (SCM), the process automatically identifies service mode, seamlessly handling SCM `Stop` and `Shutdown` signals with zero external service wrappers (like NSSM or WinSW).
+- The default service name is `CheeseWAF`.
 
 ## 2. Portable Zip Archive {#zip}
 
-Contains pre-bundled configuration templates and static assets:
+The portable package bundles default configuration templates and compiled Web Console assets:
 
 1. Extract `cheesewaf-*-windows-amd64.zip` to your target directory (e.g., `D:\CheeseWAF`).
-2. Run the executable from within that directory:
+2. Run terminal setup and start the server:
 
 ```powershell
+# Run the interactive setup wizard on first launch
+.\cheesewaf.exe setup
+
+# Launch the WAF daemon
 .\cheesewaf.exe serve --config .\configs\cheesewaf.yaml --data-dir .\data
 ```
 
 ## 3. NSIS Graphical Installer (Recommended) {#nsis}
 
-Provides an intuitive installation wizard, desktop shortcuts, and Windows Service registration:
+Ideal for workstation or production servers requiring guided installation and automated service registration:
 
-1. Launch the `CheeseWAF-*-windows-*-setup.exe` installer.
-2. Follow the setup wizard to select the target installation directory. The installer can automatically register CheeseWAF as a Windows background service (`CheeseWAF`).
-3. During uninstallation, user data and databases in `data\` are preserved by default.
+1. Run the `CheeseWAF-*-windows-*-setup.exe` installer.
+2. Follow the wizard prompts. The installer can automatically register CheeseWAF as an autostarting Windows background service.
+3. Upon uninstallation, the `data\` directory containing your databases and certificates is retained by default to prevent accidental data loss.
 
 ## Local Helper Controller (GUI) {#gui}
 
-`cheesewaf-gui` is a lightweight desktop utility designed to manage the daemon lifecycle on workstation environments:
+`cheesewaf-gui` is a desktop tray assistant for managing the lifecycle of the underlying service:
 
-- **Strict Network Boundary**: Binds strictly to the local loopback address `127.0.0.1:17943`.
-- **Core Functionality**: Displays current process PID and health status, toggles service start/stop, opens the Web management console, and provides direct access to configuration directories.
-- **Autostart**: Supports registering an autostart entry for the current user (`HKCU\Run`).
+- **Network Security**: Strictly binds only to the local loopback address `127.0.0.1:17943`.
+- **Key Features**: System tray status icon, one-click service start/stop, direct access to the Web Console, and quick shortcuts to configuration directories.
+- **Autostart**: Supports registering an autostart entry under `HKCU\Software\Microsoft\Windows\CurrentVersion\Run`.
 
 ```powershell
 .\cheesewaf-gui.exe --config .\configs\cheesewaf.yaml --data-dir .\data
 ```
 
-Once running, navigate to `http://127.0.0.1:17943/` in your browser to access the controller interface.
+Once started, open `http://127.0.0.1:17943/` in your browser to view the local desktop controller dashboard.

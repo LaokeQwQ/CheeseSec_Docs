@@ -1,55 +1,81 @@
 ---
-title: Request Processing Pipeline
+title: Traffic Pipeline & Two-Phase Execution
 linkTitle: Pipeline
 weight: 10
-description: Detailed breakdown of the synchronous traffic forwarding path and the post-response asynchronous ALAP review pipeline.
+description: Deep dive into the synchronous Two-Phase detection pipeline (Pre-Filters + Semantic Worker Pool) and the asynchronous ALAP offline review loop.
 ---
 
-CheeseWAF structures traffic evaluation into two distinct lifecycles: the **Synchronous Inline Inspection Path** and the **Asynchronous Out-of-Band Review Path**. The diagram below illustrates the end-to-end flow of an incoming HTTP/HTTPS/HTTP3 request:
+CheeseWAF separates traffic processing into two distinct flows: the **Synchronous Detection Pipeline** and the **Asynchronous Out-of-Band Review Loop**. Within the synchronous path, CheeseWAF employs a high-performance **Two-Phase Pipeline** architecture to achieve microsecond-level short-circuit drops while preserving high throughput for deep AST parsing:
 
 ```mermaid
 flowchart TB
-  Client[Client Request] --> Ingress[Ingress Layer HTTP / HTTPS / HTTP3]
-  Ingress --> IP{IP / GeoIP / Soft-Fingerprint}
+  Client[Client Request] --> Ingress[Ingress HTTP / HTTPS / HTTP3]
+  subgraph Phase1 [Phase 1: Pre-Filters (Sequential / Short-Circuit / Priority < 290)]
+    IP{IP / Geo / Fingerprint} -->|Pass| Bot{Bot Challenge / RateLimit}
+    Bot -->|Pass| Rules{Custom Rules Priority 250}
+  end
+  Ingress --> IP
   IP -->|Blacklisted| Block[Render Block Page]
-  IP -->|Passed| Bot{Bot Challenge / Rate Limit / Waiting Room}
-  Bot -->|Challenge Triggered| Challenge[Solve CAPTCHA / Queue in Room]
-  Challenge -->|Passed| Sem
-  Bot -->|Clean/Bypassed| Sem[AST Semantic Engine]
-  Sem --> Shape{Payload Morphology}
-  Shape -->|Isolated Levels 2~5| Block
-  Shape -->|Embedded Level 5| Block
-  Shape -->|Embedded Levels 2~4| Pass[Allow & Enqueue Async]
-  Shape -->|Clean| Origin[Proxy to Upstream Origin]
+  Bot -->|Trigger Challenge| Challenge[Solve Challenge / Waiting Room]
+  Challenge -->|Verified| Rules
+  Rules -->|Match Block| Block
+
+  subgraph Phase2 [Phase 2: Semantic Group (Parallel Worker Pool / Deterministic Merge / Priority >= 290)]
+    Sem[AST Semantic Analyzers: SQL / XSS / RCE / LFI / NoSQL / SSTI etc.]
+  end
+  Rules -->|Clean| Sem
+
+  Sem --> Shape{Payload Context}
+  Shape -->|Isolated Attack Level 2~5| Block
+  Shape -->|Embedded Attack Level 5| Block
+  Shape -->|Embedded Attack Level 2~4| Pass[Pass & Enqueue Asynchronously]
+  Shape -->|Clean| Origin[Forward to Backend Upstream]
   Pass --> Origin
-  Pass -.-> Queue[ALAP Async Review Queue]
+  Pass -.-> Queue[ALAP Review Queue]
   Sem -.->|Level 5 Blocked Sample| Queue
-  Queue --> LLM[Query Configured LLM]
-  LLM --> Review{AI Decision}
-  Review -->|High / Critical| Rule[Persist Long-Term Rule]
-  Review -->|Low / False Positive| Dismiss[Archive / Allowlist]
+  Queue --> LLM[LLM Reasoning & Attribution]
+  LLM --> Review{Decision}
+  Review -->|High / Critical| Rule[Generate Protective Rules]
+  Review -->|Low / False Positive| Dismiss[Dismiss / Allowlist]
   Rule -.-> IP
 ```
 
-## Pipeline Lifecycle Breakdown {#pipeline-details}
+## Two-Phase Pipeline Architecture {#two-phase-pipeline}
 
-### 1. Synchronous Forwarding Path (Solid Lines) {#sync-path}
+To ensure deterministic latency guarantees under high concurrent load, the detection pipeline partitions all registered detectors by `Priority` into two separate execution phases:
 
-The synchronous path handles real-time client-to-origin communication, prioritized for high throughput and sub-millisecond latency:
+### 1. Phase 1: Pre-Filters (Priority < 290)
 
-- **Ingress & Network Layer Filtering**: Evaluates IP whitelists/blacklists, GeoIP country bans, and client TLS soft-fingerprints. Requests matching blacklists are rejected immediately with a block page.
-- **Access Control & Anti-Scraping**: Evaluates bot challenges, token bucket rate limits, and waiting room capacity. Suspicious clients must complete JavaScript challenges or solve CAPTCHAs before proceeding.
-- **Semantic Analysis & Policy Evaluation**: Performs parameter decoding and builds AST representations to detect attack syntax, executing an immediate block or pass decision based on the configured Paranoia Level.
-- **Origin Reverse Proxying**: Clean requests are dispatched to healthy backend upstream servers according to configured load balancing policies.
+- **Components**: IP Access Control, GeoIP, Soft Client Fingerprinting, Bot Challenges, Rate Limiting, and the **Custom Regex Rule Engine (Priority 250)**.
+- **Execution Model**: Strictly sequential single-threaded execution.
+- **Fast Short-Circuiting**: If any pre-filter returns `ActionBlock`, the request is immediately dropped and the pipeline terminates. The request **never reaches the AST semantic parsing stage**, allowing reconnaissance probes and known signatures to be discarded within microseconds.
 
-### 2. Asynchronous Review Path (Dashed Lines) {#async-path}
+### 2. Phase 2: Semantic Group (Priority >= 290)
 
-The asynchronous path operates out-of-band after the client has already received its response:
+- **Components**: Deep syntax analyzers for SQL injection, Cross-Site Scripting (XSS), Remote Code Execution (RCE), Local File Inclusion (LFI), NoSQL injection, Server-Side Template Injection (SSTI), SSRF, and XXE.
+- **Execution Model**:
+  - **Shared Worker Pool**: Dispatched across a shared worker pool (bounded at 8 workers) to maximize multi-core CPU efficiency without unbounded goroutine proliferation.
+  - **Context Forking**: Each detector executes with a forked `RequestContext`, guaranteeing data race immunity for `Metadata` and `Results` writes.
+  - **Deterministic Merge**: Once parallel evaluations conclude, results are merged in strict priority order, ensuring 100% deterministic decision-making and logging.
 
-- **Sample Enqueuing**: Embedded payloads allowed under paranoia levels 2–4 and high-severity attacks blocked at level 5 are placed into the ALAP review queue.
-- **LLM Reasoning**: Background workers query the configured LLM API to extract malicious intent and calculate confidence scores.
-- **Closed-Loop Rule Persistence**: Threats confirmed as high (`high`) or critical (`critical`) can be automatically or manually committed as long-term IP blacklists or custom signature rules.
+## Pipeline Timeout & Budget Protection {#budget-protection}
+
+- **100ms Hard Timeout**: A global 100ms pipeline deadline guarantees that adversarial payloads cannot cause request processing hangs.
+- **Analysis Budget Depletion Policy (`budget_exhausted_policy`)**: If deep parsing cannot finish within the deadline, the fallback policy takes effect:
+  - `auto`: Follows the site's default protection mode.
+  - `block`: Fails closed and blocks the request for defense-in-depth.
+  - `pass`: Fails open to preserve application availability.
+  - `challenge`: Issues an interactive CAPTCHA puzzle.
+- **Overload Guarding**: Built-in guard monitors detect backpressure and return `ErrDetectionOverload`, protecting the primary service from cascading degradation.
+
+## Asynchronous Review Loop (ALAP) {#async-path}
+
+The asynchronous path runs completely decoupled from real-time reverse proxying:
+
+- **Sample Dispatch**: Embedded samples passed under Paranoia Levels 2–4 and blocked samples under Level 5 are delivered to the review queue after response delivery.
+- **LLM Intent Extraction**: Background workers issue inference requests to extract threat semantics and confidence scores.
+- **Closed-Loop Rule Derivation**: Verified high/critical threats can be promoted into persistent IP blocks or custom rules either manually or via automated adoption.
 
 {{% pageinfo color="info" %}}
-When `waf.mode` is set to `block`, paranoia levels 2–5 enforce blocking rules. Under level 0 (log only) and level 1 (monitoring), the system records alerts without terminating requests. For filter configuration details, see [Security Policies](../../protection/).
+For detailed configuration options of individual detectors, see [Protection](../../protection/); for setting up AI models, see [ALAP Review](../../alap/).
 {{% /pageinfo %}}

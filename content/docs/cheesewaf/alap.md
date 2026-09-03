@@ -2,46 +2,69 @@
 title: ALAP Asynchronous Review & Self-Learning
 linkTitle: ALAP
 weight: 100
-description: Asynchronous LLM threat review queue, automated rule synthesis, AI assistant tool approvals, and self-learning analysis.
+description: Asynchronous LLM threat review queue, automated rule adoption with fail-closed guarantees, AI assistant tool approvals, and self-learning analytics.
 ---
 
-ALAP (AI Large-Language-Model Auto Pilot) serves as CheeseWAF's intelligent reasoning engine. Through an asynchronous queue decoupled entirely from the Data Plane, ALAP leverages the generalized semantic understanding of LLMs for threat analysis without adding any latency to the critical forwarding path.
+ALAP (AI Large-Language-Model Auto Pilot) serves as CheeseWAF's out-of-band analytical brain. By decoupling LLM semantic reasoning from real-time proxying, it introduces generalized intelligence without introducing latency into the forwarding data path.
 
-Manage ALAP in the Web console under **AI** and **Review**, or configure parameters under the `ai` configuration block.
+Configured under the `ai` block, capabilities are managed across the **AI Settings** and **Threat Review** sections of the Web Console.
 
-## 1. Asynchronous Review Architecture {#queue}
+## 1. Asynchronous Queue & Concurrency Claims {#queue}
 
-After the Data Plane completes response delivery to the client, borderline samples and embedded feature requests matching specific criteria are pushed to the background review queue:
+After response delivery completes, boundary samples and embedded attacks are pushed to the background review queue:
 
-- **Model Protocol Adapters**: Background workers query external LLMs formatted according to `ai.provider` (supporting OpenAI Chat Completions or Anthropic Messages protocols).
-- **Asynchronous Principle**: Always maintain `ai.async: true` to ensure the Data Plane never blocks real-time traffic while waiting for external model inference.
+- **Protocol Adapters**: Background workers adapt prompts to OpenAI Chat Completions or Anthropic Messages protocols according to `ai.provider`.
+- **Decoupled Guarantee**: `ai.async: true` ensures real-time traffic forwarding never blocks on third-party model inference.
+- **Concurrency Decision Claims**: When multiple operators collaborate, the persistence layer uses atomic decision claims (`review_decisions` locks) to prevent race conditions and duplicate actions, while bounding queue retention.
 
-## 2. Threat Review & Operator Decision Workflow {#decisions}
+## 2. Threat Triage & Operator Decisions {#decisions}
 
-Security operators can audit analysis findings via the console or REST API:
+Security teams can audit and act upon threat findings via the console or REST API:
 
-- **Query Pending Queue**: Call `GET /api/review` to retrieve unreviewed samples and model confidence ratings.
-- **Submit Decisions**: Call `POST /api/review/{id}/decide` to record decisions (confirm threat, dismiss false positive, or synthesize defense rules).
-- **Strict Mode Constraints**: Under Paranoia Level 5, requests blocked inline by the Data Plane cannot be retroactively marked as allowed, but can be converted into long-term global defense rules.
+- **Queue Inspection**: Call `GET /api/review` to fetch flagged samples and model confidence scores.
+- **Decision Submission**: Call `POST /api/review/{id}/decide` to mark samples as verified threats, false positives, or promote them to persistent protection rules.
+- **Strict Invariance**: Payloads blocked under Paranoia Level 5 represent physically terminated connections and cannot be retroactively passed, but can be promoted to permanent global blocks.
 
-## 3. Automated Rule Agreement (Auto-Agree) {#auto-agree}
+## 3. Automated Rule Adoption & Fail-Closed Guardrails {#auto-agree}
 
-When `ai.auto_agree: true` is active, high-confidence samples evaluated as `high` or `critical` threats are automatically persisted as permanent IP blacklists, client soft-fingerprints, or custom signature rules without requiring manual approval.
+When `ai.auto_agree: true` is enabled, the system automatically translates high-confidence malicious assessments (`high` or `critical`) into permanent IP denylists, client fingerprint bans, or custom rules.
 
-{{% pageinfo color="tip" %}}
-During initial deployment, keep auto-agreement disabled. Audit the review queue manually for 1–2 weeks to calibrate prompts and verify model evaluation quality before enabling full closed-loop automation.
+{{% pageinfo color="warning" %}}
+**Fail-Closed Invariance**: Proposed rules that fail syntax validation, lack clear site associations, or fall below confidence thresholds **fail closed**. The engine never injects unverified rules into the active data plane.
 {{% /pageinfo %}}
 
-## 4. AI Operations Assistant & Tool Approval Workflow {#assistant}
+## 4. AI Copilot Tool Approvals & Replay Protection {#assistant}
 
-CheeseWAF provides an interactive LLM-powered operations assistant (invoked via `POST /api/ai/assistant`, with Server-Sent Events streaming support):
+CheeseWAF includes a streaming AI copilot (`POST /api/ai/assistant` using Server-Sent Events):
 
-- **Approval Sandbox**: High-risk tool calls—such as mutating listeners, deleting sites, or reloading rules—must be submitted to `/api/ai/tools/approvals` for explicit human confirmation.
-- **Granular RBAC Roles**:
-  - `use:ai`: Allows initiating conversational queries and threat analysis.
-  - `write:ai`: Permits modifying AI configuration and executing self-learning jobs.
-  - `approve:ai`: Authorized to approve pending high-risk tool executions.
+- **Actor & Preview Binding**: When the assistant generates actions affecting network bindings, site definitions, or rule tables, it requires explicit approval via `/api/ai/tools/approvals`. Approval tokens are cryptographically bound to the authenticated operator (actor), the exact parameter preview fingerprint, and execution state, preventing replay attacks and privilege escalation.
+- **RBAC Scope Separation**:
+  - `use:ai`: Query and interactive chat dialogs.
+  - `write:ai`: Modifying AI settings and triggering self-learning jobs.
+  - `approve:ai`: Authorizing high-risk system-level tool executions.
 
-## 5. Automated Threat Self-Learning {#self-learning}
+## 5. Scheduled Self-Learning Analytics {#self-learning}
 
-Invoke `POST /api/ai/self-learning/run` to trigger a cluster analysis pass across recent access logs and blocked payloads, automatically identifying emerging attack patterns and probing trends. This task can also be scheduled periodically via the built-in task scheduler. See [Storage & Task Scheduling](../storage/).
+CheeseWAF includes automated periodic clustering of access logs and attack samples:
+
+```yaml
+ai:
+  self_learning:
+    enabled: false
+    auto_apply: false
+    dry_run: true
+    interval: 24h
+    at: "03:30"
+    min_confidence: 0.995
+    min_events: 5
+    max_events: 200
+    max_rules_per_run: 3
+    action: "block"
+```
+
+- **Configuration Properties**:
+  - `min_confidence`: Minimum confidence score required to propose a rule (default 0.995).
+  - `min_events` / `max_events`: Sample bounds for unsupervised clustering.
+  - `max_rules_per_run`: Maximum rules synthesized per execution (default 3) to prevent rule bloat.
+  - `dry_run`: Simulation mode; generates analytical reports without modifying active rules.
+- **Manual Trigger**: Invoke `POST /api/ai/self-learning/run` to execute immediate cluster analysis over recent traffic.

@@ -5,7 +5,7 @@ weight: 170
 description: Complete structure navigation for cheesewaf.yaml, top-level key index, timeout controls, and hot-reload scopes.
 ---
 
-CheeseWAF automatically generates a default `cheesewaf.yaml` configuration file within its runtime data directory upon first launch. A baseline template is maintained in the source repository at [`configs/cheesewaf.yaml`](https://github.com/LaokeQwQ/CheeseWAF/blob/master/configs/cheesewaf.yaml).
+CheeseWAF automatically generates a default `cheesewaf.yaml` configuration file within its runtime data directory under `config/` upon first launch (default `./data/config/cheesewaf.yaml`). A baseline template is maintained in the source repository at [`configs/cheesewaf.yaml`](https://github.com/LaokeQwQ/CheeseWAF/blob/dev/configs/cheesewaf.yaml).
 
 ## Top-Level Configuration Index {#top-level-keys}
 
@@ -18,15 +18,17 @@ CheeseWAF automatically generates a default `cheesewaf.yaml` configuration file 
 | `console` | Web console UI preferences and administrative login security | [Bot & CAPTCHA](../protection/bot-captcha/) · [Monitoring & Logs](../monitor/) |
 | `sites` | Reverse proxy sites, domain bindings, and upstream origin pools | [Site Management](../sites/) |
 | `protection` | Global security baseline (AST engines, IP, Bot, rate limiting, ACL) | [Security Protection Policies](../protection/) |
-| `block_page` | Block response templates and custom HTML branding | [Block Response Pages](../protection/block-page/) |
-| `storage` | Embedded SQLite storage, external log sinks, and database backups | [Storage & Scheduling](../storage/) |
+| `block_page` | Block response templates and custom HTML branding sanitization | [Block Response Pages](../protection/block-page/) |
+| `storage` | Embedded SQLite versioned migrations, external log sinks, and backups | [Storage & Scheduling](../storage/) |
 | `logging` | Access log verbosity, structured JSON formats, and log rotation | [Monitoring & Logs](../monitor/) |
 | `ai` | ALAP LLM provider endpoints and asynchronous review parameters | [ALAP Review & Self-Learning](../alap/) |
 | `update` | OTA automated rule updates and cryptographic signature verification | [System Operations](../operations/) |
 | `scheduler` | Automated log cleanup, database backups, and daily security reports | [Storage & Scheduling](../storage/) |
 | `edge` | Edge response header manipulation, static caching, and Brotli compression | [Edge Features](../edge/) |
-| `monitor` | Prometheus metrics export, health probes, and alert notifiers | [Monitoring & Logs](../monitor/) |
+| `monitor` | Prometheus metrics export, Remote Write, and alert notifiers | [Monitoring & Logs](../monitor/) |
 | `apisec` | API asset discovery, request schema contracts, and RBAC matrix | [API Security & Governance](../api-security/) |
+| `performance` | Go runtime Garbage Collection (GC) adaptive tuning (`memory_limit_ratio` / `min_gogc`) | [Architecture & Overview](../intro/) |
+| `vulnerability` | Vulnerability CVE feed subscription configurations | [System Operations](../operations/) |
 
 ## Network Timeout Controls {#timeouts}
 

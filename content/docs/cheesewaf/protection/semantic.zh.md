@@ -2,39 +2,49 @@
 title: AST 语义分析引擎
 linkTitle: 语义引擎
 weight: 10
-description: 基于多层递归解码与抽象语法树（AST）语法分析的现代 Web 攻击检测引擎。
+description: 基于多层递归解码与抽象语法树（AST）语法分析的现代 Web 攻击检测引擎，具备 97.08% 实网语料检出率与微秒级预筛选性能。
 ---
 
-CheeseWAF 的核心检测器采用抽象语法树（AST）语法分析架构，而非传统的静态正则表达式匹配。引擎在处理入站请求时，首先对参数执行 URL 编码、Unicode、十六进制及嵌套 Base64 等多层递归解码，随后将规范化后的文本构建为特定语言的语法树，精准识别攻击载荷的语法语义。
+CheeseWAF 的核心检测器采用抽象语法树（AST）语法分析架构，而非传统的静态正则表达式堆叠。入站请求首先经过 URL 编码、Unicode、十六进制及嵌套 Base64 等多层递归解码，随后构建特定语言的语法树，精准识别载荷的语义意图。
+
+经过基于 7 套权威外部实网语料库与独立标注保真度分类器（Corpus Fidelity Classifier）的大规模评测与缺口修复，语义引擎的标注可信检出率（TPR）已提升至 **97.08%**。
 
 ## 语义引擎开关配置 {#engines}
 
 在站点配置项 `sites[].waf.semantic_engines` 中，可按业务技术栈独立启用或关闭专项分析引擎：
 
-| 引擎标识 | 目标攻击类型与检测说明 |
+| 引擎标识 | 目标攻击类型与深度检测能力说明 |
 | --- | --- |
-| `sql` | SQL 注入攻击（涵盖各种主流数据库方言的注入语法） |
-| `xss` | 跨站脚本攻击（涵盖 HTML 标签闭合、事件注入与 JS 脚本上下文） |
-| `rce` | 操作系统命令注入与代码执行攻击 |
-| `lfi` | 本地文件包含与目录遍历（Path Traversal）攻击 |
-| `xxe` | XML 外部实体注入攻击 |
-| `ssrf` | 服务端请求伪造攻击 |
-| `nosql` | NoSQL 数据库注入攻击（如 MongoDB 操作符注入） |
-| `ssti` | 服务端模板注入攻击（涵盖 Jinja2、Twig 等主流模板引擎语法） |
+| `sql` | **SQL 注入**：主流 SQL 方言语法树构建；内置 **XPath 注入解析器**；重量级时间盲注（笛卡尔积、`generate_series`）识别；注释空格截断防御 |
+| `xss` | **跨站脚本**：HTML/SVG 标签闭合；混淆 `javascript:` 伪协议拼接识别；`dynsrc`/`lowsrc` 属性探针；JS 字符串逃逸；畸形事件处理器属性防护 |
+| `rce` | **命令与代码执行**：系统命令表对齐（覆盖 `id`、`ls`、`echo`、`netstat`、`lsof` 等）；换行命令链；绝对路径 Basename 自动提取匹配；`;` + 系统调用组合检测 |
+| `lfi` | **文件包含与目录遍历**：POSIX 与 **Windows 绝对路径识别**（智能排除 `Program Files` 等合法路径防误报）；超长 UTF-8 折叠展开；SSI 服务器包含指令（`<!--#exec`）识别 |
+| `nosql` | **NoSQL 数据库注入**：支持请求头深度分析（如 `X-User-Filter`）；MongoDB Shell 语法逃逸；注入型操作符与合法过滤型操作符隔离分析 |
+| `ssti` | **服务端模板注入**：Jinja2、Twig 等主流语法树识别；引号操作数探针；整值模板表达式智能绕过字段名门限分析 |
+| `ssrf` | **服务端请求伪造**：入站 URL 参数协议检测；整请求体为 URL 时自动识别为 Fetch Sink 并触发防护 |
+| `xxe` | **XML 外部实体注入**：DOCTYPE 实体声明、SYSTEM/PUBLIC 外部资源引用与参数实体攻击拦截 |
 
-{{% pageinfo color="info" %}}
-建议保持核心引擎全量开启。若明确业务无对应技术栈风险（例如纯静态网站不需要 SQL 引擎），可单独关闭对应引擎以进一步优化检测耗时。
+{{% pageinfo color="tip" %}}
+建议在生产环境中保持核心引擎全量开启。若明确业务无对应技术栈（例如纯静态网站无需 SQL 引擎），可关闭特定引擎以进一步减少单次请求的 CPU 耗时。
 {{% /pageinfo %}}
+
+## 性能保障与低时延设计 {#performance}
+
+为了在具备深层语法分析能力的同时保持微秒级的极低延迟，引擎实现了以下优化机制：
+
+- **廉价子串门限前置（Substring Pre-Filters）**：在执行复杂的语法树解析或高成本正则前，先通过常数时间（O(1) 或 O(n)）的廉价特征子串门限进行初筛，无潜在风险的正常业务参数在微秒级直接跳过。
+- **并发 Worker 池与请求上下文隔离**：多个语义分析器在 Phase 2 阶段通过并发 Worker 协程池执行，检测上下文互不干扰，并在结束时按照优先级确定性合并结果。
+- **100ms 硬超时防线**：若遭遇超大畸形请求体导致计算耗尽，流水线将根据 `budget_exhausted_policy` 触发安全兜底，绝不拖垮宿主机。
 
 ## 分析预算与白名单控制 {#budget}
 
 通过 `sites[].waf.semantic_policy` 可对分析耗时与特殊业务路径进行细粒度调控：
 
-- **`budget_exhausted_policy`**：单次请求语法解析预算耗尽时的兜底策略。设为 `auto` 时将遵循全局 `web_attack` 策略。
+- **`budget_exhausted_policy`**：单次请求语法解析预算耗尽时的兜底策略。可选 `auto`（默认，遵循站点处置模式）、`block`（阻断）、`pass`（放行）或 `challenge`（人机挑战）。
 - **`path_allowlist`**：路径白名单列表，匹配到的 URI 路径将直接跳过语义检测。
 - **`param_allowlist`**：参数白名单列表，匹配到的特定参数名不执行语法分析。
 
-在 `sites[].waf.performance` 中可进一步限制 `max_body_bytes`（请求体最大分析字节数）、`max_header_bytes` 及 `proxy_timeout`。
+在 `sites[].waf.performance` 中可进一步限制 `max_body_bytes`（请求体最大分析字节数，默认 2MB）、`max_header_bytes` 及 `proxy_timeout`。
 
 ## 出站响应检测（敏感数据防泄露） {#response}
 

@@ -1,17 +1,17 @@
 ---
-title: High Availability Clustering & Node Synchronization
+title: High Availability & Cluster Federation
 linkTitle: Cluster
 weight: 120
-description: Node join tokens, mutual TLS (mTLS) inter-node communication, embedded consensus, automated rolling upgrades, and cluster state synchronization.
+description: Node join tokens, mutual TLS (mTLS) interconnects, built-in Raft consensus, Ansible automated orchestration, and CLI cluster management.
 ---
 
-In multi-node, large-scale deployments, CheeseWAF supports clustering across distributed nodes. Nodes synchronize site configurations, IP access lists, and defensive rules via secure mutual TLS (mTLS) channels, backed by an embedded consensus engine and rolling upgrade orchestration.
+For large-scale, multi-node deployments, CheeseWAF supports distributed high-availability clustering. Cluster nodes synchronize site configurations, IP policies, and protection rules over mutual TLS (mTLS), backed by built-in consensus, automated certificate rotation, Ansible deployment generation, and zero-downtime rolling upgrades.
 
-Manage clusters visually in the Web console under **Cluster**, via terminal commands using `cheesewaf cluster`, or programmatically via `/api/cluster/*`.
+Cluster administration is accessible via the **Cluster** module in the Web Console, the `cheesewaf cluster` CLI commands, or REST APIs at `/api/cluster/*`.
 
-## 1. Baseline Configuration & Standalone vs. Cluster Mode {#enable}
+## 1. Core Architecture & Configuration {#enable}
 
-The default standalone configuration is defined as follows:
+The default standalone configuration:
 
 ```yaml
 deployment:
@@ -24,36 +24,74 @@ cluster:
     mtls_required: true
 ```
 
-To enable multi-node clustering:
+Steps to enable multi-node clustering:
 
-1. Set `cluster.enabled` to `true` and define a shared `cluster_id`.
-2. Assign a globally unique `node_id` to each physical/virtual host.
-3. Configure `interconnect.advertise_addr` with an address reachable by all other cluster members.
-4. Maintain `mtls_required: true` and configure trusted `ca_file`, `cert_file`, and `key_file` paths on each node.
+1. Set `cluster.enabled` to `true` and assign a consistent `cluster_id`.
+2. Assign a globally unique `node_id` to each physical or virtual instance.
+3. Configure `interconnect.advertise_addr` as the routable IP/port accessible by peer nodes.
+4. Keep `mtls_required: true` and configure trusted `ca_file`, `cert_file`, and `key_file` paths.
 
-### Split-Brain & Protection Mode Policies
+### Split-Brain Protection & Majority Quorum
 
-- `cluster.protection.freeze_writes_without_majority`: Freezes configuration write mutations during network partitions when a quorum majority cannot be reached, preventing state divergence.
-- `allow_traffic_in_protection_mode`: Determines whether Data Plane instances continue proxying traffic while the cluster is in protected freeze mode.
+- `cluster.protection.freeze_writes_without_majority`: When network partitioning prevents forming a majority quorum, configuration mutations are automatically frozen to prevent state divergence.
+- `allow_traffic_in_protection_mode`: Ensures that the data plane continues forwarding and protecting traffic during read-only protection mode.
 
-## 2. Node Onboarding & Approval Mechanism {#join}
+## 2. Cluster CLI Command Suite {#cli-tools}
 
-- **Issue Join Tokens**: The primary node invokes `POST /api/cluster/join-tokens` to generate temporary join tokens (validity configured by `token_ttl`; defaults to 15 minutes).
-- **Node Join Request**: A candidate node submits its join token to `POST /api/cluster/join`.
-- **Administrative Approval**: When `require_approval: true` is configured, joining nodes require manual operator confirmation in the console before cluster synchronization begins.
+CheeseWAF includes a comprehensive CLI suite for controller initialization, node joining, and certificate maintenance:
 
-## 3. Cluster Operations API Reference {#ops}
+### 1. Controller Setup & Token Issuance
 
-| Operation | REST API Endpoint | Description |
+```bash
+# Initialize current node as cluster controller and mint the cluster CA
+cheesewaf cluster init
+
+# Mint a temporary worker join token (default TTL: 15 minutes)
+cheesewaf cluster token create --ttl 15m
+
+# List active tokens or revoke an existing token
+cheesewaf cluster token list
+cheesewaf cluster token revoke <token_id>
+```
+
+### 2. Worker Node Joining & Certificate Rotation
+
+```bash
+# Join a worker node into the cluster using a token
+cheesewaf cluster join \
+  --controller https://10.0.0.1:9444 \
+  --token <token> \
+  --node-id node-worker-02 \
+  --advertise-addr 10.0.0.2:9444 \
+  --ca-cert /etc/cheesewaf/certs/cluster-ca.crt
+
+# Rotate node interconnect mTLS certificates online
+cheesewaf cluster cert rotate
+
+# Inspect current node and cluster quorum health
+cheesewaf cluster status
+```
+
+## 3. Ansible Automated Deployment {#ansible}
+
+To simplify provisioning across dozens of edge nodes, CheeseWAF generates complete Ansible deployment bundles:
+
+- **Playbook Generation API**: Call `POST /api/cluster/deploy/ansible` with a list of nodes, roles (`controller` / `worker`), SSH ports, and region metadata. CheeseWAF returns an archive containing `hosts.ini`, systemd definitions, installation tasks, and certificate distribution scripts.
+- **Web UI Export**: In the **Cluster** view of the Web Console, configure the target node inventory and click "Export Ansible Bundle" to download ready-to-run playbooks.
+
+## 4. Cluster REST API Reference {#ops}
+
+| Operation | REST API Route | Description |
 | --- | --- | --- |
-| **Cluster Status** | `GET /api/cluster/status` | Queries overall cluster health, node counts, and quorum status |
-| **Node List** | `GET /api/cluster/nodes` | Lists member nodes, IP addresses, software versions, and status |
-| **Heartbeat** | `POST /api/cluster/nodes/{id}/heartbeat` | Regular heartbeat status reporting from nodes |
-| **Rotate Certificate** | `POST /api/cluster/nodes/{id}/rotate-certificate` | Automated rotation of inter-node mTLS communication certificates |
-| **Revoke Node** | `POST /api/cluster/nodes/{id}/revoke` | Revokes node authorization and removes it from cluster membership |
-| **Ansible Bundle** | `POST /api/cluster/deploy/ansible` | Exports automated Ansible playbooks for bulk node provisioning |
-| **Rolling Upgrade** | `POST /api/cluster/orchestrate/rolling-upgrade` | Initiates zero-downtime rolling upgrades across all nodes |
-| **Upgrade Rollback** | `POST /api/cluster/orchestrate/rolling-upgrade/{id}/rollback` | Rolls back to the previous stable release upon upgrade failure |
-| **Consensus State** | `GET /api/cluster/consensus` | Queries state for embedded Raft consensus or external etcd |
+| **Cluster Health** | `GET /api/cluster/status` | Query overall topology, software versions, and quorum state |
+| **Node List** | `GET /api/cluster/nodes` | List active nodes, IPs, and heartbeat timestamps |
+| **Issue Join Token** | `POST /api/cluster/join-tokens` | Mint a temporary join token |
+| **Join Node** | `POST /api/cluster/join` | Join cluster carrying an authorized token |
+| **Rotate Certificate** | `POST /api/cluster/nodes/{id}/rotate-certificate` | Rotate interconnect mTLS certificates |
+| **Revoke Node** | `POST /api/cluster/nodes/{id}/revoke` | Revoke node certificate and evict from cluster |
+| **Ansible Bundle** | `POST /api/cluster/deploy/ansible` | Export Ansible deployment playbooks |
+| **Rolling Upgrade** | `POST /api/cluster/orchestrate/rolling-upgrade` | Trigger zero-downtime rolling upgrades |
+| **Upgrade Rollback** | `POST /api/cluster/orchestrate/rolling-upgrade/{id}/rollback` | Roll back to previous release version |
+| **Consensus State** | `GET /api/cluster/consensus` | Inspect built-in Raft or external etcd status |
 
-The system uses an embedded consensus provider by default (`cluster.consensus.provider: builtin`). If an existing etcd cluster is available, define `etcd_endpoints` to connect an external consensus backend.
+The system uses the built-in Raft consensus provider by default (`cluster.consensus.provider: builtin`). Existing external etcd clusters can be connected via `etcd_endpoints`.

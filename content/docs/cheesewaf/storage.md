@@ -1,15 +1,15 @@
 ---
-title: Storage Sinks & Task Scheduling
+title: Storage & Scheduler Architecture
 linkTitle: Storage
 weight: 130
-description: Embedded CGO-free SQLite storage, external log sinks, automated task scheduler, and database backup/recovery.
+description: Pure-Go SQLite versioned migrations, Redis challenge store backend, external logging sinks, and automated scheduler maintenance.
 ---
 
-CheeseWAF combines an embedded, zero-dependency storage layer for turnkey operations with an extensible sink architecture for enterprise-grade log streaming and offline security analytics.
+CheeseWAF utilizes a lightweight embedded persistence layer alongside scalable external sinks. This combines single-node out-of-the-box convenience with distributed cluster support and high-throughput log aggregation.
 
-Manage storage and task jobs visually in the Web console under **Operations** and **System**, or configure settings under `storage`, `setup.data_dir`, and `scheduler`.
+Storage and task scheduling are managed via the **Operations** and **System** views in the Web Console (`storage`, `setup.data_dir`, and `scheduler`).
 
-## 1. Default Storage Engine (SQLite) {#sqlite}
+## 1. Embedded SQLite & Versioned Schema Migrations {#sqlite}
 
 ```yaml
 setup:
@@ -19,26 +19,48 @@ storage:
     path: "./data/cheesewaf.db"
 ```
 
-The system utilizes a pure-Go embedded SQLite engine (via `modernc.org/sqlite`, with zero CGO dependencies) to persist administrator credentials, site definitions, ALAP threat review items, auto-promotion deadlines, and cluster consensus states.
+The primary metadata store is pure-Go SQLite (powered by `modernc.org/sqlite`, with zero CGO dependencies). It persists administrative accounts, site configurations, ALAP threat samples, temporary escalation deadlines, and cluster topology.
 
-## 2. External Log Sinks & Storage Integrations {#sinks}
+### Versioned Schema Migrations
 
-To accommodate high-throughput log analytics, CheeseWAF supports streaming access and security logs asynchronously to external storage backends:
+To guarantee seamless upgrades across releases, CheeseWAF runs an automated transaction-safe migrator (`sqliteSchemaVersion = 3`):
 
-| Storage Sink | Best Suited For & Description |
+- **v1 (Initial Schema)**: Base tables for sites, users, credentials, and review queue items.
+- **v2 (Review Decision Claims)**: Introduces concurrency locks and operator metadata tracking for review triage.
+- **v3 (Legacy Rules to Site Custom Rules)**: Smoothly converts legacy global rule tables into standardized site-scoped custom rule collections.
+
+### Concurrency & Data Integrity Guarantees
+
+- **WAL Mode (Write-Ahead Logging)**: Configured automatically via `PRAGMA journal_mode = WAL`. Concurrent reads and writes execute without database lock contention.
+- **Foreign Key Constraints**: Enforced by default via `PRAGMA foreign_keys = ON` to protect referential integrity.
+- **Forward-Compatibility Lock (`ErrSQLiteSchemaTooNew`)**: If a database file was written by a newer CheeseWAF binary, an older daemon refuses to open it, preventing accidental schema degradation or corruption.
+
+## 2. Distributed Redis Backend (Bot Challenge Store) {#redis-challenge}
+
+For distributed clusters fronting high-concurrency traffic, CheeseWAF supports storing bot challenge state in Redis (`storage.redis`):
+
+- **Transactional Capacity Reservation**: Generating CAPTCHA puzzles follows a transactional contract (`ReserveScoped` -> `Start` -> `Commit` / `Rollback`) to prevent attackers from exhausting server entropy and CPU by flooding challenge requests.
+- **Atomic Replay Prevention**: Challenge tokens (JTI) are marked consumed atomically, immediately invalidating them across all cluster nodes.
+
+## 3. External Log Sinks {#sinks}
+
+For enterprise-scale access logs, CheeseWAF streams events asynchronously to external backends:
+
+| Storage Sink | Use Case & Integration |
 | --- | --- |
-| `storage.postgresql` | Streams structured logs to an existing PostgreSQL relational database |
-| `storage.clickhouse` | High-performance columnar storage for petabyte-scale access log analytics |
-| `storage.victorialogs` | Ingests logs into VictoriaLogs for lightweight log aggregation and querying |
-| `storage.redis` | Optional distributed cache and state coordination backend (disabled by default) |
+| `storage.clickhouse` | High-throughput column-oriented OLAP storage for real-time aggregation across billions of records |
+| `storage.victorialogs` | Lightweight log aggregation featuring high compression ratios |
+| `storage.postgresql` | Standard relational database integration for corporate SIEM pipelines |
+| `storage.elasticsearch` | Direct indexing into Elasticsearch or OpenSearch clusters for Kibana dashboards |
+| `storage.redis` | Distributed state coordination and cross-node session lookups |
 
 {{% pageinfo color="info" %}}
-To prevent SSRF risks, external storage endpoints targeting private RFC1918 IP addresses require setting `allow_private_endpoint: true`. Test backend connectivity before switching by invoking `POST /api/system/storage/test`.
+To prevent SSRF attacks, endpoints resolving to private IP ranges require setting `allow_private_endpoint: true`. Test connectivity via `POST /api/system/storage/test` prior to cutover.
 {{% /pageinfo %}}
 
-## 3. Automated Task Scheduler {#scheduler}
+## 4. Automated Task Scheduler {#scheduler}
 
-The built-in task scheduler automates access log retention cleanup, database backups, and daily threat reports:
+The built-in cron scheduler handles log rotation, backups, and security digest generation:
 
 ```yaml
 scheduler:
@@ -63,10 +85,10 @@ scheduler:
       enabled: false
 ```
 
-- **Task Management**: Query and update scheduled jobs via `GET /api/scheduler/tasks` and `PUT /api/scheduler/tasks`.
-- **Execution History**: View job execution timestamps, durations, and exit statuses via `GET /api/scheduler/history`.
+- **Task Management**: Query and adjust task schedules via `GET/PUT /api/scheduler/tasks`.
+- **Execution History**: Inspect execution durations and exit statuses via `GET /api/scheduler/history`.
 
-## 4. Data Backup & Storage Reclamation {#backup}
+## 5. Backup & Space Recovery {#backup}
 
-- **Export & Restore**: Call `POST /api/backup/export` to export an encrypted snapshot of configuration and SQLite databases; call `POST /api/backup/restore` to restore state from a snapshot.
-- **Disk Reclamation**: After creating a backup, call `POST /api/storage/cleanup` and `POST /api/system/reclaim` to purge rotated logs and run SQLite `VACUUM` space reclamation.
+- **Export & Restore**: Call `POST /api/backup/export` to download full SQLite database and configuration archives; restore using `POST /api/backup/restore`.
+- **Disk Space Defragmentation**: After pruning rotated logs, invoke `POST /api/system/reclaim` to trigger SQLite `VACUUM` and return unused disk pages to the host OS.

@@ -1,33 +1,56 @@
 ---
-title: System Operations & Account Security
+title: Operations & Security Hardening
 linkTitle: Operations
 weight: 180
-description: Administrator credentials, TOTP two-factor authentication (2FA), NTP time synchronization, and OTA automated software updates.
+description: User administration, TOTP two-factor authentication (2FA), NTP time synchronization, OTA rule updates, and supply chain signature verification.
 ---
 
-CheeseWAF provides comprehensive administrative and operational capabilities to ensure long-term stability and account security. Configure these settings visually under **Users**, **System**, and **Updates** in the Web console.
+This section outlines standard operational procedures and hardening requirements for running CheeseWAF in production. Corresponding UI modules in the Web Console include **Users**, **System**, and **Updates**.
 
-## 1. User Accounts & Multi-Factor Authentication (2FA) {#users}
+## 1. User Administration & CLI Credentials {#users}
 
-- **User Lifecycle**: Manage administrative and operator accounts via `GET/POST /api/users` and `PUT /api/users/{id}`.
-- **Two-Factor Authentication (TOTP)**: Users can configure TOTP authenticator apps (such as Google Authenticator) via `/api/users/{id}/2fa/setup`, `enable`, `disable`, and `recover`.
-- **Terminal User Management**: Manage accounts, passwords, and 2FA secrets directly in the terminal using `cheesewaf user`.
+- **Web Console & REST API**: Administer accounts programmatically via `GET/POST /api/users` and `PUT /api/users/{id}`.
+- **Command-Line Operations (`cheesewaf user`)**:
+  ```bash
+  # Interactively update a user's password
+  cheesewaf user password admin
 
-{{% pageinfo color="tip" %}}
-Do not share root administrator credentials among team members. Provision dedicated user accounts assigned the `readonly` role for operational staff who only require log querying and dashboard viewing privileges.
-{{% /pageinfo %}}
+  # Auto-generate a strong password and disable TOTP 2FA (emergency recovery)
+  cheesewaf user password admin --generate --reset-2fa
 
-## 2. NTP Time Synchronization {#time}
+  # Ensure an admin user exists and read password from stdin (useful for automated scripts)
+  cheesewaf user ensure-admin admin --password-stdin < secret.txt
 
-Accurate system time is critical for TOTP two-factor verification, JWT token timestamp validation (`exp`/`nbf`), and distributed cluster consensus:
+  # Rename a local user
+  cheesewaf user rename old_admin new_admin
+  ```
+- **Principle of Least Privilege**: Create dedicated `readonly` accounts for operational auditing to avoid sharing root administrative credentials.
+- **Two-Factor Authentication (2FA/TOTP)**: Configure TOTP using `/api/users/{id}/2fa/setup` to generate seeds and QR codes; manage state via `enable`, `disable`, and `recover`.
 
-- **Check Clock Status**: Query current clock synchronization state via `GET /api/system/time-sync`.
-- **Clock Source Reselection**: Trigger clock source reselection via `POST /api/system/time-sync/reselect`.
-- **Manual Force Sync**: Trigger immediate time synchronization via `POST /api/system/time-sync/sync`.
+## 2. Support Bundle Packaging & CLI Localization {#cli-maintenance}
 
-If users encounter unexpected "Invalid Token" or TOTP verification failures, verify host NTP synchronization before troubleshooting other components.
+- **Support Bundle Archiving**: When troubleshooting issues, package all runtime logs into a standardized, timestamped ZIP archive:
+  ```bash
+  cheesewaf logs pack --dir /tmp --name cheesewaf-support.zip
+  ```
+- **CLI Interface Language**:
+  ```bash
+  # Display current language and supported options
+  cheesewaf lang show
 
-## 3. Automated OTA Software Updates {#updates}
+  # Persistently set CLI locale (supports en and zh-CN)
+  cheesewaf lang set en
+  ```
+
+## 3. NTP Time Synchronization {#time}
+
+JWT signature verification, TOTP token calculations, and cluster consensus rely on synchronized clocks:
+
+- **Query Clock Sources**: Call `GET /api/system/time-sync` to inspect offsets and active NTP servers.
+- **Force Resynchronization**: Call `POST /api/system/time-sync/sync` to trigger immediate alignment.
+- **Reselect Lowest-Latency Peer**: Call `POST /api/system/time-sync/reselect` to discover and switch to the lowest-latency NTP pool.
+
+## 4. OTA Automated Updates {#updates}
 
 ```yaml
 update:
@@ -41,13 +64,15 @@ update:
     verify_signature: true
 ```
 
-- **Rule Hot-Updates**: Setting `auto_update_rules: true` allows the daemon to automatically download updated threat signatures and intelligence feeds without service restarts.
-- **Binary Upgrades**: Keep `auto_update_binary: false` in production environments until the update channel and distribution server are thoroughly verified.
-- **Cryptographic Verification**: Always enforce `verify_signature: true` to prevent unauthorized firmware or tampering.
+- **Automated Signature Updates**: When `auto_update_rules: true` is set, the daemon regularly checks for updated threat intelligence feeds and detection signatures.
+- **Controlled Binary Upgrades**: In enterprise environments, keep `auto_update_binary: false` and deploy binaries through controlled configuration management.
+- **Cryptographic Verification**: `verify_signature` must remain `true` to ensure update packages are signed and intact.
 
-## 4. System Settings & Version Queries {#system}
+## 5. Software Supply Chain Security & Integrity {#supply-chain}
 
-- **System Preferences**: Read and update runtime parameters via `GET /api/system` and `PUT /api/system`.
-- **Version Query**: Query software build version, release channel, and Git commit hash via `GET /api/version`.
+All official CheeseWAF binaries and container images comply with rigorous supply-chain security standards:
 
-For automated backup routines and disk space reclamation, see [Storage Sinks & Task Scheduling](../storage/).
+- **Software Bill of Materials (SBOM)**: Every release includes standard CycloneDX and SPDX SBOMs generated via Syft, detailing all upstream dependencies and license metadata.
+- **Cosign Container Signatures**: Container images on Docker Hub and GitHub Packages are cryptographically signed using Sigstore/Cosign. Verify authenticity prior to deployment via `cosign verify`.
+- **Windows Authenticode Signatures**: Windows installers and executables carry official Authenticode certificates, ensuring Windows SmartScreen does not trigger warnings.
+- **SHA256 Checksums**: Every release artifact provides a signed `checksums.txt` file. Verify with `sha256sum -c checksums.txt`.

@@ -2,58 +2,85 @@
 title: Linux Deployment (systemd)
 linkTitle: Linux
 weight: 10
-description: Install the CheeseWAF binary, configure dedicated unprivileged system users, and manage services via systemd.
+description: Install CheeseWAF on Linux with dedicated system accounts, static Web UI assets, and systemd service supervision.
 ---
 
-This guide walks through deploying CheeseWAF as a systemd service on Linux bare-metal hosts or virtual machines.
+This guide covers deploying CheeseWAF on Linux bare-metal or virtual machines using systemd.
 
-## 1. Download & Unpack {#unpack}
+## 1. Download & Extract {#unpack}
 
-Download the pre-compiled archive matching your system architecture from Releases and extract it (replace `amd64` with `arm64` or `loong64` as appropriate):
+Download the official release archive for your architecture from GitHub Releases (example below uses AMD64; replace with ARM64 or LoongArch as appropriate):
 
 ```bash
 tar -xzf cheesewaf-*-linux-amd64.tar.gz
 cd cheesewaf-*
 ```
 
-## 2. Install Executables & Setup Directories {#install-files}
+{{% pageinfo color="info" %}}
+Official `.tar.gz` release archives include the `cheesewaf` binary, pre-compiled Web Console assets (`web/dist`), configuration templates (`configs/`), systemd service definitions, and an automated installer script.
+{{% /pageinfo %}}
 
-Install binaries to standard system paths and provision isolated runtime directories under a dedicated service account:
+## 2. Automated Installation (Recommended) {#automated-install}
+
+An FHS-compliant automated installation script is included at the root of the archive:
 
 ```bash
-# Install main executable and CLI symlink
-sudo install -m 0755 cheesewaf /usr/local/bin/cheesewaf
-sudo ln -sf /usr/local/bin/cheesewaf /usr/local/bin/waf-cli
-
-# Create configuration, data, and log directories
-sudo mkdir -p /etc/cheesewaf /var/lib/cheesewaf /var/log/cheesewaf
-sudo cp configs/cheesewaf.yaml /etc/cheesewaf/cheesewaf.yaml
-
-# Provision non-login system user and set directory ownership
-sudo useradd --system --home /var/lib/cheesewaf --shell /usr/sbin/nologin cheesewaf
-sudo chown -R cheesewaf:cheesewaf /etc/cheesewaf /var/lib/cheesewaf /var/log/cheesewaf
+sudo ./install-linux.sh
 ```
 
-## 3. Configure & Start systemd Service {#systemd}
+This script standardizes the deployment:
+- Installs the binary to `/usr/local/bin/cheesewaf` and creates the symlink `/usr/local/bin/waf-cli`.
+- Installs the Web Console static assets to `/usr/share/cheesewaf/web`.
+- Copies the initial configuration to `/etc/cheesewaf/cheesewaf.yaml`.
+- Installs the systemd unit to `/etc/systemd/system/cheesewaf.service`.
+- Creates a dedicated non-login system user `cheesewaf` and assigns ownership of `/var/lib/cheesewaf`.
 
-Use the bundled systemd unit file to enable and launch the service:
+## 3. Manual Step-by-Step Installation {#manual-install}
+
+For environments with custom filesystem hierarchies or Ansible playbooks, follow the manual steps:
 
 ```bash
+# 1. Install binary and create CLI symlink
+sudo install -m 0755 cheesewaf /usr/local/bin/cheesewaf
+sudo ln -sfn /usr/local/bin/cheesewaf /usr/local/bin/waf-cli
+
+# 2. Create standard system directories
+sudo mkdir -p /etc/cheesewaf /var/lib/cheesewaf /var/log/cheesewaf /usr/share/cheesewaf/web
+
+# 3. Deploy Web Console static assets (Essential: required for Web UI to load)
+sudo cp -R ./web/dist/. /usr/share/cheesewaf/web/
+
+# 4. Copy initial configuration template
+sudo cp configs/cheesewaf.yaml /etc/cheesewaf/cheesewaf.yaml
+
+# 5. Create unprivileged system user and set ownership
+sudo useradd --system --home /var/lib/cheesewaf --shell /usr/sbin/nologin cheesewaf
+sudo chown -R cheesewaf:cheesewaf /etc/cheesewaf /var/lib/cheesewaf /var/log/cheesewaf
+
+# 6. Install systemd service unit
 sudo cp systemd/cheesewaf.service /etc/systemd/system/cheesewaf.service
+```
+
+## 4. Start & Verify the Service {#systemd}
+
+Reload the systemd daemon and launch the service:
+
+```bash
 sudo systemctl daemon-reload
 sudo systemctl enable --now cheesewaf
 sudo systemctl status cheesewaf
 ```
 
-Once the daemon is active, navigate to `http://<SERVER_IP>:9443/setup` in your browser to access the initialization wizard. For step-by-step guidance, see [System Initialization](../../tutorial/setup/).
+Once running, navigate to `http://<server-ip>:9443/setup` in your browser, or run `cheesewaf setup` directly in your terminal. See [System Initialization](../../tutorial/setup/) for details.
 
-## Default System Layout {#paths}
+## Standard Filesystem Hierarchy {#paths}
 
-| File / Directory Path | Purpose & Description |
+| Path | Purpose |
 | --- | --- |
-| `/usr/local/bin/cheesewaf` | Main service binary executable |
-| `/etc/cheesewaf/cheesewaf.yaml` | Main configuration file |
-| `/var/lib/cheesewaf` | Runtime data directory housing SQLite databases, certificates, and state caches |
-| `/var/log/cheesewaf` | Access logs and security alert logs |
+| `/usr/local/bin/cheesewaf` | Main application binary |
+| `/usr/share/cheesewaf/web` | Static Web Console frontend assets |
+| `/etc/cheesewaf/cheesewaf.yaml` | Primary configuration file |
+| `/var/lib/cheesewaf` | Runtime data directory (SQLite database, certificates, cache) |
+| `/var/log/cheesewaf` | Access logs (`access.log`) and audit logs (`audit.log`) |
 
-It is recommended to verify reverse proxy routing, upstream connectivity, and baseline rule behavior before exposing the Data Plane port directly to public internet traffic.
+It is recommended to test reverse proxy routes and protection rules before switching production DNS records to the WAF ingress.

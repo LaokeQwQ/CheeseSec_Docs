@@ -2,32 +2,39 @@
 title: macOS Deployment
 linkTitle: macOS
 weight: 40
-description: Install CheeseWAF via DMG desktop image or run from a standalone command-line archive.
+description: Install CheeseWAF on macOS via graphical DMG package or lightweight tar.gz command-line archive.
 ---
 
-On macOS, CheeseWAF can be deployed either as a desktop application with a status bar controller or as a standalone terminal daemon:
+CheeseWAF supports two primary deployment mechanisms on macOS:
 
-## 1. DMG Desktop Installer {#dmg}
+## 1. DMG Graphical Installer {#dmg}
 
-Ideal for local testing and workstation environments:
+Ideal for local testing, development, and desktop workstations:
 
-1. Download the disk image for your processor architecture: `cheesewaf-*-darwin-arm64.dmg` for Apple Silicon (M-series) or `cheesewaf-*-darwin-amd64.dmg` for Intel-based Macs.
-2. Double-click the DMG image and drag **CheeseWAF** into the **Applications** folder.
-3. Launch CheeseWAF from Launchpad or Applications.
+1. Download the archive matching your CPU architecture: `cheesewaf-*-darwin-arm64.dmg` for Apple Silicon (M-series), or `cheesewaf-*-darwin-amd64.dmg` for Intel Macs.
+2. Open the DMG image and drag **CheeseWAF** into your **Applications** folder.
+3. Launch CheeseWAF from Launchpad or Spotlight.
 
-Upon startup, the application runs the local controller in the menu bar, enabling one-click service start/stop, status inspection, and direct access to the Web console. Runtime configuration and data are stored under `~/Library/Application Support/CheeseWAF`.
+{{% pageinfo color="info" %}}
+**Gatekeeper Guidance**: Official releases are signed and notarized by Apple. If running an ad-hoc developer build that triggers macOS security prompts, Control-click the app icon, select "Open", and confirm the prompt, or execute the bundled `fix-gatekeeper.command` helper script.
+{{% /pageinfo %}}
+
+Upon launching, CheeseWAF runs a resident menu bar assistant binding to loopback `http://127.0.0.1:17943/`. It provides one-click process start/stop controls, status monitoring, and shortcuts to the Web Console. Default runtime data is saved under `~/Library/Application Support/CheeseWAF`.
 
 ## 2. Command-Line Archive (tar.gz) {#tarball}
 
-Ideal for automated workflows or headless macOS instances:
+Ideal for headless servers, developer terminal workflows, or automated scripts:
 
 ```bash
-# Unpack the archive matching your architecture
+# Extract the archive
 tar -xzf cheesewaf-*-darwin-arm64.tar.gz
 cd cheesewaf-*
 
-# Launch the daemon
+# Run terminal setup wizard
+./cheesewaf setup
+
+# Launch the WAF daemon
 ./cheesewaf serve --config ./configs/cheesewaf.yaml --data-dir ./data
 ```
 
-Once running, navigate to `http://127.0.0.1:9443/setup` in your browser to complete the initialization wizard.
+Once initialized, navigate to `http://127.0.0.1:9443/` to log into the Web Console.

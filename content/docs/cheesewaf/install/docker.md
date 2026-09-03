@@ -2,14 +2,14 @@
 title: Docker Compose Deployment
 linkTitle: Docker
 weight: 20
-description: Deploy CheeseWAF with Docker Compose featuring a read-only root filesystem and unprivileged non-root execution.
+description: Deploy CheeseWAF with Docker Compose supporting read-only root filesystems and unprivileged container security.
 ---
 
-This deployment guide is intended for containerized infrastructures. The official CheeseWAF Docker image adheres to strict container hardening practices, running as an unprivileged user (UID `10001`) with a read-only root filesystem.
+This guide covers deploying CheeseWAF on containerized infrastructure. The official container images follow strict security hardening practices: running as an unprivileged user (UID `10001`) with read-only root filesystem capabilities.
 
-## Compose Orchestration File {#compose-file}
+## Compose Configuration {#compose-file}
 
-Reference the production Compose file located at `deploy/docker/docker-compose.yml` in the project repository:
+Reference `deploy/docker/docker-compose.yml`:
 
 ```yaml
 services:
@@ -45,18 +45,22 @@ volumes:
 ```
 
 {{% pageinfo color="info" %}}
-When building the image locally from source, ensure the build context is set to the root directory of the CheeseWAF repository.
+When building locally, ensure the build context points to the root of the CheeseWAF repository so both the frontend (`web/`) and backend Go modules build successfully.
 {{% /pageinfo %}}
 
-## Service Launch & Initialization {#start}
+## Launching & Initialization {#start}
 
-Execute the following commands to launch the service in detached mode and follow the container output:
+Start the container daemon and view logs:
 
 ```bash
 docker compose up -d
 docker compose logs -f cheesewaf
 ```
 
-During the initial startup, the container generates a self-signed TLS certificate for the Control Plane and prints the one-time initialization Token to stdout. Open `https://<SERVER_IP>:9443/setup` in your browser to complete the setup wizard.
+On initial startup, the container generates self-signed TLS certificates for the admin API. Navigate to `https://<server-ip>:9443/setup` in your browser to complete the Web setup wizard, or run the CLI wizard inside the container:
 
-Stopping the container with `docker compose down` will preserve persistent named volumes (`cheesewaf-data` storing SQLite data/certificates and `cheesewaf-logs` storing access logs).
+```bash
+docker compose exec -it cheesewaf cheesewaf setup
+```
+
+Stopping containers with `docker compose down` safely preserves your SQLite databases, certificates, and log streams inside the named volumes `cheesewaf-data` and `cheesewaf-logs`.

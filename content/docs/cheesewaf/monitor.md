@@ -1,15 +1,15 @@
 ---
-title: "Observability: Logs, Prometheus & Threat Map"
+title: Observability, Logging & Threat Attack Map
 linkTitle: Monitoring
 weight: 110
-description: Access log rotation, Prometheus metrics exporter, custom alert notifications, and real-time geographic threat visualizer.
+description: Access log rotation, Prometheus metrics and Remote Write protobuf streaming, alerts, and 100% offline air-gapped threat attack maps.
 ---
 
-CheeseWAF delivers end-to-end observability out of the box, including structured access logs, standard Prometheus metric outputs, multi-channel alert dispatching, and a real-time global threat visualizer.
+CheeseWAF provides end-to-end observability, including structured JSON access logs, standard Prometheus metrics, multi-channel alerting, and an interactive real-time threat attack map.
 
-Access these tools visually under **Dashboard**, **Logs**, **Monitor**, and **Attack Map** in the Web console, or configure them under `logging` and `monitor`.
+Configured under `logging` and `monitor`, these capabilities are visualized across the **Dashboard**, **Logs**, **Monitor**, and **Attack Map** modules in the Web Console.
 
-## 1. Structured Access Logging {#logs}
+## 1. Structured Access Logs {#logs}
 
 ```yaml
 logging:
@@ -23,11 +23,12 @@ logging:
       max_backups: 10
 ```
 
-- **Log Rotation & Retention**: Automatically rotates log files based on size (`max_size`) and retains a configurable number of historical backups (`max_backups`).
-- **Trace ID End-to-End Tracking**: Every request log entry contains a globally unique `traceId`. Accessing `/logs/{traceId}` in the console displays the complete rule evaluation and AST assertion chain for that transaction.
-- **Log Sinks**: Stream logs to ClickHouse, PostgreSQL, or VictoriaLogs for long-term retention. See [Storage Sinks & Task Scheduling](../storage/).
+- **Rotation & Retention**: Automatically rotates files based on size (`max_size`) and retains a configurable number of historical backups (`max_backups`).
+- **Trace ID Correlation**: Every request receives a globally unique `traceId` for end-to-end tracing across all processing stages.
+- **Log Support Bundles**: Execute `cheesewaf logs pack` to immediately generate a timestamped ZIP archive containing all runtime logs.
+- **External Sinks**: Asynchronously stream logs to ClickHouse, PostgreSQL, VictoriaLogs, or Elasticsearch. See [Storage & Scheduler Architecture](../storage/).
 
-## 2. Prometheus Metrics Export {#prometheus}
+## 2. Prometheus Metrics & Remote Write {#prometheus}
 
 ```yaml
 monitor:
@@ -35,22 +36,28 @@ monitor:
     enabled: true
     path: "/metrics"
     public: false
+  remote_write:
+    enabled: false
+    endpoint: "https://prometheus-push.internal/api/v1/write"
+    interval: 1m
+    timeout: 10s
 ```
 
-- **Metric Scrape Endpoints**: When `public: false`, scrape `/api/metrics` using an authorized Bearer token. When set to `public: true`, metrics are exposed on the root router path without authentication (recommended only on isolated internal monitoring networks).
-- **Prometheus Remote Write**: Use `monitor.remote_write` to actively push time-series metrics to Prometheus Remote Write-compatible backends.
+- **Scrape Endpoint**: When `public: false`, scraping `/api/metrics` requires an administrative Bearer token. Setting `public: true` exposes `/metrics` directly at the root path.
+- **Remote Write (Protobuf Streaming)**: Periodically pushes metrics directly to compatible collectors using the official Prometheus Remote Write protocol format.
 
-## 3. Alerting Rules & Notification Channels {#alerts}
+## 3. Alerts & Notification Channels {#alerts}
 
-CheeseWAF includes built-in alert definitions for blocking rate anomalies (`high-block-rate`) and disk space limits (`disk-usage`):
+Configure alert thresholds for anomalous drop surges (`high-block-rate`) or storage exhaustion (`disk-usage`):
 
-- **Notification Channels**: Configure Webhook endpoints, emails, or enterprise chat bots (DingTalk, WeChat Work, Lark) under `monitor.notifiers`.
-- **In-App Notifications**: Internal operational alerts are stored in the system and queryable via `/api/notifications`.
+- **Notifiers**: Deliver notifications via Webhook, SMTP email, or enterprise messaging webhooks (Slack, DingTalk, WeChat Work, Lark).
+- **In-App Notifications**: Event alerts are mirrored to the system notification bus and retrievable via `/api/notifications`.
 
-## 4. Real-Time Geographic Threat Map {#map}
+## 4. Threat Attack Map (100% Offline & Compliance Ready) {#map}
 
-Navigate to `/attack-map` or the fullscreen visualizer at `/attack-map/screen` in the Web console to view real-time geographic attack origin maps, blocking frequencies, and threat classification charts.
+Navigate to `/attack-map` or fullscreen `/attack-map/screen` to monitor inbound attack geolocations and threat distributions in real time.
 
-{{% pageinfo color="info" %}}
-Set `console.map.china_boundary` to load official national boundary data files. When configuring external map source URLs, maintain `allow_insecure: false` and `allow_private: false` to prevent SSRF security issues.
-{{% /pageinfo %}}
+The attack map is engineered for air-gapped security and compliance:
+- **Certified National Boundaries**: Integrates officially approved China border geometries and the South China Sea ten-dash line.
+- **Licensed Gaode World Polygons**: Uses licensed country and regional polygon datasets.
+- **3D Offline Earth Canvas**: Eliminates all external dependencies on public OpenStreetMap (OSM) raster tile servers. The 3D globe operates completely offline, preventing external DNS leakage and guaranteeing 100% availability in air-gapped, isolated networks.

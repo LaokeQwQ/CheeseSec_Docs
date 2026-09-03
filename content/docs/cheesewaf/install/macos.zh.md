@@ -9,13 +9,17 @@ description: 使用 DMG 镜像安装 CheeseWAF 桌面应用，或使用 tar.gz �
 
 ## 1. DMG 桌面安装包 {#dmg}
 
-适用于本地开发调试与桌面环境：
+适用于本地开发调试与桌面工作站环境：
 
 1. 根据芯片架构下载安装包：Apple Silicon（M 系列芯片）选择 `cheesewaf-*-darwin-arm64.dmg`，Intel 芯片选择 `cheesewaf-*-darwin-amd64.dmg`。
 2. 双击打开 DMG 镜像，将 **CheeseWAF** 拖拽至 **Applications（应用程序）** 文件夹。
 3. 从启动台或应用程序文件夹中启动 CheeseWAF。
 
-程序启动后将在系统托盘驻留本地控制器，支持一键启动/停止服务、查看运行状态及打开 Web 控制台。默认运行时数据目录为 `~/Library/Application Support/CheeseWAF`。
+{{% pageinfo color="info" %}}
+**Gatekeeper 安全验证说明**：官方正式发布的 DMG 均带有 Apple 开发者签名与公证。若使用未签名的本地开发包（Ad-hoc build）或遇到系统提示拦截，请对应用图标点按右键选择「打开」并在提示框中确认，或执行安装镜像中提供的 `fix-gatekeeper.command` 移除隔离属性。
+{{% /pageinfo %}}
+
+程序启动后将在系统托盘驻留本地控制器（监听回环地址 `http://127.0.0.1:17943/`），支持一键启动/停止服务、查看运行状态及快速打开 Web 控制台。默认运行时数据目录为 `~/Library/Application Support/CheeseWAF`。
 
 ## 2. 命令行压缩包（tar.gz） {#tarball}
 
@@ -26,8 +30,11 @@ description: 使用 DMG 镜像安装 CheeseWAF 桌面应用，或使用 tar.gz �
 tar -xzf cheesewaf-*-darwin-arm64.tar.gz
 cd cheesewaf-*
 
-# 启动服务
+# 运行终端初始化向导
+./cheesewaf setup
+
+# 启动 WAF 守护服务
 ./cheesewaf serve --config ./configs/cheesewaf.yaml --data-dir ./data
 ```
 
-服务启动后，使用浏览器访问 `http://127.0.0.1:9443/setup` 进入初始化向导。
+服务启动后，使用浏览器访问 `http://127.0.0.1:9443/` 进入 Web 管理控制台登录页。

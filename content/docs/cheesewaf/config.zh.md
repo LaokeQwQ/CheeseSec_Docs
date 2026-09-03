@@ -5,7 +5,7 @@ weight: 170
 description: cheesewaf.yaml 主配置文件结构导航、顶层键解析、超时控制与热重载范围说明。
 ---
 
-CheeseWAF 在首次启动时会在运行数据目录中自动生成 `cheesewaf.yaml` 主配置文件。预设配置模板可参考源码库中的 [`configs/cheesewaf.yaml`](https://github.com/LaokeQwQ/CheeseWAF/blob/master/configs/cheesewaf.yaml)。
+CheeseWAF 在首次启动时会在运行数据目录的 `config/` 目录下自动生成 `cheesewaf.yaml` 主配置文件（默认 `./data/config/cheesewaf.yaml`）。预设配置模板可参考源码库中的 [`configs/cheesewaf.yaml`](https://github.com/LaokeQwQ/CheeseWAF/blob/dev/configs/cheesewaf.yaml)。
 
 ## 顶层配置块索引 {#top-level-keys}
 
@@ -18,15 +18,17 @@ CheeseWAF 在首次启动时会在运行数据目录中自动生成 `cheesewaf.y
 | `console` | Web 控制台个性化与管理端登录安全 | [Bot 与验证码](../protection/bot-captcha/) · [监控与日志](../monitor/) |
 | `sites` | 业务反向代理站点、域名与上游配置 | [站点管理](../sites/) |
 | `protection` | 全局安全基线（语义引擎、IP、Bot、限流等） | [安全防护策略](../protection/) |
-| `block_page` | 阻断拦截页模板与自定义响应 HTML | [拦截响应页](../protection/block-page/) |
-| `storage` | 内置 SQLite、外部外发 Sink 与数据备份 | [存储与调度](../storage/) |
+| `block_page` | 阻断拦截页模板与自定义响应 HTML 清洗 | [拦截响应页](../protection/block-page/) |
+| `storage` | 内置 SQLite 版本化迁移、外部外发 Sink 与数据备份 | [存储与调度](../storage/) |
 | `logging` | 访问日志输出级别、格式与文件轮转 | [监控与日志](../monitor/) |
 | `ai` | ALAP 大语言模型连接与异步研判参数 | [ALAP 异步审查](../alap/) |
 | `update` | OTA 自动更新与签名校验 | [系统运维](../operations/) |
 | `scheduler` | 自动化清理与定时报表任务调度器 | [存储与调度](../storage/) |
 | `edge` | 边缘响应头注入、静态缓存与 Gzip/Brotli 压缩 | [边缘特性](../edge/) |
-| `monitor` | Prometheus 指标导出与告警通知器 | [监控与日志](../monitor/) |
+| `monitor` | Prometheus 指标导出、Remote Write 与告警通知器 | [监控与日志](../monitor/) |
 | `apisec` | API 资产发现、Schema 校验与 RBAC 权限矩阵 | [API 接口安全](../api-security/) |
+| `performance` | Go 运行时垃圾回收（GC）自适应调优（`memory_limit_ratio` / `min_gogc`） | [架构介绍](../intro/) |
+| `vulnerability` | 漏洞预警情报源订阅配置 | [系统运维](../operations/) |
 
 ## 超时机制配置 {#timeouts}
 

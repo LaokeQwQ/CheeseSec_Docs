@@ -2,7 +2,7 @@
 title: 站点管理与反向代理
 linkTitle: 站点
 weight: 50
-description: 配置业务域名、上游源站负载均衡、健康检查探测、路径重写及站点专属防护策略。
+description: 配置业务域名、上游源站负载均衡算法（轮询/加权/IP哈希/最小连接）、健康检查探测及站点专属防护策略。
 ---
 
 在 CheeseWAF 中，**站点（Site）** 是业务反向代理与安全策略的基本组织单元。一个站点由一组对外绑定的域名（Host）与一个或多个后端上游源站（Upstream）构成。
@@ -21,17 +21,26 @@ description: 配置业务域名、上游源站负载均衡、健康检查探测�
 | **站点名称** | `sites[].name` | 便于识别的可读名称 |
 | **匹配域名** | `sites[].domains` | 字符串数组，用于精确匹配入站 HTTP `Host` 请求头 |
 | **上游源站** | `sites[].upstreams[].address` | 后端源站地址（格式为 `主机:端口`），支持配置 `weight` 权重 |
-| **独立监听端口** | `sites[].listen_port` | 可选配置，为该站点分配独立的监听端口 |
-| **负载均衡策略** | `sites[].loadbalance` | 负载均衡算法，默认为轮询 `round_robin` |
+| **独立监听端口** | `sites[].listen_port` | 可选配置，为该站点分配独立的物理监听端口 |
+| **负载均衡策略** | `sites[].loadbalance` | 负载均衡算法，支持 `round_robin`、`weighted`、`ip_hash`、`least_conn` |
 | **站点启用状态** | `sites[].enabled` | 布尔值，设为 `false` 则暂停该站点的流量转发 |
 | **WAF 防护开关** | `sites[].waf.enabled` | 是否对该站点的请求执行安全过滤 |
 | **处置模式** | `sites[].waf.mode` | `block`（拦截模式）或 `log`（仅记录模式） |
 | **防护等级** | `sites[].waf.paranoia_level` | 防护等级取值范围 0～5，默认为 3 |
 | **语义分析引擎** | `sites[].waf.semantic_engines` | 支持独立开启 `sql`、`xss`、`rce`、`lfi`、`xxe`、`ssrf`、`nosql`、`ssti` |
-| **自定义规则** | `sites[].waf.custom_rules` | 站点级自定义正则匹配规则列表 |
-| **路径改写** | `sites[].waf.rewrite` | URI 路径内部重写或 HTTP 3xx 重定向规则 |
+| **自定义规则** | `sites[].waf.custom_rules` | 站点专属自定义正则规则列表（支持 CLI 与控制台批量导入导出） |
+| **路径改写** | `sites[].waf.rewrite` | URI 路径内部静默重写或 HTTP 3xx 重定向规则 |
 | **上游健康检查** | `sites[].waf.health_check` | 包含探测路径、检测间隔与健康/不健康阈值 |
 | **可信代理网段** | `sites[].waf.access_control.trusted_cidrs` | 前置 CDN 或负载均衡器 CIDR 网段，用于解析真实源 IP |
+
+## 负载均衡算法详解 {#loadbalance}
+
+针对配置了多个后端上游源站的站点，`sites[].loadbalance` 支持以下 4 种负载均衡策略：
+
+1. **`round_robin`（轮询，默认）**：请求依次循环分发给各健康上游节点，适合各源站规格性能一致的标准集群。
+2. **`weighted`（加权轮询）**：根据各节点在 `upstreams[].weight` 中配置的权重比例分配请求（例如权重 3:1 时，每 4 个请求分配 3 个至主节点），适合异构服务器部署。
+3. **`ip_hash`（客户端源 IP 哈希）**：基于真实客户端源 IP 进行一致性哈希计算，将同一客户端的请求稳定分发至同一后端节点，用于维持服务端本地会话（Session Sticky）。
+4. **`least_conn`（最小活跃连接数）**：实时追踪分配至各源站的在途未完成请求数，将新请求动态分发至当前处理中连接数最少的健康节点，有效平抑长耗时请求导致的请求堆积。
 
 ## 上游健康检查探测 {#health}
 
@@ -39,6 +48,7 @@ description: 配置业务域名、上游源站负载均衡、健康检查探测�
 
 - 当源站连续探测失败次数达到 `unhealthy_threshold` 时，该节点将被暂时标记为不健康并移出负载均衡池。
 - 当节点恢复正常且连续成功达到阈值后，系统将自动恢复其流量分发。
+- 若所有源站均不健康，系统将触发熔断保护，防止请求在不可用节点间长时间重试耗尽连接资源。
 
 ## 路径重写与重定向 {#rewrites}
 
@@ -47,13 +57,9 @@ description: 配置业务域名、上游源站负载均衡、健康检查探测�
 - **内部静默改写**：当 `redirect_code: 0` 时，系统在转发给源站前在内存中改写 URI 路径，客户端对此无感知。
 - **外部重定向**：当 `redirect_code` 设为 `301` 或 `302` 时，直接向客户端返回 HTTP 重定向响应。
 
-## 站点级防护策略覆盖 {#policy}
+## 站点专属自定义规则 {#custom-rules-site}
 
-通过 `sites[].waf.protection_policy` 可覆盖全局 `protection.policy` 的预设策略：
-
-- `web_attack`：Web 应用通用攻击防护策略
-- `api_security`：API 接口安全策略
-- `bot_cc`：Bot 与防刷防护策略
-- `threat_intel`：威胁情报协同策略
-
-若字段值留空，站点将自动继承全局策略基线（系统预设为 `smart`）。
+每个站点均独立维护专属的 `custom_rules` 列表：
+- 支持通过 Web 控制台「规则管理」直接编辑或导入导出。
+- 支持使用 CLI 工具 `cheesewaf rules import --site <site-id> --file <rules.yaml>` 进行 CI/CD 流水线自动化同步。
+- 规则在请求进入 AST 语义分析前（Phase 1 Priority 250）进行评估，可精准阻断特定站点的探测流量。
