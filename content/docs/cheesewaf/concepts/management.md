@@ -9,8 +9,8 @@ CheeseWAF provides three dedicated management surfaces tailored for visual opera
 
 | Management Surface | Role & Intended Scenarios | Access & Invocation |
 | --- | --- | --- |
-| **Web Console** | Visual operations, security policy management, real-time log querying, and attack map visualization | Access `http://127.0.0.1:9443/` in a browser after completing initial setup |
-| **CLI / TUI** | Headless server administration, jump boxes, and rapid interactive terminal troubleshooting | Execute `waf-cli` or `cheesewaf panel` to launch the interactive terminal interface |
+| **Web Console** | Visual operations, security policy management, real-time log querying, and attack map visualization | Access the configured HTTP/HTTPS management URL after setup. Docker Compose uses HTTPS at `https://127.0.0.1:9443/` on the Docker host loopback (use an SSH tunnel for remote access). |
+| **CLI / TUI** | Headless server administration, jump boxes, and rapid interactive terminal troubleshooting | Execute `waf-cli` or `cheesewaf cli` to launch the interactive terminal interface |
 | **RESTful API** | CI/CD automation, external monitoring integration, and orchestration pipelines | Invoke `/api/...` endpoints using Session Cookie or Bearer API token authentication |
 
 ## Unified Identity & RBAC Matrix {#unified-auth}

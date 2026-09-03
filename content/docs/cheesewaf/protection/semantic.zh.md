@@ -7,7 +7,7 @@ description: 基于多层递归解码与抽象语法树（AST）语法分析的�
 
 CheeseWAF 的核心检测器采用抽象语法树（AST）语法分析架构，而非传统的静态正则表达式堆叠。入站请求首先经过 URL 编码、Unicode、十六进制及嵌套 Base64 等多层递归解码，随后构建特定语言的语法树，精准识别载荷的语义意图。
 
-经过基于 7 套权威外部实网语料库与独立标注保真度分类器（Corpus Fidelity Classifier）的大规模评测与缺口修复，语义引擎的标注可信检出率（TPR）已提升至 **97.08%**。
+经过基于 多套权威工业级实网语料库与独立标注保真度分类器（Corpus Fidelity Classifier）的大规模评测与缺口修复，语义引擎的标注可信检出率（TPR）已提升至 **97.08%**。
 
 ## 语义引擎开关配置 {#engines}
 
@@ -40,17 +40,19 @@ CheeseWAF 的核心检测器采用抽象语法树（AST）语法分析架构，�
 
 通过 `sites[].waf.semantic_policy` 可对分析耗时与特殊业务路径进行细粒度调控：
 
-- **`budget_exhausted_policy`**：单次请求语法解析预算耗尽时的兜底策略。可选 `auto`（默认，遵循站点处置模式）、`block`（阻断）、`pass`（放行）或 `challenge`（人机挑战）。
+- **`budget_exhausted_policy`**：单次请求语法解析预算耗尽时的兜底策略。可选 `auto`（默认，遵循 web_attack 策略等级）、`open`（放行可用优先）、`observe`（仅记录观察）或 `closed`（挑战/严格拦截）。
 - **`path_allowlist`**：路径白名单列表，匹配到的 URI 路径将直接跳过语义检测。
 - **`param_allowlist`**：参数白名单列表，匹配到的特定参数名不执行语法分析。
 
-在 `sites[].waf.performance` 中可进一步限制 `max_body_bytes`（请求体最大分析字节数，默认 2MB）、`max_header_bytes` 及 `proxy_timeout`。
+**迁移说明：** 规范配置路径为 `sites[].waf.semantic_policy.budget_exhausted_policy`。旧版本若将该字段放在其他非规范路径，当前版本不会读取，请手动移动到每个站点的 `waf.semantic_policy` 下。迁移旧枚举时，将 `pass` 映射为 `open`，将 `block` 或 `challenge` 映射为 `closed`（当前 `closed` 在分析无法完成时优先挑战）。留空或设置为 `auto` 时，实际策略会根据站点 `web_attack` 等级推导。
+
+在 `sites[].waf.performance` 中可进一步限制 `max_body_bytes`（请求体最大分析字节数，默认 8MB）、`max_header_bytes` 及 `proxy_timeout`。
 
 ## 出站响应检测（敏感数据防泄露） {#response}
 
 `sites[].waf.response` 支持对后端源站返回的响应体进行出站扫描，防止敏感凭据泄漏：
 
-- **检测范围**：支持识别 AWS Access Key、私钥 PEM 结构及常见账号密码泄露模式。
+- **检测范围**：支持识别 AWS Access Key、常见账号密码泄露模式及站点自定义敏感模式（注意：站点自定义 `sensitive_patterns` 将覆盖系统默认规则，默认配置下 PEM 私钥扫描未激活，可在 `sensitive_patterns` 中按需配置启用）。
 - **性能建议**：对于大文件下载或视频流业务，建议结合路径规则将响应检测限制在 JSON/HTML 接口范围，并合理设置 `max_body_bytes`。
 
 关于独立攻击与嵌入长文本攻击的判定逻辑，请参考 [独立特征与夹杂特征](../../concepts/isolated-embedded/)。

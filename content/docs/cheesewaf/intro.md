@@ -16,7 +16,7 @@ To address these challenges, CheeseWAF adopts a **decoupled dual-plane architect
 The Data Plane processes incoming HTTP/1.1, HTTPS, and HTTP/3 traffic through an ordered, high-performance pipeline:
 
 1. **Network & Identity Filtering**: Evaluates IP access control lists, GeoIP country bans, and client soft-fingerprints.
-2. **Access Control & Anti-Scraping**: Enforces bot challenges, token bucket rate limits, and waiting room scheduling.
+2. **Access Control & Anti-Scraping**: Enforces bot challenges, sharded sliding-window counter rate limits, and waiting room scheduling.
 3. **AST Semantic Analysis**: Parses recursively decoded parameters into language syntax trees for attack detection.
 4. **Reverse Proxying**: Dispatches validated requests to the configured backend upstream servers.
 
@@ -53,7 +53,7 @@ CheeseWAF utilizes a self-contained architecture. All core components are compil
 | --- | --- |
 | `cheesewaf` | Primary server process; default command is `serve` to launch both data and control planes |
 | `waf-cli` | Same binary (or symbolic link); default command launches the interactive TUI management panel |
-| `cheesewaf-gui` | Dedicated desktop helper utility for Windows and macOS (binds exclusively to loopback) |
+| `cheesewaf-gui` | Browser-based local service controller for Windows and macOS (binds exclusively to loopback) |
 | Web Console | Modern React application embedded within the binary and hosted directly by the control plane |
 | SQLite Engine | CGO-free embedded database (`modernc.org/sqlite`) for persistent configuration and state |
 

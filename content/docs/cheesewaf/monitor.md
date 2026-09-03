@@ -50,7 +50,7 @@ monitor:
 
 Configure alert thresholds for anomalous drop surges (`high-block-rate`) or storage exhaustion (`disk-usage`):
 
-- **Notifiers**: Deliver notifications via Webhook, SMTP email, or enterprise messaging webhooks (Slack, DingTalk, WeChat Work, Lark).
+- **Notifiers**: Deliver notifications via standard HTTP Webhooks (enterprise platforms like Slack, DingTalk, WeChat Work, and Lark connect via their incoming bot webhook URLs).
 - **In-App Notifications**: Event alerts are mirrored to the system notification bus and retrievable via `/api/notifications`.
 
 ## 4. Threat Attack Map (100% Offline & Compliance Ready) {#map}

@@ -10,7 +10,7 @@ CheeseWAF utilizes a unified single-binary (BusyBox pattern) architecture. The e
 | Executable Name | Default Execution Behavior |
 | --- | --- |
 | `cheesewaf` | Executes the `serve` command by default, launching both Data Plane reverse proxy and Control Plane management services |
-| `waf-cli` | Launches the interactive Terminal User Interface (TUI, equivalent to `panel`) |
+| `waf-cli` | Launches the interactive Terminal User Interface (TUI, equivalent to `cli`; `panel` is a compatibility alias) |
 
 ## Global Command-Line Flags {#global-flags}
 
@@ -29,7 +29,7 @@ The language resolution hierarchy is: CLI `--lang` flag > Environment variable `
 | `serve` | Launches the full WAF daemon (Data Plane reverse proxy + Control Plane API and Web console) |
 | `setup` | Interactive or headless terminal initialization wizard for hardware profiling and initial credentials |
 | `rules` | Batch imports, exports, and template generation for site custom regex rules |
-| `panel` | Launches the interactive TUI terminal management panel |
+| `cli` | Launches the interactive TUI terminal management panel (compatibility alias: `panel`) |
 | `status` | Checks daemon health, process PID lease, and runtime status |
 | `healthcheck` | Diagnostic probes for admin API and outbound TLS (used in Docker healthcheck probes) |
 | `stop` | Gracefully terminates the running local daemon process |
@@ -54,7 +54,7 @@ cheesewaf setup
 cheesewaf setup --yes \
   --username admin \
   --password-stdin < /path/to/password.txt \
-  --profile balanced \
+  --profile smart \
   --admin-listen 127.0.0.1:9443 \
   --skip-probe
 ```
@@ -62,7 +62,7 @@ cheesewaf setup --yes \
 Key flags:
 - `-y, --yes`: Skip all confirmation prompts and commit changes directly.
 - `--username` / `--password-stdin`: Initial root administrator username and password from standard input.
-- `--profile`: Hardware profile tuning (`minimal`, `balanced`, or `performance`).
+- `--profile`: Hardware profile tuning (`smart`, `low`, `medium`, `high`, or `custom`; legacy aliases `minimal`, `balanced`, and `performance` remain accepted).
 - `--admin-listen`: Admin management API listen address (default `127.0.0.1:9443`).
 - `--skip-probe` / `--skip-external`: Skip hardware autodetection or skip external telemetry (GeoIP/Prometheus/VictoriaLogs) setup.
 
@@ -84,8 +84,11 @@ cheesewaf rules export --site site-demo --format json --file exported-rules.json
 ### 3. Local User Administration (`user`) {#cmd-user}
 
 ```bash
-# Reset password for a local user interactively
-cheesewaf user password admin
+# Set a local user's password by reading it from stdin (recommended; avoids shell history/process leakage)
+cheesewaf user password admin --password-stdin < secret.txt
+
+# Direct --password is less safe because the value can appear in shell history, environment variables, or process arguments
+cheesewaf user password admin --password 'replace-with-new-password'
 
 # Generate a strong temporary password and disable TOTP 2FA (emergency recovery)
 cheesewaf user password admin --generate --reset-2fa
@@ -100,7 +103,7 @@ cheesewaf user rename old_admin new_admin
 ### 4. Cluster Management (`cluster`) {#cmd-cluster}
 
 ```bash
-# Initialize current node as cluster controller and mint cluster CA
+# Initialize current node as a single-node cluster (does not mint a CA)
 cheesewaf cluster init
 
 # Create a temporary worker join token (default TTL: 15 minutes)
@@ -108,22 +111,45 @@ cheesewaf cluster token create --ttl 15m
 
 # List or revoke join tokens
 cheesewaf cluster token list
-cheesewaf cluster token revoke <token_id>
+export CHEESEWAF_TOKEN_ID='token-id-to-revoke'
+cheesewaf cluster token revoke "$CHEESEWAF_TOKEN_ID"
 
-# Join a worker node into the cluster
+export CHEESEWAF_CONTROLLER='https://10.0.0.1:9443'
+export CHEESEWAF_JOIN_TOKEN='one-time-join-token'
+export CHEESEWAF_NODE_ID='node-worker-02'
+export CHEESEWAF_ADVERTISE_ADDR='10.0.0.2:9444'
+export CHEESEWAF_CONTROLLER_CA='/etc/cheesewaf/certs/admin-ca.crt'
+
+# Join a worker node using a one-time token; the CLI creates the local key and CSR
 cheesewaf cluster join \
-  --controller https://10.0.0.1:9444 \
-  --token <join_token> \
-  --node-id node-worker-02 \
-  --advertise-addr 10.0.0.2:9444 \
-  --ca-cert /path/to/cluster-ca.crt
+  --controller "$CHEESEWAF_CONTROLLER" \
+  --token "$CHEESEWAF_JOIN_TOKEN" \
+  --node-id "$CHEESEWAF_NODE_ID" \
+  --advertise-addr "$CHEESEWAF_ADVERTISE_ADDR" \
+  --ca-file "$CHEESEWAF_CONTROLLER_CA"
 
-# Rotate cluster mTLS communication certificates online
-cheesewaf cluster cert rotate
+export CHEESEWAF_API_TOKEN='management-token-with-write-cluster'
+
+# Request replacement cluster mTLS files (requires existing local certificate paths; reload/restart afterward)
+cheesewaf cluster cert rotate \
+  --controller "$CHEESEWAF_CONTROLLER" \
+  --ca-file "$CHEESEWAF_CONTROLLER_CA" \
+  --api-token-env CHEESEWAF_API_TOKEN
 
 # Inspect cluster health and consensus status
 cheesewaf cluster status
+
+# Export declarative cluster objects (redirect the YAML output to a file)
+cheesewaf cluster export > cluster-export.yaml
+
+# Run the local node heartbeat loop toward the HTTPS interconnect (mTLS) controller
+export CHEESEWAF_INTERCONNECT_CONTROLLER='https://10.0.0.1:9444'
+cheesewaf cluster monitor-node --controller "$CHEESEWAF_INTERCONNECT_CONTROLLER" --interval 10s
 ```
+
+`--ca-file` for `cluster join` and `cert rotate` verifies the controller's **9443 HTTPS management endpoint**; it is not the cluster CA returned during enrollment. Omit it only when the controller certificate chains to the system trust store; pre-provision a private admin CA when needed. Joining generates a local key/CSR and writes the returned cluster CA and certificate under the node data directory. Certificate rotation requires exactly one token source (`--api-token`, `--api-token-file`, or `--api-token-env`), writes files locally, and takes effect after the service reload/restart procedure.
+
+`cluster monitor-node` posts heartbeats to the cluster **interconnect** (normally HTTPS `:9444`) using the local configured cluster CA/certificate/key. A custom `--controller` value must likewise be an HTTPS interconnect address; `--insecure-skip-verify` is for isolated laboratory testing only.
 
 ### 5. Support Bundle Packaging (`logs`) {#cmd-logs}
 
@@ -164,4 +190,8 @@ cheesewaf healthcheck
 
 {{% pageinfo color="info" %}}
 On Windows systems, if you wish to run `waf-cli` directly by name, copy or create an alias from `cheesewaf.exe` to `waf-cli.exe`.
+
+The TUI subcommand's canonical spelling is `cheesewaf cli`; `cheesewaf panel` remains available as a compatibility alias.
+
+`cheesewaf user` also accepts the `users` alias. `cheesewaf healthcheck` is intentionally hidden from normal `--help` output and is used by service/container probes.
 {{% /pageinfo %}}

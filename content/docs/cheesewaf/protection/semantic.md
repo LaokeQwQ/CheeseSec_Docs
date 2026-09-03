@@ -40,17 +40,20 @@ To deliver deep syntax parsing without sacrificing microsecond-level latency, Ch
 
 Fine-grained controls in `sites[].waf.semantic_policy` allow tuning parsing behavior:
 
-- **`budget_exhausted_policy`**: Fallback action when syntax analysis exhausts its budget: `auto` (follows site mode), `block`, `pass`, or `challenge`.
+- **`budget_exhausted_policy`**: Fallback action when syntax analysis exhausts its budget: `auto` (derives from web_attack level), `open` (availability-first pass), `observe` (log only), or `closed` (challenge/strict block).
 - **`path_allowlist`**: URI path prefixes that bypass semantic analysis entirely.
 - **`param_allowlist`**: Parameter keys excluded from deep AST inspection.
 
-Global limits can be configured in `sites[].waf.performance`, including `max_body_bytes` (default 2MB), `max_header_bytes`, and `proxy_timeout`.
+**Migration note:** The canonical location is `sites[].waf.semantic_policy.budget_exhausted_policy`. Values left in older, non-canonical configuration locations are not read; move them manually under each site's `waf.semantic_policy` block. When migrating legacy values, map `pass` to `open`, and map `block` or `challenge` to `closed` (the current closed mode prefers a challenge when analysis cannot finish). Leave the field empty or set it to `auto` to derive the effective action from the site's `web_attack` level.
+
+Global limits can be configured in `sites[].waf.performance`, including `max_body_bytes` (default 8MB), `max_header_bytes`, and `proxy_timeout`.
 
 ## Outbound Response Inspection (Data Leak Prevention) {#response}
 
 `sites[].waf.response` inspects upstream HTTP response bodies to prevent sensitive credential exposure:
 
-- **Detection Scope**: Discovers AWS Access Keys, private key PEM headers, and generic leaked credential patterns.
+- **Detection Scope**: Discovers AWS Access Keys, generic leaked credential patterns, and any additional patterns configured for the site. The built-in default set includes password/secret-key patterns; PEM private-key detection is available when explicitly included in `sensitive_patterns` (the shipped site template does not enable it by default).
+- **Pattern Precedence**: When `sites[].waf.response.sensitive_patterns` is non-empty, it replaces the built-in defaults rather than extending them; include every pattern you need in the site-level list.
 - **Tuning Advice**: For large file downloads or streaming media, restrict response inspection to JSON/HTML content types via path patterns.
 
 For classification semantics regarding isolated attacks vs embedded long-text inputs, see [Isolated vs. Embedded Payloads](../../concepts/isolated-embedded/).

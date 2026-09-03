@@ -34,7 +34,7 @@ tls:
   hsts: true
 ```
 
-- **Data Plane Listeners**: Configure `server.listen_tls` (default `443`) and `server.listen_http3` to enable HTTPS and HTTP/3 ingress for business traffic.
+- **Data Plane Listeners**: Configure `server.listen_tls` to enable an HTTPS ingress listener; it has no default value and remains disabled until explicitly set. Enable HTTP/3 with `server.http3.enabled: true`; `server.listen_http3` may be set explicitly and otherwise falls back to the TLS listener (or `:443` when neither address is set).
 - **TLS Version Constraints**: Use `min_version` to enforce minimum protocol versions (e.g., `1.2` or `1.3`).
 - **HSTS Enforcement**: Setting `hsts: true` automatically injects the `Strict-Transport-Security` header into outbound responses.
 - **HTTP/3 (QUIC) Support**: Set `server.http3.enabled: true` to enable UDP-based HTTP/3 support (requires an active TLS listener).
@@ -43,6 +43,6 @@ tls:
 
 CheeseWAF natively supports the ACME protocol for automated certificate management (e.g., Let's Encrypt):
 
-1. **Query DNS Providers**: Call `GET /api/acme/providers` to list supported DNS API challenge plugins (e.g., Cloudflare, Aliyun).
+1. **Query DNS Providers**: Call `GET /api/acme/providers` to list the DNS API challenge providers that are configured and enabled in the running instance; this is not a catalog of every provider supported by the implementation.
 2. **Issue Certificates**: Invoke `POST /api/sites/{id}/acme/issue` for a site to automatically perform DNS challenge verification and bind the issued certificate.
 3. **Secure Key Storage**: ACME account private keys and generated certificates are persisted securely in the runtime data directory; do not commit them to Git.

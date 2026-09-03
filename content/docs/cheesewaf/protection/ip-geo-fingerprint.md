@@ -24,7 +24,7 @@ protection:
       blocked_countries: []
 ```
 
-- **IP Whitelist (`whitelist`)**: Matching client IPs immediately bypass subsequent IP restrictions, bot challenges, and semantic inspection.
+- **IP Whitelist (`whitelist`)**: Matching client IPs bypass subsequent IP restrictions, GeoIP rules, threat intel, bot challenges, and rate limiting (the semantic engine pipeline continues to inspect payloads for application security).
 - **IP Blacklist (`blacklist`)**: Matching client IPs are blocked at the network entry point, returning a block page without consuming semantic engine resources.
 
 ## GeoIP Country Restrictions {#geoip}
@@ -41,5 +41,5 @@ Import third-party threat intelligence IP feeds directly into CheeseWAF. The Web
 
 ## Client Soft-Fingerprinting & Trusted Proxies {#fingerprints}
 
-- **Client Soft-Fingerprints**: The Data Plane computes lightweight fingerprints based on TLS handshake parameters, HTTP header ordering, and related client attributes. ALAP review can persist malicious fingerprints as defense rules to serve as corroborating evidence.
+- **Client Soft-Fingerprints**: The Data Plane computes lightweight fingerprints based on client User-Agent and Accept-Language headers (sha256 8-byte prefix). ALAP review can persist malicious fingerprints as defense rules to serve as corroborating evidence.
 - **Trusted Upstream Proxies**: When CheeseWAF is deployed behind a CDN, cloud load balancer, or reverse proxy, configure `sites[].waf.access_control.trusted_cidrs` or `trusted_proxy_providers` to correctly extract client IP addresses from `X-Forwarded-For` headers.

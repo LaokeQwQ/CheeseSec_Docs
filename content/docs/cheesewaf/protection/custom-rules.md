@@ -37,7 +37,7 @@ custom_rules:
 | --- | --- | --- |
 | `id` | String | Globally unique rule ID within the site. If omitted during import, the engine generates one automatically |
 | `name` | String | Human-readable rule title for logging and UI display |
-| `pattern` | String | Regular expression pattern (Go RE2 syntax; max 16KB per pattern, max 8192 compiled instructions) |
+| `pattern` | String | Regular expression pattern (Go RE2 syntax; max 16KB per pattern, max 4096 compiled instructions) |
 | `location` | String | Target inspection location. Strictly limited to: `uri`, `query`, `header`, `body`, `cookie` (default `uri`) |
 | `action` | String | Action on match. Strictly limited to: `block`, `log`, `challenge` (default `block`) |
 | `severity` | String | Threat level: `low`, `medium`, `high`, `critical` (default `medium`) |
@@ -49,7 +49,7 @@ custom_rules:
 To prevent malformed or unbounded rules from causing performance degradation, the configuration validator enforces strict boundaries:
 
 - **Resource Limits**: A single site supports up to **256** custom rules (`maxCustomRulesCount = 256`). Import document size must not exceed **1MB**, and total pattern length across all rules cannot exceed **256KB**.
-- **ReDoS Immunity**: Backed by Go's `regexp` (RE2 guarantees linear-time execution, eliminating catastrophic backtracking ReDoS). Expressions exceeding 8192 compiled program instructions are rejected.
+- **ReDoS Immunity**: Backed by Go's `regexp` (RE2 guarantees linear-time execution, eliminating catastrophic backtracking ReDoS). Expressions exceeding 4096 compiled program instructions are rejected.
 - **Deduplication Check**: Rule IDs must be unique within each site. Duplicate `location + pattern` combinations are strictly rejected.
 
 ## Batch Import, Export & Template Generation {#import-export}

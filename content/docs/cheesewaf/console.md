@@ -5,7 +5,7 @@ weight: 140
 description: Modern React-based single-page management console navigation, module routing matrix, and security mechanisms.
 ---
 
-CheeseWAF includes a modern single-page visual management console built with React and hosted directly by the control plane daemon. After completing [System Setup](../tutorial/setup/), navigate to the management endpoint (default `http://127.0.0.1:9443/`) to log in.
+CheeseWAF includes a modern single-page visual management console built with React and hosted directly by the control plane daemon. After completing [System Setup](../tutorial/setup/), navigate to the configured management endpoint. Standalone deployments may use the configured HTTP/HTTPS scheme; the official Docker Compose file publishes the admin listener as HTTPS on the Docker host loopback, so use `https://127.0.0.1:9443/` there (or an SSH tunnel), not a remote host URL unless you explicitly change the bind address.
 
 The console enforces session cookie statefulness with strict double-submit CSRF defenses (dynamically adjusting `Secure` flags when running on unencrypted local loops and enforcing them under HTTPS), and supports enabling [CAPTCHA challenges on login](../protection/bot-captcha/#login).
 

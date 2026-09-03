@@ -19,9 +19,11 @@ cheesewaf setup
 
 向导启动时会自动探测主机的计算与存储资源（CPU 核心数、物理可用内存及磁盘挂载容量），并智能推荐最适配的运行画像（Hardware Profile）：
 
-- **`minimal`（轻量模式）**：适合 1~2 核 CPU、<2GB 内存的轻量虚拟机或边缘路由器，调低内存缓冲区。
-- **`balanced`（均衡模式）**：适合 4~8 核、4~16GB 内存的标准生产服务器，平衡检测吞吐与并发连接数。
-- **`performance`（高性能模式）**：适合 16+ 核以上高性能计算节点，启用全量并发 Worker 线程池与激进缓存。
+- **`smart`（智能自适应模式，推荐）**：根据硬件探测结果动态匹配检测深度与限流配额。
+- **`low`（轻量模式，兼容别名 `minimal`）**：适合 1~2 核 CPU、<2GB 内存的轻量虚拟机或边缘路由器，调低内存缓冲区。
+- **`medium`（标准均衡模式，兼容别名 `balanced`）**：适合 4~8 核、4~16GB 内存的标准生产服务器，平衡检测吞吐与并发连接数。
+- **`high`（高性能模式，兼容别名 `performance`）**：适合 16+ 核以上高性能计算节点，启用全量并发 Worker 线程池与激进缓存。
+- **`custom`（自定义模式）**：手动精确调优各项性能与安全参数。
 
 ### 2. 交互式凭据录入与安全事务保障
 
@@ -37,7 +39,7 @@ cheesewaf setup
 cheesewaf setup --yes \
   --username admin \
   --password-stdin < /etc/cheesewaf/secrets/admin_pass.txt \
-  --profile balanced \
+  --profile smart \
   --admin-listen 127.0.0.1:9443 \
   --skip-probe
 ```
@@ -48,8 +50,9 @@ cheesewaf setup --yes \
 
 ### 1. 打开初始化向导网页
 
-- **本地物理机或开发环境**：使用浏览器打开 `http://127.0.0.1:9443/setup`。
-- **云服务器或 Docker 容器**：访问 `https://<服务器IP>:9443/setup`（若启用了自签名 TLS，首次需在浏览器中信任临时证书）。
+- **独立部署或非 Docker 本机**：使用浏览器打开 `http://127.0.0.1:9443/setup`。
+- **远程服务器（非 Docker）**：在管理监听可达且已启用 TLS 时访问配置的管理地址（例如 `https://10.0.0.10:9443/setup`；如使用自签名证书，首次访问需在浏览器中信任）。
+- **Docker Compose**：默认 Compose 文件仅将管理端口绑定到 Docker 宿主机回环地址（`127.0.0.1:9443`），请在该宿主机打开 `https://127.0.0.1:9443/setup`。从其他机器访问时，请先将 `CHEESEWAF_SSH_TARGET` 设置为 SSH 目标，再执行 `ssh -N -L 9443:127.0.0.1:9443 "$CHEESEWAF_SSH_TARGET"` 建立隧道，之后仍使用同一回环地址；如需直接暴露端口，请显式修改绑定。
 
 ### 2. 创建管理员账号与安全凭据
 
@@ -65,3 +68,7 @@ cheesewaf setup --yes \
 {{% /steps %}}
 
 完成初始化向导后，访问管理地址将自动重定向至 Web 控制台登录页。后续可通过终端交互工具 `waf-cli` 或命令行 `cheesewaf user` 随时重置管理员密码。
+
+{{% pageinfo color="info" %}}
+初始化向导生成的配置中，`update.ota.server` 默认预填官方更新服务地址（`https://ota.waf.laoker.cc/`），但该功能默认保持禁用状态（`update.ota.enabled: false`）。在全隔离内网环境中，可将该地址置空或保持禁用。
+{{% /pageinfo %}}

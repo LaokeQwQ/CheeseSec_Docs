@@ -50,7 +50,7 @@ monitor:
 
 系统支持配置拦截率突增（`high-block-rate`）与磁盘空间预警（`disk-usage`）等规则：
 
-- **通知渠道（Notifiers）**：在 `monitor.notifiers` 中可配置 Webhook、邮件或企业即时通讯机器人（如钉钉、企业微信、飞书等）。
+- **通知渠道（Notifiers）**：在 `monitor.notifiers` 中可配置标准 Webhook 通知器（钉钉、企业微信、飞书等企业即时通讯通过配置其自定义机器人 Webhook URL 即可接入）。
 - **站内消息中心**：所有告警事件同时写入站内通知系统，可通过 `/api/notifications` 端点拉取。
 
 ## 4. 实时攻击态势大屏（100% 纯离线与合规支持） {#map}

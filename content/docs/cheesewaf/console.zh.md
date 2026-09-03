@@ -5,7 +5,7 @@ weight: 140
 description: 现代化 React 管理控制台功能导航、模块路由映射与安全交互机制。
 ---
 
-CheeseWAF 内置了基于 React 构建的单页可视化管理控制台，由控制平面直接托管。完成 [系统初始化](../tutorial/setup/) 后，使用浏览器访问管理地址（默认 `http://127.0.0.1:9443/`）即可登录使用。
+CheeseWAF 内置了基于 React 构建的单页可视化管理控制台，由控制平面直接托管。完成 [系统初始化](../tutorial/setup/) 后，请访问配置的管理地址。独立部署可按配置使用 HTTP/HTTPS；官方 Docker Compose 将管理端以 HTTPS 绑定在 Docker 宿主机回环地址，因此应在宿主机打开 `https://127.0.0.1:9443/`（或使用 SSH 隧道），除非明确修改绑定，否则不要使用远程主机地址。
 
 控制台采用基于 Session Cookie 的状态保持与严格的 CSRF 双重防御机制（HTTP 环境自动自适应，HTTPS 下强制启用 Secure 属性），并支持在登录页启用 [人机验证码防护](../protection/bot-captcha/#login)。
 

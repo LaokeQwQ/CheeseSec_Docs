@@ -1,8 +1,8 @@
 ---
-title: 系统安装
-linkTitle: 安装
+title: 部署 & 安装
+linkTitle: 部署与安装
 weight: 20
-description: 选择适用于 Linux、Docker、Windows 或 macOS 的 CheeseWAF 安装包。
+description: 详细介绍 CheeseWAF 的部署方案及安装过程，包括 Linux、Docker、Windows 或 macOS 系统。
 ---
 
 CheeseWAF 支持以系统服务、容器编排或单二进制运行于各类主流操作系统。根据生产或测试环境的实际架构，选择对应的安装方式：
@@ -20,15 +20,16 @@ CheeseWAF 支持以系统服务、容器编排或单二进制运行于各类主�
 
 | 发行文件名 | 目标平台与架构 |
 | --- | --- |
-| `cheesewaf-*-linux-amd64.tar.gz` | Linux x86_64 架构 |
-| `cheesewaf-*-linux-arm64.tar.gz` | Linux ARM64 架构 |
-| `cheesewaf-*-linux-loong64.tar.gz` | Linux LoongArch（龙芯）架构 |
-| `cheesewaf-*-darwin-amd64.tar.gz` / `.dmg` | macOS Intel 架构 |
-| `cheesewaf-*-darwin-arm64.tar.gz` / `.dmg` | macOS Apple Silicon 架构 |
-| `cheesewaf-*-windows-amd64.exe` | Windows x86_64 单文件可执行程序 |
-| `cheesewaf-*-windows-arm64.exe` | Windows ARM64 单文件可执行程序 |
-| `cheesewaf-*-windows-amd64.zip` | Windows x86_64 便携压缩包 |
-| `cheesewaf-*-windows-arm64.zip` | Windows ARM64 便携压缩包 |
-| `CheeseWAF-*-windows-*-setup.exe` | Windows NSIS 图形安装向导 |
+| `cheesewaf-amd64-linux-*.tar.gz` | Linux x86_64 架构 |
+| `cheesewaf-arm64-linux-*.tar.gz` | Linux ARM64 架构 |
+| `cheesewaf-loong64-linux-*.tar.gz` | Linux LoongArch（龙芯）架构 |
+| `cheesewaf-amd64-darwin-*.tar.gz` / `.dmg` | macOS Intel 架构 |
+| `cheesewaf-arm64-darwin-*.tar.gz` / `.dmg` | macOS Apple Silicon 架构 |
+| `cheesewaf-amd64-windows-*.exe` | Windows x86_64 单文件可执行程序 |
+| `cheesewaf-arm64-windows-*.exe` | Windows ARM64 单文件可执行程序 |
+| `cheesewaf-amd64-windows-*.zip` | Windows x86_64 便携压缩包 |
+| `cheesewaf-arm64-windows-*.zip` | Windows ARM64 便携压缩包 |
+| `cheesewaf-amd64-windows-*-setup.exe` | Windows x86_64 NSIS 图形安装向导 |
+| `cheesewaf-arm64-windows-*-setup.exe` | Windows ARM64 NSIS 图形安装向导 |
 
 安装完成后，请继续参考 [快速上手](../tutorial/) 完成系统初始化与站点接入。

@@ -17,7 +17,7 @@ Official releases are available on [GitHub Releases](https://github.com/LaokeQwQ
 
 1. **High-Performance Data Plane Inspection**: Incoming requests undergo multi-layer recursive decoding before entering the Abstract Syntax Tree (AST) semantic engine. Identified SQL injection, Cross-Site Scripting (XSS), Remote Code Execution (RCE), and malicious payloads are blocked in sub-millisecond to microsecond timeframes.
 2. **Asynchronous ALAP Threat Review**: After the client receives its response, ambiguous samples or payloads embedded in large text blocks are enqueued into a background review pipeline. Configured LLMs (compatible with OpenAI and Anthropic APIs) perform in-depth semantic reasoning.
-3. **Closed-Loop Rule Synthesis**: Samples evaluated as high (`high`) or critical (`critical`) threats can be approved manually or via auto-agreement, persisting into long-term IP blacklists, client soft-fingerprints, or custom signature rules.
+3. **Closed-Loop Rule Synthesis**: Samples evaluated as high (`high`) or critical (`critical`) threats can be approved manually or via auto-agreement. Site-level auto-agreement persists a site-scoped custom payload rule; global IP denylists and client soft-fingerprint actions remain explicit operator decisions.
 
 ## Default Network Listeners {#default-listeners}
 
@@ -27,7 +27,7 @@ CheeseWAF exposes services on the following default listener endpoints:
 | --- | --- | --- |
 | **Data Plane** | `http://127.0.0.1:8080` | Ingests business traffic, performs synchronous security inspection, and proxies upstream |
 | **Management Plane** | `http://127.0.0.1:9443` | Hosts the Web console, REST API, and `/setup` initialization wizard (defaults to HTTPS in Docker) |
-| **Cluster Plane** | `http://127.0.0.1:9444` | Handles inter-node communication and state synchronization in High Availability (HA) cluster mode |
+| **Cluster Plane** | `https://127.0.0.1:9444` | TLS/mTLS interconnect for node identity, health/heartbeat, topology, and orchestration in HA mode; it is not a general site/policy state-replication channel |
 | **Local Controller** | `http://127.0.0.1:17943` | Local loopback auxiliary controller port for Windows and macOS desktop environments |
 
 ## Documentation Roadmap {#start-here}
@@ -36,5 +36,5 @@ CheeseWAF exposes services on the following default listener endpoints:
 {{< nav-card title="Deployment & Installation" link="/docs/cheesewaf/install/" icon="fa-solid fa-download" desc="Step-by-step guides for Linux (systemd), Docker Compose, Windows, and macOS environments." />}}
 {{< nav-card title="Quick Start" link="/docs/cheesewaf/tutorial/" icon="fa-solid fa-rocket" desc="Initial system setup, reverse proxy site onboarding, and connecting LLM review providers." />}}
 {{< nav-card title="Core Concepts" link="/docs/cheesewaf/concepts/" icon="fa-solid fa-diagram-project" desc="In-depth breakdown of the request lifecycle, paranoia levels, payload isolation, and unified RBAC." />}}
-{{< nav-card title="Security Policies" link="/docs/cheesewaf/protection/" icon="fa-solid fa-shield" desc="AST semantic engine, custom regex rules, IP/GeoIP filtering, bot challenges, token bucket rate limiting, and ACLs." />}}
+{{< nav-card title="Security Policies" link="/docs/cheesewaf/protection/" icon="fa-solid fa-shield" desc="AST semantic engine, custom regex rules, IP/GeoIP filtering, bot challenges, sharded sliding-window counter rate limiting, and ACLs." />}}
 {{< /nav-cards >}}

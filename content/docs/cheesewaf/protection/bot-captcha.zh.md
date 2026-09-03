@@ -30,17 +30,17 @@ protection:
 | `cookie_name` | 验证通过后写入客户端的 Cookie 名称，默认为 `cheesewaf_js_clearance` |
 | `path_prefixes` | 强制触发挑战的 URI 路径前缀列表 |
 | `exempt_path_prefixes` | 豁免挑战的白名单路径前缀（如健康检查接口 `/health`） |
-| `suspicious_user_agents` | 严格匹配的可疑客户端标识，命中后直接升级为人机验证 |
+| `suspicious_user_agents` | 子串包含匹配的可疑客户端标识（User-Agent 包含该值即命中），命中后升级为人机验证 |
 
 {{% pageinfo color="warning" %}}
-请勿将挑战签名的 `secret` 密钥提交至版本控制系统，系统首次运行将在运行时数据目录中自动安全生成。
+挑战签名的 `secret` 密钥若在配置中留空，服务启动时将在内存中自动生成安全随机密钥（不持久化至磁盘）。
 {{% /pageinfo %}}
 
 ## 验证码类型与交互形式 {#kinds}
 
 - **工作量证明（PoW / Altcha）**：客户端后台在浏览器中执行哈希碰撞计算并通过请求头 `X-CheeseWAF-Altcha` 提交结果，对合法用户完全无感且大幅增加攻击者并发成本。
 - **滑动拼图（Slider）**：包含几何轨迹分析与最短拖动时间校验（由 `slider_captcha_*` 参数定义），有效防御机械脚本。
-- **图形验证码（Image）**：支持自定义字符长度、干扰线密度、图片尺寸及语音辅助验证次数限制。
+- **图形验证码（Image）**：支持自定义字符长度、图片尺寸及语音辅助验证次数限制。
 - **实验性行为验证**：包括轨迹绘制、刮刮卡与图标点选等实验室题型，建议在控制台 **验证码实验室** 中验证业务适配性后再推向生产。
 
 通过 `/api/captcha/assets` 端点支持上传企业定制背景图与图标素材。
@@ -53,4 +53,4 @@ protection:
 
 ## 排队室机制（Waiting Room） {#waiting-room}
 
-通过配置 `waiting_room: true` 并设定 `waiting_room_max_active` 活跃用户上限，在突发秒杀或流量激增时，将超出承载能力的客户端优雅调度至排队等待页面，避免直接丢弃请求或击穿后端。详见 [流量限流](../ratelimit/)。
+通过配置 `waiting_room: true` 并设定 `waiting_room_max_active` 活跃用户上限，可在突发秒杀或流量激增时将超出承载能力的客户端优雅调度至排队等待页面。排队室只有在全局 `protection.policy.bot_cc` 未设为 `off` 且其 action 为 `challenge` 时才会生效；仅打开站点级排队室开关并不足够。详见 [流量限流](../ratelimit/)。

@@ -33,14 +33,14 @@ protection:
 | `suspicious_user_agents` | User-Agent substring matches that immediately escalate to full human verification |
 
 {{% pageinfo color="warning" %}}
-Do not check challenge signing `secret` tokens into version control. CheeseWAF generates them securely into your runtime data directory upon first launch.
+Do not check challenge signing `secret` tokens into version control. If omitted, CheeseWAF generates an in-memory random secret on startup (not persisted to disk).
 {{% /pageinfo %}}
 
 ## Challenge Types & Interaction Mechanisms {#kinds}
 
 - **Proof of Work (PoW / Altcha)**: Clients compute a cryptographic hash challenge in the browser background and submit the nonce via the `X-CheeseWAF-Altcha` request header. This is fully frictionless for real users while making automated concurrent scraping computationally prohibitive.
 - **Sliding Puzzle (Slider)**: Analyzes mouse drag trajectories and validates minimum drag timing thresholds (configured via `slider_captcha_*`).
-- **Character Image (Image)**: Supports configurable string lengths, distortion line densities, image dimensions, and audio assistance limits.
+- **Character Image (Image)**: Supports configurable string lengths, image dimensions, and audio assistance limits.
 - **Experimental Behavioral Tests**: Includes gesture curves, scratch-off, and icon point-and-click puzzles. Verify user experience in the console **CAPTCHA Lab** before rolling out to production traffic.
 
 Custom background images and iconography can be uploaded via `/api/captcha/assets`.
@@ -53,4 +53,4 @@ Additionally, enable `console.login.security_entry` to obscure the management po
 
 ## Waiting Room Queue Scheduling {#waiting-room}
 
-Enable `waiting_room: true` and specify `waiting_room_max_active` to gracefully hold excess concurrent clients in an organized queue during flash sales or traffic surges, preventing origin resource exhaustion. See [Rate Limiting](../ratelimit/).
+Enable `waiting_room: true` and specify `waiting_room_max_active` to gracefully hold excess concurrent clients in an organized queue during flash sales or traffic surges, preventing origin resource exhaustion. The waiting room is effective only when the global `protection.policy.bot_cc` policy is not `off` and its action is `challenge`; enabling the site waiting-room flag alone is not sufficient. See [Rate Limiting](../ratelimit/).

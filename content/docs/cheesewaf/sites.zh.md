@@ -13,6 +13,12 @@ description: 配置业务域名、上游源站负载均衡算法（轮询/加权
 - **RESTful API**：支持通过 `GET/POST /api/sites` 与 `GET/PUT/DELETE /api/sites/{id}` 接口进行自动化管理。
 - **Nginx 配置导入**：支持调用 `POST /api/nginx/import` 解析并导入现有的 Nginx `server` 块配置。
 
+{{% pageinfo color="info" %}}
+**YAML 配置层与 REST API 结构形态说明**：
+- **YAML 配置层**（`cheesewaf.yaml`）：上游为对象数组 `upstreams: [{address: "127.0.0.1:8080", weight: 1}]`，支持为节点分配权重；防护配置嵌套在 `waf` 对象中。
+- **REST API DTO 层**（`POST /api/sites`）：为扁平结构，`upstreams` 接收字符串数组（如 `["http://127.0.0.1:8080"]`），防护参数扁平铺开为 `waf_enabled`、`waf_mode` 与 `paranoia_level`（权重仅在 YAML 层承载，API 层不携带权重字段）。按 YAML 嵌套形态调用 REST API 会报错。
+{{% /pageinfo %}}
+
 ## 站点配置字段说明 {#fields}
 
 | 属性名称 | 配置键路径 | 类型与取值说明 |
@@ -21,11 +27,11 @@ description: 配置业务域名、上游源站负载均衡算法（轮询/加权
 | **站点名称** | `sites[].name` | 便于识别的可读名称 |
 | **匹配域名** | `sites[].domains` | 字符串数组，用于精确匹配入站 HTTP `Host` 请求头 |
 | **上游源站** | `sites[].upstreams[].address` | 后端源站地址（格式为 `主机:端口`），支持配置 `weight` 权重 |
-| **独立监听端口** | `sites[].listen_port` | 可选配置，为该站点分配独立的物理监听端口 |
+| **独立监听端口** | `sites[].listen_port` | 元数据字段（供 nginx 配置导入与 UI 识别展示；数据面统一由主监听按 Host 域名路由） |
 | **负载均衡策略** | `sites[].loadbalance` | 负载均衡算法，支持 `round_robin`、`weighted`、`ip_hash`、`least_conn` |
 | **站点启用状态** | `sites[].enabled` | 布尔值，设为 `false` 则暂停该站点的流量转发 |
 | **WAF 防护开关** | `sites[].waf.enabled` | 是否对该站点的请求执行安全过滤 |
-| **处置模式** | `sites[].waf.mode` | `block`（拦截模式）或 `log`（仅记录模式） |
+| **处置模式** | `sites[].waf.mode` | 可选 `block`（拦截阻断）、`monitor`（仅记录模式，亦兼容别名 `log`）或 `off`（关闭） |
 | **防护等级** | `sites[].waf.paranoia_level` | 防护等级取值范围 0～5，默认为 3 |
 | **语义分析引擎** | `sites[].waf.semantic_engines` | 支持独立开启 `sql`、`xss`、`rce`、`lfi`、`xxe`、`ssrf`、`nosql`、`ssti` |
 | **自定义规则** | `sites[].waf.custom_rules` | 站点专属自定义正则规则列表（支持 CLI 与控制台批量导入导出） |
@@ -48,7 +54,7 @@ description: 配置业务域名、上游源站负载均衡算法（轮询/加权
 
 - 当源站连续探测失败次数达到 `unhealthy_threshold` 时，该节点将被暂时标记为不健康并移出负载均衡池。
 - 当节点恢复正常且连续成功达到阈值后，系统将自动恢复其流量分发。
-- 若所有源站均不健康，系统将触发熔断保护，防止请求在不可用节点间长时间重试耗尽连接资源。
+- 若所有源站均标记为不健康，Fail-Open 仅可对安全重试的空 `GET` 或 `HEAD` 请求回退尝试配置的上游。非幂等方法（如 `POST`、`PUT`）或携带请求体的请求不会被重放。
 
 ## 路径重写与重定向 {#rewrites}
 
@@ -61,5 +67,5 @@ description: 配置业务域名、上游源站负载均衡算法（轮询/加权
 
 每个站点均独立维护专属的 `custom_rules` 列表：
 - 支持通过 Web 控制台「规则管理」直接编辑或导入导出。
-- 支持使用 CLI 工具 `cheesewaf rules import --site <site-id> --file <rules.yaml>` 进行 CI/CD 流水线自动化同步。
+- 支持使用 CLI 工具进行 CI/CD 流水线自动化同步，例如 `export CHEESEWAF_SITE_ID='site-demo'; export CHEESEWAF_RULES_FILE='rules.yaml'; cheesewaf rules import --site "$CHEESEWAF_SITE_ID" --file "$CHEESEWAF_RULES_FILE"`。
 - 规则在请求进入 AST 语义分析前（Phase 1 Priority 250）进行评估，可精准阻断特定站点的探测流量。

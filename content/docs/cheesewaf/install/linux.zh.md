@@ -12,7 +12,7 @@ description: 在 Linux 环境下安装 CheeseWAF 二进制程序、配置系统�
 从 GitHub Releases 下载对应架构的完整发布包并解压（以 AMD64 为例，ARM64 或龙芯请替换包名中的架构标识）：
 
 ```bash
-tar -xzf cheesewaf-*-linux-amd64.tar.gz
+tar -xzf cheesewaf-amd64-linux-*.tar.gz
 cd cheesewaf-*
 ```
 
@@ -71,7 +71,15 @@ sudo systemctl enable --now cheesewaf
 sudo systemctl status cheesewaf
 ```
 
-服务启动后，在浏览器中访问 `http://<服务器IP>:9443/setup` 进入初始化向导，或直接在终端中执行 `cheesewaf setup` 完成初始化。详细指引请参考 [系统初始化](../../tutorial/setup/)。
+服务启动后，管理平面默认仅绑定回环地址（`server.admin_listen: 127.0.0.1:9443`）。远程服务器推荐通过 SSH 隧道端口转发访问（`ssh -L 9443:127.0.0.1:9443 user@server` 后在本地访问 `http://127.0.0.1:9443/setup`）。若直接在服务器终端初始化，必须显式指向 systemd 使用的配置与数据目录，避免在当前目录另建一套配置：
+
+```bash
+sudo -u cheesewaf /usr/local/bin/cheesewaf \
+  --config /etc/cheesewaf/cheesewaf.yaml \
+  --data-dir /var/lib/cheesewaf setup
+```
+
+详细指引请参考 [系统初始化](../../tutorial/setup/)。
 
 ## 系统标准路径参考 {#paths}
 

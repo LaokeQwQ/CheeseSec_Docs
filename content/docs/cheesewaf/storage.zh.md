@@ -55,7 +55,7 @@ storage:
 | `storage.redis` | 用于分布式状态协调与跨节点会话同步 |
 
 {{% pageinfo color="info" %}}
-出于防 SSRF 安全考量，外部存储地址若指向内网私有网段，需显式声明 `allow_private_endpoint: true`。在正式切换前，建议调用 `POST /api/system/storage/test` 验证后端连通性与权限。
+出于防 SSRF 安全考量，ClickHouse、VictoriaLogs 与 Elasticsearch 外部存储地址若指向内网私网地址，需显式声明 `allow_private_endpoint: true`（PostgreSQL 与 Redis 直连驱动无此限制）。在正式切换前，建议调用 `POST /api/system/storage/test` 验证后端连通性与权限。
 {{% /pageinfo %}}
 
 ## 4. 定时任务调度器（Scheduler） {#scheduler}

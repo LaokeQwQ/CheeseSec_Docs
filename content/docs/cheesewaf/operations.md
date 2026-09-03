@@ -12,8 +12,12 @@ This section outlines standard operational procedures and hardening requirements
 - **Web Console & REST API**: Administer accounts programmatically via `GET/POST /api/users` and `PUT /api/users/{id}`.
 - **Command-Line Operations (`cheesewaf user`)**:
   ```bash
-  # Interactively update a user's password
-  cheesewaf user password admin
+  # Recommended for scripts: read the password from stdin (avoid shell history/process listings)
+  cheesewaf user password admin --password-stdin < secret.txt
+
+  # One-off shell use only: explicit password (choose exactly one input mode)
+  read -r -s -p 'New password: ' CHEESEWAF_NEW_PASSWORD; printf '\n'
+  cheesewaf user password admin --password "$CHEESEWAF_NEW_PASSWORD"
 
   # Auto-generate a strong password and disable TOTP 2FA (emergency recovery)
   cheesewaf user password admin --generate --reset-2fa

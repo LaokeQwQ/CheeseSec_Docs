@@ -12,8 +12,12 @@ description: 本地账号管理、TOTP 双因素认证（2FA）、NTP 时钟同�
 - **Web 控制台与 REST API**：调用 `GET/POST /api/users` 与 `PUT /api/users/{id}` 进行管理员账号增删改查。
 - **命令行运维工具（`cheesewaf user`）**：
   ```bash
-  # 为指定用户重置密码（交互式输入）
-  cheesewaf user password admin
+  # 推荐脚本方式：从标准输入读取密码，避免写入 shell 历史或进程列表
+  cheesewaf user password admin --password-stdin < secret.txt
+
+  # 仅适合一次性人工操作：显式密码（必须三选一）
+  read -r -s -p 'New password: ' CHEESEWAF_NEW_PASSWORD; printf '\n'
+  cheesewaf user password admin --password "$CHEESEWAF_NEW_PASSWORD"
 
   # 自动生成随机高强度密码并重置/禁用 TOTP 2FA（应急救砖）
   cheesewaf user password admin --generate --reset-2fa

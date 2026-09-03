@@ -47,7 +47,7 @@ Enforce stateless JSON Web Token authentication at the proxy layer via `apisec.a
 
 ## 4. Route-Level Precision Rate Limiting {#rate}
 
-Unlike global [Data Plane Token Bucket Limiting](../protection/ratelimit/), API rate limiting applies strictly to specific HTTP method and path combinations (such as sensitive authentication or SMS dispatch endpoints):
+Unlike global [Data Plane sharded sliding-window counter limiting](../protection/ratelimit/), API rate limiting applies strictly to specific HTTP method and path combinations (such as sensitive authentication or SMS dispatch endpoints):
 
 ```yaml
 apisec:

@@ -14,9 +14,9 @@ Reference `deploy/docker/docker-compose.yml`:
 ```yaml
 services:
   cheesewaf:
-    image: cheesewaf:latest
+    image: cheesewaf:dev
     build:
-      context: .
+      context: ../..
       dockerfile: deploy/docker/Dockerfile
     user: "10001:10001"
     restart: unless-stopped
@@ -29,7 +29,7 @@ services:
       - /tmp:size=32m,mode=1777,noexec,nosuid,nodev
     ports:
       - "8080:8080"
-      - "9443:9443"
+      - "127.0.0.1:9443:9443"
     volumes:
       - cheesewaf-data:/var/lib/cheesewaf
       - cheesewaf-logs:/var/log/cheesewaf
@@ -53,14 +53,16 @@ When building locally, ensure the build context points to the root of the Cheese
 Start the container daemon and view logs:
 
 ```bash
-docker compose up -d
-docker compose logs -f cheesewaf
+docker compose -f deploy/docker/docker-compose.yml up -d
+docker compose -f deploy/docker/docker-compose.yml logs -f cheesewaf
 ```
 
-On initial startup, the container generates self-signed TLS certificates for the admin API. Navigate to `https://<server-ip>:9443/setup` in your browser to complete the Web setup wizard, or run the CLI wizard inside the container:
+On initial startup, the container generates self-signed TLS certificates for the admin API. This Compose file binds the admin port to the Docker host's loopback interface (`127.0.0.1:9443`), so open `https://127.0.0.1:9443/setup` on the Docker host. From another machine, set `CHEESEWAF_SSH_TARGET` to your SSH target and create a tunnel with `ssh -N -L 9443:127.0.0.1:9443 "$CHEESEWAF_SSH_TARGET"`, then use the same local URL; if you intentionally change the port binding, apply an appropriate access-control policy. You can also run the CLI wizard inside the container:
 
 ```bash
-docker compose exec -it cheesewaf cheesewaf setup
+docker compose -f deploy/docker/docker-compose.yml exec -it cheesewaf \
+  cheesewaf --config /var/lib/cheesewaf/config/cheesewaf.yaml \
+  --data-dir /var/lib/cheesewaf setup
 ```
 
-Stopping containers with `docker compose down` safely preserves your SQLite databases, certificates, and log streams inside the named volumes `cheesewaf-data` and `cheesewaf-logs`.
+Stopping containers with `docker compose -f deploy/docker/docker-compose.yml down` safely preserves your SQLite databases, certificates, and log streams inside the named volumes `cheesewaf-data` and `cheesewaf-logs`.

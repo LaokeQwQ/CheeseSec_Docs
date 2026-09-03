@@ -16,6 +16,10 @@ description: 开发环境依赖、前后端编译流程、单元测试与内置�
 
 CheeseWAF 采用单二进制打包架构，编译时会将前端 React 产物嵌入 Go 二进制中：
 
+{{% pageinfo color="warning" %}}
+**前端资源嵌入提醒**：从源码构建可执行文件若需包含 Web 控制台，在执行 `go build` 前必须先执行 `bash scripts/ci/build-web.sh`（或 `cd web && npm ci && npm run build` 并同步产物至 `internal/webui/dist/`），否则构建出的二进制运行控制台页面将返回 404。
+{{% /pageinfo %}}
+
 ```bash
 # 克隆仓库
 git clone https://github.com/LaokeQwQ/CheeseWAF.git
@@ -26,6 +30,8 @@ cd web
 npm ci
 npm run build
 cd ..
+# 将构建产物复制到 Go 嵌入目录
+cp -R web/dist/. internal/webui/dist/
 
 # 2. 编译 Go 主程序二进制
 go build -o bin/cheesewaf ./cmd/cheesewaf

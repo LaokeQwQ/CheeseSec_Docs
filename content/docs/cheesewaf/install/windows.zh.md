@@ -13,7 +13,7 @@ description: Windows 环境下的三种运行方式：单文件 CLI、便携 Zip
 
 ```powershell
 # 前台交互式启动 WAF 转发与管理服务
-.\cheesewaf.exe serve --config .\configs\cheesewaf.yaml --data-dir .\data
+.\cheesewaf.exe serve --config .\data\config\cheesewaf.yaml --data-dir .\data
 
 # 查询服务运行状态与 PID 租约
 .\cheesewaf.exe status
@@ -32,7 +32,7 @@ description: Windows 环境下的三种运行方式：单文件 CLI、便携 Zip
 
 便携包内包含预设的配置文件模板与编译好的 Web 控制台静态资源：
 
-1. 将 `cheesewaf-*-windows-amd64.zip` 解压至指定目录（如 `D:\CheeseWAF`）。
+1. 将 `cheesewaf-amd64-windows-*.zip` 解压至指定目录（如 `D:\CheeseWAF`）。
 2. 在该目录下通过 PowerShell 执行初始化与启动：
 
 ```powershell
@@ -40,27 +40,27 @@ description: Windows 环境下的三种运行方式：单文件 CLI、便携 Zip
 .\cheesewaf.exe setup
 
 # 启动 WAF 守护进程
-.\cheesewaf.exe serve --config .\configs\cheesewaf.yaml --data-dir .\data
+.\cheesewaf.exe serve --config .\data\config\cheesewaf.yaml --data-dir .\data
 ```
 
 ## 3. NSIS 图形安装向导 (推荐) {#nsis}
 
-适用于需要图形化引导、开机自启与自动创建系统快捷方式的生产或办公桌面环境：
+适用于需要图形化引导、注册 Windows 服务与创建系统快捷方式的生产或办公桌面环境：
 
-1. 下载并运行 `CheeseWAF-*-windows-*-setup.exe` 安装包。
-2. 按照向导提示选择安装路径。安装程序支持一键自动将 CheeseWAF 注册为 Windows 系统后台自启服务。
+1. 下载并运行 `cheesewaf-amd64-windows-*-setup.exe` 安装包（Windows ARM64 请使用 `arm64` 版本）。
+2. 按照向导提示选择安装路径。安装程序会注册 `CheeseWAF` Windows 服务，并设置为手动启动（`start= demand`）；需要时可通过服务管理器或 `sc.exe` 显式启动/停止。
 3. 卸载程序时，系统将默认保留 `data\` 目录中的业务数据库与配置文件，防止误删历史数据。
 
 ## 本地辅助控制器（GUI） {#gui}
 
-`cheesewaf-gui` 是面向桌面环境的本地辅助托盘程序，用于便捷管理主服务进程的生命周期：
+`cheesewaf-gui` 是面向桌面环境的轻量级浏览器本地控制器，用于便捷管理主服务进程的生命周期：
 
 - **网络边界**：严格限制仅监听本地回环地址 `127.0.0.1:17943`，杜绝局域网未授权探测。
-- **核心功能**：托盘常驻图标、实时运行状态灯、一键启动/停止服务、直达 Web 管理控制台及快捷打开配置目录。
-- **开机自启**：支持在当前用户注册表（`HKCU\Software\Microsoft\Windows\CurrentVersion\Run`）中一键勾选开机自启动。
+- **核心功能**：启动/停止/重启服务、显示运行状态与 PID、直达 Web 管理控制台及快捷打开配置目录。
+- **运行模型**：按需调用本地 `cheesewaf serve` 进程，不是第二套管理后台；控制器仅监听本机回环地址。
 
 ```powershell
-.\cheesewaf-gui.exe --config .\configs\cheesewaf.yaml --data-dir .\data
+.\cheesewaf-gui.exe --config .\data\config\cheesewaf.yaml --data-dir .\data
 ```
 
 启动后可在浏览器中直接打开 `http://127.0.0.1:17943/` 进入桌面控制器界面。

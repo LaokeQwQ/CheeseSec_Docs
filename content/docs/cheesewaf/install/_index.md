@@ -20,15 +20,16 @@ Pre-compiled production binaries can be downloaded directly from GitHub Releases
 
 | Release Package | Target Platform & Architecture |
 | --- | --- |
-| `cheesewaf-*-linux-amd64.tar.gz` | Linux x86_64 architecture |
-| `cheesewaf-*-linux-arm64.tar.gz` | Linux ARM64 architecture |
-| `cheesewaf-*-linux-loong64.tar.gz` | Linux LoongArch architecture |
-| `cheesewaf-*-darwin-amd64.tar.gz` / `.dmg` | macOS Intel architecture |
-| `cheesewaf-*-darwin-arm64.tar.gz` / `.dmg` | macOS Apple Silicon architecture |
-| `cheesewaf-*-windows-amd64.exe` | Windows x86_64 standalone executable |
-| `cheesewaf-*-windows-arm64.exe` | Windows ARM64 standalone executable |
-| `cheesewaf-*-windows-amd64.zip` | Windows x86_64 portable ZIP archive |
-| `cheesewaf-*-windows-arm64.zip` | Windows ARM64 portable ZIP archive |
-| `CheeseWAF-*-windows-*-setup.exe` | Windows NSIS graphical installer |
+| `cheesewaf-amd64-linux-*.tar.gz` | Linux x86_64 architecture |
+| `cheesewaf-arm64-linux-*.tar.gz` | Linux ARM64 architecture |
+| `cheesewaf-loong64-linux-*.tar.gz` | Linux LoongArch architecture |
+| `cheesewaf-amd64-darwin-*.tar.gz` / `.dmg` | macOS Intel architecture |
+| `cheesewaf-arm64-darwin-*.tar.gz` / `.dmg` | macOS Apple Silicon architecture |
+| `cheesewaf-amd64-windows-*.exe` | Windows x86_64 standalone executable |
+| `cheesewaf-arm64-windows-*.exe` | Windows ARM64 standalone executable |
+| `cheesewaf-amd64-windows-*.zip` | Windows x86_64 portable ZIP archive |
+| `cheesewaf-arm64-windows-*.zip` | Windows ARM64 portable ZIP archive |
+| `cheesewaf-amd64-windows-*-setup.exe` | Windows x86_64 NSIS graphical installer |
+| `cheesewaf-arm64-windows-*-setup.exe` | Windows ARM64 NSIS graphical installer |
 
 Following installation, proceed to [Quick Start](../tutorial/) to complete system initialization and onboard your first reverse proxy site.

@@ -62,10 +62,10 @@ To ensure deterministic latency guarantees under high concurrent load, the detec
 
 - **100ms Hard Timeout**: A global 100ms pipeline deadline guarantees that adversarial payloads cannot cause request processing hangs.
 - **Analysis Budget Depletion Policy (`budget_exhausted_policy`)**: If deep parsing cannot finish within the deadline, the fallback policy takes effect:
-  - `auto`: Follows the site's default protection mode.
-  - `block`: Fails closed and blocks the request for defense-in-depth.
-  - `pass`: Fails open to preserve application availability.
-  - `challenge`: Issues an interactive CAPTCHA puzzle.
+  - `auto`: Follows the global `web_attack` policy level.
+  - `open`: Fails open to preserve application availability while recording metrics.
+  - `observe`: Logs observation details without a hard drop.
+  - `closed`: Security-first challenge or strict block.
 - **Overload Guarding**: Built-in guard monitors detect backpressure and return `ErrDetectionOverload`, protecting the primary service from cascading degradation.
 
 ## Asynchronous Review Loop (ALAP) {#async-path}
@@ -74,7 +74,7 @@ The asynchronous path runs completely decoupled from real-time reverse proxying:
 
 - **Sample Dispatch**: Embedded samples passed under Paranoia Levels 2–4 and blocked samples under Level 5 are delivered to the review queue after response delivery.
 - **LLM Intent Extraction**: Background workers issue inference requests to extract threat semantics and confidence scores.
-- **Closed-Loop Rule Derivation**: Verified high/critical threats can be promoted into persistent IP blocks or custom rules either manually or via automated adoption.
+- **Closed-Loop Rule Derivation**: Manual review decisions can promote a verified sample to the selected payload, URI, IP, or fingerprint rule. Site-level automated adoption is narrower: it writes a site-scoped custom payload rule only.
 
 {{% pageinfo color="info" %}}
 For detailed configuration options of individual detectors, see [Protection](../../protection/); for setting up AI models, see [ALAP Review](../../alap/).

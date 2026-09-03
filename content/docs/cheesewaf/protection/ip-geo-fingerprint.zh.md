@@ -24,7 +24,7 @@ protection:
       blocked_countries: []
 ```
 
-- **IP 白名单（`whitelist`）**：命中白名单的客户端将直接跳过后续的 IP 拦截、Bot 挑战与语义分析。
+- **IP 白名单（`whitelist`）**：命中白名单的客户端将跳过 IP 拦截、GeoIP 限制、威胁情报、Bot 挑战与全局速率限制（注：WAF 语义检测流水线仍会执行，以保障业务内容安全）。
 - **IP 黑名单（`blacklist`）**：命中黑名单的请求将被当场拒绝并返回拦截页，不会进一步消耗语义引擎分析算力。
 
 ## GeoIP 地理位置封禁 {#geoip}
@@ -41,5 +41,5 @@ protection:
 
 ## 客户端软指纹与前置代理穿透 {#fingerprints}
 
-- **客户端软指纹**：数据平面基于客户端 TLS 握手特征、HTTP 请求头顺序及相关特征计算轻量级软指纹。ALAP 异步分析在识别高危威胁后，支持将恶意指纹沉淀为封禁规则，作为辅助防御维度。
+- **客户端软指纹**：数据平面基于客户端 User-Agent 与 Accept-Language 特征计算轻量级软指纹（sha256 前 8 字节摘要）。ALAP 异步分析在识别高危威胁后，支持将恶意指纹沉淀为封禁规则，作为辅助防御维度。
 - **前置代理真实 IP 获取**：若 CheeseWAF 部署于 CDN、云负载均衡器或 Nginx 之后，必须在站点配置中声明 `sites[].waf.access_control.trusted_cidrs` 或 `trusted_proxy_providers`，以便正确从 `X-Forwarded-For` 等头部提取真实的客户端源 IP。

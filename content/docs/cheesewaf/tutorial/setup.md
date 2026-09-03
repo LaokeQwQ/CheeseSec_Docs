@@ -19,9 +19,11 @@ cheesewaf setup
 
 The wizard inspects host resources (CPU cores, available RAM, and storage mounts) and recommends an optimal runtime profile:
 
-- **`minimal`**: Configured for 1–2 CPU cores and <2GB RAM edge devices or small VMs; minimizes memory buffers.
-- **`balanced`**: Tailored for standard 4–8 CPU cores and 4–16GB RAM production servers; balances parsing throughput and connection concurrency.
-- **`performance`**: Configured for 16+ core high-throughput servers; allocates full worker pools and aggressive caches.
+- **`smart`**: Dynamically adjusts inspection depth, budget, and rate limits according to hardware probe results (Recommended).
+- **`low`**: Configured for 1–2 CPU cores and <2GB RAM edge devices or small VMs; minimizes memory buffers (alias: `minimal`).
+- **`medium`**: Tailored for standard 4–8 CPU cores and 4–16GB RAM production servers (alias: `balanced`).
+- **`high`**: Configured for 16+ core high-throughput servers; allocates full worker pools and aggressive caches (alias: `performance`).
+- **`custom`**: Allows manual tuning of performance and security thresholds.
 
 ### 2. Guided Credentials & Transactional Safety
 
@@ -37,7 +39,7 @@ For CI/CD pipelines or cloud-init automation, use non-interactive command-line f
 cheesewaf setup --yes \
   --username admin \
   --password-stdin < /etc/cheesewaf/secrets/admin_pass.txt \
-  --profile balanced \
+  --profile smart \
   --admin-listen 127.0.0.1:9443 \
   --skip-probe
 ```
@@ -48,8 +50,9 @@ cheesewaf setup --yes \
 
 ### 1. Open the Setup URL
 
-- **Local Machine**: Open `http://127.0.0.1:9443/setup` in your browser.
-- **Remote Server or Docker**: Navigate to `https://<server-ip>:9443/setup` (accept the self-signed TLS certificate prompt on first visit).
+- **Standalone or non-Docker local machine**: Open `http://127.0.0.1:9443/setup` in your browser.
+- **Remote Server (non-Docker)**: Navigate to the configured admin URL (for example, `https://10.0.0.10:9443/setup`) when that listener is reachable and TLS is enabled (accept the self-signed certificate prompt on first visit, if applicable).
+- **Docker Compose**: The default Compose file binds the admin port only to the Docker host's loopback interface (`127.0.0.1:9443`). Open `https://127.0.0.1:9443/setup` on that host. From another machine, set `CHEESEWAF_SSH_TARGET` to your SSH target and run `ssh -N -L 9443:127.0.0.1:9443 "$CHEESEWAF_SSH_TARGET"`, then use the same local URL; change the port binding explicitly if direct exposure is required.
 
 ### 2. Create Root Administrator Account
 

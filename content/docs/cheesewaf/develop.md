@@ -14,6 +14,10 @@ This guide is intended for developers contributing code or building CheeseWAF di
 
 ## 2. Compile Frontend Assets & Main Daemon {#build}
 
+{{% pageinfo color="warning" %}}
+**Console Assets Embedding Note**: When compiling from source, you must run `bash scripts/ci/build-web.sh` (or `cd web && npm ci && npm run build` and copy `web/dist` to `internal/webui/dist/`) before `go build`, otherwise web console routes will return 404.
+{{% /pageinfo %}}
+
 ```bash
 # Clone the repository
 git clone https://github.com/LaokeQwQ/CheeseWAF.git
@@ -24,6 +28,8 @@ cd web
 npm ci
 npm run build
 cd ..
+# Copy the generated bundle into the Go embed directory
+cp -R web/dist/. internal/webui/dist/
 
 # Compile the Go single-binary executable
 go build -o bin/cheesewaf ./cmd/cheesewaf

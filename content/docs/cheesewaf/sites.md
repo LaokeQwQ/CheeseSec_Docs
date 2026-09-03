@@ -13,6 +13,12 @@ In CheeseWAF, a **Site** is the fundamental administrative unit for reverse prox
 - **RESTful API**: Programmatic lifecycle automation via `GET/POST /api/sites` and `GET/PUT/DELETE /api/sites/{id}`.
 - **Nginx Config Importer**: Call `POST /api/nginx/import` to parse and import existing Nginx `server` blocks directly.
 
+{{% pageinfo color="info" %}}
+**YAML Configuration vs. REST API Schema Note**:
+- **YAML Configuration** (`cheesewaf.yaml`): Upstreams are structured objects (`upstreams: [{address: "127.0.0.1:8080", weight: 1}]`) and WAF settings are nested under `waf`.
+- **REST API DTO** (`POST /api/sites`): Uses a flat structure where `upstreams` is a string array (`["http://127.0.0.1:8080"]`) and WAF settings are flattened (`waf_enabled`, `waf_mode`, `paranoia_level`). Submitting nested objects directly to the REST API will return an unmarshaling error.
+{{% /pageinfo %}}
+
 ## Site Configuration Schema {#fields}
 
 | Property | YAML Key Path | Type & Description |
@@ -21,11 +27,11 @@ In CheeseWAF, a **Site** is the fundamental administrative unit for reverse prox
 | **Site Name** | `sites[].name` | Human-readable site label |
 | **Bound Domains** | `sites[].domains` | String array matching the inbound HTTP `Host` header |
 | **Origin Upstreams** | `sites[].upstreams[].address` | Backend destination (`host:port`), supporting `weight` proportions |
-| **Dedicated Port** | `sites[].listen_port` | Optional dedicated physical listening port for this site |
+| **Dedicated Port** | `sites[].listen_port` | Metadata field (for nginx import and UI display; WAF process routes traffic on primary listeners) |
 | **Load Balancing** | `sites[].loadbalance` | Algorithm choice: `round_robin`, `weighted`, `ip_hash`, `least_conn` |
 | **Enabled** | `sites[].enabled` | Boolean toggle; `false` halts reverse proxying for this site |
 | **WAF Enabled** | `sites[].waf.enabled` | Whether request inspection is active |
-| **WAF Mode** | `sites[].waf.mode` | `block` (drop malicious requests) or `log` (record only) |
+| **WAF Mode** | `sites[].waf.mode` | `block` (drop malicious requests), `monitor` (record only; `log` accepted as alias), or `off` |
 | **Paranoia Level** | `sites[].waf.paranoia_level` | Inspection strictness from 0 (disabled) to 5 (maximum paranoia), default 3 |
 | **Semantic Engines** | `sites[].waf.semantic_engines` | Independent engine toggles for `sql`, `xss`, `rce`, `lfi`, `xxe`, `ssrf`, `nosql`, `ssti` |
 | **Custom Rules** | `sites[].waf.custom_rules` | Site-scoped RE2 rules (supports batch CLI and Web UI import/export) |
@@ -48,7 +54,7 @@ When `health_check.enabled: true` is set, CheeseWAF periodically issues HTTP hea
 
 - When probe failures reach `unhealthy_threshold`, the node is temporarily marked unhealthy and removed from the active routing pool.
 - Once the node recovers and consecutive successes meet `healthy_threshold`, traffic dispatch automatically resumes.
-- If all upstreams fail health probes, circuit breaker protection activates to prevent request storm loops.
+- If all upstreams fail health probes, fail-open fallback may retry only a safe, empty `GET` or `HEAD` request against configured upstreams. Non-idempotent methods (such as `POST`/`PUT`) or any request carrying a body are not replayed.
 
 ## Path Rewriting & Redirects {#rewrites}
 
@@ -61,5 +67,5 @@ Rewriting rules define a matching regex `pattern`, a target `replacement`, and a
 
 Each site manages an isolated list of `custom_rules`:
 - Visually configured or uploaded via the **Rules** page in the Web Console.
-- Automated through CI/CD pipelines using `cheesewaf rules import --site <site-id> --file <rules.yaml>`.
+- Automated through CI/CD pipelines, for example `export CHEESEWAF_SITE_ID='site-demo'; export CHEESEWAF_RULES_FILE='rules.yaml'; cheesewaf rules import --site "$CHEESEWAF_SITE_ID" --file "$CHEESEWAF_RULES_FILE"`.
 - Evaluated in Phase 1 at Priority 250, short-circuiting malicious probes before syntax tree generation.

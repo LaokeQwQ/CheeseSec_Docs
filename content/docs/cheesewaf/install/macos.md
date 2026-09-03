@@ -11,15 +11,15 @@ CheeseWAF supports two primary deployment mechanisms on macOS:
 
 Ideal for local testing, development, and desktop workstations:
 
-1. Download the archive matching your CPU architecture: `cheesewaf-*-darwin-arm64.dmg` for Apple Silicon (M-series), or `cheesewaf-*-darwin-amd64.dmg` for Intel Macs.
+1. Download the DMG matching your CPU architecture: `cheesewaf-arm64-darwin-*.dmg` for Apple Silicon (M-series), or `cheesewaf-amd64-darwin-*.dmg` for Intel Macs.
 2. Open the DMG image and drag **CheeseWAF** into your **Applications** folder.
 3. Launch CheeseWAF from Launchpad or Spotlight.
 
 {{% pageinfo color="info" %}}
-**Gatekeeper Guidance**: Official releases are signed and notarized by Apple. If running an ad-hoc developer build that triggers macOS security prompts, Control-click the app icon, select "Open", and confirm the prompt, or execute the bundled `fix-gatekeeper.command` helper script.
+**Gatekeeper Guidance**: Official releases are signed and notarized by Apple. If running an ad-hoc developer build that triggers macOS security prompts, Control-click the app icon, select "Open", and confirm the prompt.
 {{% /pageinfo %}}
 
-Upon launching, CheeseWAF runs a resident menu bar assistant binding to loopback `http://127.0.0.1:17943/`. It provides one-click process start/stop controls, status monitoring, and shortcuts to the Web Console. Default runtime data is saved under `~/Library/Application Support/CheeseWAF`.
+Upon launching, the DMG application runs a lightweight browser-based local controller bound to loopback at `http://127.0.0.1:17943/`. It provides process start/stop/restart controls, status monitoring, and shortcuts to the Web Console and configuration directory. Default runtime data is saved under `~/Library/Application Support/CheeseWAF`.
 
 ## 2. Command-Line Archive (tar.gz) {#tarball}
 
@@ -27,14 +27,14 @@ Ideal for headless servers, developer terminal workflows, or automated scripts:
 
 ```bash
 # Extract the archive
-tar -xzf cheesewaf-*-darwin-arm64.tar.gz
+tar -xzf cheesewaf-arm64-darwin-*.tar.gz
 cd cheesewaf-*
 
 # Run terminal setup wizard
 ./cheesewaf setup
 
 # Launch the WAF daemon
-./cheesewaf serve --config ./configs/cheesewaf.yaml --data-dir ./data
+./cheesewaf serve --config ./data/config/cheesewaf.yaml --data-dir ./data
 ```
 
 Once initialized, navigate to `http://127.0.0.1:9443/` to log into the Web Console.

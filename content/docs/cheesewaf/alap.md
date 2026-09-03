@@ -23,11 +23,11 @@ Security teams can audit and act upon threat findings via the console or REST AP
 
 - **Queue Inspection**: Call `GET /api/review` to fetch flagged samples and model confidence scores.
 - **Decision Submission**: Call `POST /api/review/{id}/decide` to mark samples as verified threats, false positives, or promote them to persistent protection rules.
-- **Strict Invariance**: Payloads blocked under Paranoia Level 5 represent physically terminated connections and cannot be retroactively passed, but can be promoted to permanent global blocks.
+- **Strict Invariance**: Payloads blocked under Paranoia Level 5 represent physically terminated connections and cannot be retroactively passed. An operator may still submit a separate review decision (payload/URI/IP/fingerprint) to create the selected rule.
 
 ## 3. Automated Rule Adoption & Fail-Closed Guardrails {#auto-agree}
 
-When `ai.auto_agree: true` is enabled, the system automatically translates high-confidence malicious assessments (`high` or `critical`) into permanent IP denylists, client fingerprint bans, or custom rules.
+When `sites[].waf.semantic_policy.auto_agree: true` is enabled, the system automatically translates high-confidence malicious assessments (`high` or `critical`) into a site-scoped custom payload rule. Auto-agreement itself does not create global IP denylists or client-fingerprint bans; those remain separate, explicit operator actions.
 
 {{% pageinfo color="warning" %}}
 **Fail-Closed Invariance**: Proposed rules that fail syntax validation, lack clear site associations, or fall below confidence thresholds **fail closed**. The engine never injects unverified rules into the active data plane.

@@ -1,13 +1,13 @@
 ---
 title: CheeseSec 官方文档
 linkTitle: 首页
-description: CheeseSec 旗下安全产品官方手册与工程实践指南，涵盖 CheeseWAF 的部署、配置与运维。
+description: CheeseSec 旗下安全产品官方手册与工程实践指南，涵盖我司发行产品的部署、配置与运维。
 cascade:
   type: docs
 no_list: true
 ---
 
-欢迎查阅 CheeseSec 官方产品手册。本站提供旗下安全组件与系统的架构设计说明、部署指引、安全防护配置及生产运维手册。
+欢迎查阅 CheeseSec 官方产品手册。本站提供旗下产品与服务的架构设计说明、部署指引、安全防护配置及生产运维手册。
 
 当前收录核心产品 **CheeseWAF**。项目源码与预编译分发包托管于 [CheeseWAF 仓库](https://github.com/LaokeQwQ/CheeseWAF)，遵循 [Apache License 2.0](https://github.com/LaokeQwQ/CheeseWAF/blob/master/LICENSE) 开源协议。
 

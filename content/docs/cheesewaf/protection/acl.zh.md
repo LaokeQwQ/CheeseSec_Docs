@@ -33,9 +33,9 @@ protection:
 | `path_prefix` | 匹配的 URI 路径前缀（如 `/debug`、`/actuator`） |
 | `header` | 待检查的 HTTP 请求头名称；留空表示不限制 |
 | `header_value` | 对应请求头的期望值或排斥值 |
-| `action` | 命中后的动作，通常为 `block`（拦截）或 `allow`（放行） |
+| `action` | 命中后的处置动作，支持 `block`（拦截）、`log`（记录）或 `challenge`（人机挑战） |
 | `severity` | 记录在告警日志与审计事件中的威胁等级 |
 
 {{% pageinfo color="info" %}}
-ACL 采用前缀树高效匹配，适合确定性的固定路径阻断。若匹配规则需要复杂的正则表达式支持，请使用 [自定义正则规则](../custom-rules/)。
+ACL 按配置顺序线性遍历启用的规则，对 HTTP 方法做大小写归一化匹配，对 URI 做字面路径前缀比较，并对请求头值做不区分大小写的精确比较。若匹配规则需要复杂的正则表达式支持，请使用 [自定义正则规则](../custom-rules/)。
 {{% /pageinfo %}}

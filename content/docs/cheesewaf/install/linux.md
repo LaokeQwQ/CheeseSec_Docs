@@ -12,7 +12,7 @@ This guide covers deploying CheeseWAF on Linux bare-metal or virtual machines us
 Download the official release archive for your architecture from GitHub Releases (example below uses AMD64; replace with ARM64 or LoongArch as appropriate):
 
 ```bash
-tar -xzf cheesewaf-*-linux-amd64.tar.gz
+tar -xzf cheesewaf-amd64-linux-*.tar.gz
 cd cheesewaf-*
 ```
 
@@ -71,7 +71,15 @@ sudo systemctl enable --now cheesewaf
 sudo systemctl status cheesewaf
 ```
 
-Once running, navigate to `http://<server-ip>:9443/setup` in your browser, or run `cheesewaf setup` directly in your terminal. See [System Initialization](../../tutorial/setup/) for details.
+Once running, by default the management plane binds to loopback (`127.0.0.1:9443`). Use an SSH tunnel (`ssh -L 9443:127.0.0.1:9443 user@server` and browse to `http://127.0.0.1:9443/setup`). If you initialize from the server terminal instead, target the same systemd paths explicitly so setup does not create a second configuration under the current directory:
+
+```bash
+sudo -u cheesewaf /usr/local/bin/cheesewaf \
+  --config /etc/cheesewaf/cheesewaf.yaml \
+  --data-dir /var/lib/cheesewaf setup
+```
+
+See [System Initialization](../../tutorial/setup/) for details.
 
 ## Standard Filesystem Hierarchy {#paths}
 

@@ -2,7 +2,7 @@
 title: RESTful Management API Reference
 linkTitle: REST API
 weight: 160
-description: Management API authentication mechanics, public unauthenticated endpoint inventory, granular RBAC permission matrix, and standard error formats.
+description: Management API authentication mechanics, public and bootstrap endpoint inventory, granular RBAC permission matrix, and standard error formats.
 ---
 
 CheeseWAF's management API is hosted strictly on the **Control Plane** (default port `9443`) under the `/api` route prefix, maintaining complete physical and logical isolation from business traffic on the Data Plane.
@@ -16,7 +16,7 @@ The system supports two primary authentication models:
 
 ### Public Unauthenticated Endpoints
 
-The following endpoints can be accessed without prior authentication:
+The following read-only, login, or challenge endpoints can be accessed without a prior session or bearer token. A configured public Prometheus path is also unauthenticated when `monitor.prometheus.public: true`; its path is deployment-specific.
 
 | HTTP Method | Route Path | Description & Purpose |
 | --- | --- | --- |
@@ -24,10 +24,16 @@ The following endpoints can be accessed without prior authentication:
 | `GET` | `/api/auth/login-options` | Retrieves login security settings (e.g., CAPTCHA/2FA requirements) |
 | `POST` | `/api/auth/captcha`, `/api/auth/captcha/verify` | Generates and verifies login CAPTCHA challenges |
 | `POST` | `/api/auth/login` | Administrator authentication endpoint |
-| `POST` | `/api/setup`, `/api/setup/probe` | Initial deployment setup and environment probing |
-| `GET/PATCH` | `/api/setup/draft` | Draft initialization state storage and querying |
-| `POST` | `/api/cluster/join` | Node onboarding request endpoint for cluster membership |
-| `POST` | `/api/cluster/nodes/{id}/heartbeat` | Cluster member node heartbeat reporting |
+| `GET` | `/api/setup/status` | Reports whether first-install setup is still required; does not mutate state |
+
+### Bootstrap and Node-Authenticated Endpoints
+
+These routes are mounted outside the normal management-token middleware, but they are **not anonymous operations**:
+
+- `POST /api/setup` and `POST /api/setup/probe` require the setup token in `X-CheeseWAF-Setup-Token`, and are accepted only while setup is incomplete.
+- `GET /api/setup/draft` requires the setup-session cookie issued by the probe; `PATCH /api/setup/draft` requires that cookie plus the setup token.
+- `POST /api/cluster/join` requires a one-time join token and a node CSR. The controller validates the token and enrolls the node; it is not a public membership endpoint.
+- `POST /api/cluster/nodes/{id}/heartbeat` requires a verified mTLS client certificate for an enrolled, non-revoked node (certificate identity/serial must match the registration).
 
 ## RBAC Permission Matrix Reference {#permissions}
 
@@ -61,9 +67,12 @@ API failures return appropriate HTTP status codes accompanied by a structured JS
 
 ```json
 {
-  "code": 40001,
-  "message": "Invalid request parameter",
-  "details": "Field 'domain' is required"
+  "error": {
+    "code": "BAD_REQUEST",
+    "message": "Invalid request parameter",
+    "trace_id": "1a2b3c4d5e6f",
+    "event_id": "1a2b3c4d5e6f"
+  }
 }
 ```
 

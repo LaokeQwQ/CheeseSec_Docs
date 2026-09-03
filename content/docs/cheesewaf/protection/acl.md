@@ -33,9 +33,9 @@ protection:
 | `path_prefix` | Matching URI path prefix (e.g., `/debug`, `/actuator`) |
 | `header` | HTTP header key to evaluate; leave empty if unconstrained |
 | `header_value` | Expected or rejected value for the specified header |
-| `action` | Action on match: `block` (terminate request) or `allow` (permit passage) |
+| `action` | Action on match: `block`, `log`, or `challenge` |
 | `severity` | Threat severity recorded in security logs and audit events |
 
 {{% pageinfo color="info" %}}
-ACL uses high-performance prefix-tree matching optimized for fixed path boundaries. For complex regex-based pattern matching, use [Custom Regex Rules](../custom-rules/).
+ACL evaluates enabled rules in declaration order, using case-normalized method checks, literal URI-prefix comparisons, and exact case-insensitive header-value comparisons. For complex regex-based pattern matching, use [Custom Regex Rules](../custom-rules/).
 {{% /pageinfo %}}

@@ -2,7 +2,7 @@
 title: RESTful 管理接口
 linkTitle: REST API
 weight: 160
-description: 管理 API 鉴权机制、公开免密端点清单、RBAC 细粒度权限对照表与错误响应格式。
+description: 管理 API 鉴权机制、公开与引导流程端点清单、RBAC 细粒度权限对照表与错误响应格式。
 ---
 
 CheeseWAF 的管理 API 统一部署于 **管理平面**（默认端口 `9443`）的 `/api` 路径下，与承载业务流量的数据平面完全隔离。
@@ -16,7 +16,7 @@ CheeseWAF 的管理 API 统一部署于 **管理平面**（默认端口 `9443`�
 
 ### 公开免密端点清单
 
-以下接口无需鉴权即可访问：
+以下只读、登录或挑战接口无需已有会话或 Bearer 令牌即可访问。若配置 `monitor.prometheus.public: true`，对应的 Prometheus 路径也会免密开放（路径由部署配置决定）。
 
 | HTTP 方法 | 接口路径 | 用途说明 |
 | --- | --- | --- |
@@ -24,10 +24,16 @@ CheeseWAF 的管理 API 统一部署于 **管理平面**（默认端口 `9443`�
 | `GET` | `/api/auth/login-options` | 获取登录配置（如是否启用验证码、2FA 等） |
 | `POST` | `/api/auth/captcha`、`/api/auth/captcha/verify` | 登录人机验证码获取与预校验 |
 | `POST` | `/api/auth/login` | 管理员登录接口 |
-| `POST` | `/api/setup`、`/api/setup/probe` | 首次初始化与环境探测接口 |
-| `GET/PATCH` | `/api/setup/draft` | 初始化草稿数据暂存与查询 |
-| `POST` | `/api/cluster/join` | 集群新节点注册加入端点 |
-| `POST` | `/api/cluster/nodes/{id}/heartbeat` | 节点集群心跳上报 |
+| `GET` | `/api/setup/status` | 查询是否仍需首次初始化；该接口不修改状态 |
+
+### 引导流程与节点鉴权接口
+
+这些路由虽然不经过常规管理令牌中间件，但**并非匿名操作**：
+
+- `POST /api/setup` 与 `POST /api/setup/probe` 必须在请求头 `X-CheeseWAF-Setup-Token` 中提供初始化令牌，且仅在系统尚未完成初始化时接受。
+- `GET /api/setup/draft` 必须携带探测阶段下发的初始化会话 Cookie；`PATCH /api/setup/draft` 同时需要该 Cookie 与初始化令牌。
+- `POST /api/cluster/join` 必须提供一次性加入令牌与节点 CSR；控制器会校验令牌并完成节点注册，并非公开的集群成员接口。
+- `POST /api/cluster/nodes/{id}/heartbeat` 仅接受已注册且未吊销节点的已验证 mTLS 客户端证书（证书身份/序列号必须与注册信息一致）。
 
 ## RBAC 细粒度权限对照表 {#permissions}
 
@@ -61,9 +67,12 @@ API 调用失败时，将返回对应的 HTTP 状态码与标准 JSON 错误响�
 
 ```json
 {
-  "code": 40001,
-  "message": "Invalid request parameter",
-  "details": "Field 'domain' is required"
+  "error": {
+    "code": "BAD_REQUEST",
+    "message": "Invalid request parameter",
+    "trace_id": "1a2b3c4d5e6f",
+    "event_id": "1a2b3c4d5e6f"
+  }
 }
 ```
 

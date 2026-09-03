@@ -55,7 +55,7 @@ For enterprise-scale access logs, CheeseWAF streams events asynchronously to ext
 | `storage.redis` | Distributed state coordination and cross-node session lookups |
 
 {{% pageinfo color="info" %}}
-To prevent SSRF attacks, endpoints resolving to private IP ranges require setting `allow_private_endpoint: true`. Test connectivity via `POST /api/system/storage/test` prior to cutover.
+To prevent SSRF attacks, external storage endpoints for ClickHouse, VictoriaLogs, and Elasticsearch resolving to private IP ranges require setting `allow_private_endpoint: true` (PostgreSQL and Redis drivers do not carry this field). Test connectivity via `POST /api/system/storage/test` prior to cutover.
 {{% /pageinfo %}}
 
 ## 4. Automated Task Scheduler {#scheduler}

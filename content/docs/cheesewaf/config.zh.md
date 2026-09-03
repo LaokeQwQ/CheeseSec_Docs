@@ -28,6 +28,9 @@ CheeseWAF 在首次启动时会在运行数据目录的 `config/` 目录下自�
 | `monitor` | Prometheus 指标导出、Remote Write 与告警通知器 | [监控与日志](../monitor/) |
 | `apisec` | API 资产发现、Schema 校验与 RBAC 权限矩阵 | [API 接口安全](../api-security/) |
 | `performance` | Go 运行时垃圾回收（GC）自适应调优（`memory_limit_ratio` / `min_gogc`） | [架构介绍](../intro/) |
+| `time_sync` | NTP 时间同步服务器与时钟偏差共识算法配置 | [监控与日志](../monitor/) |
+| `captcha_assets` | 验证码自定义背景图与点选图标静态资源目录 | [Bot 与验证码](../protection/bot-captcha/) |
+| `acme` | ACME 自动化证书签发与 DNS 认证提供商配置 | [TLS 与证书](../tls/) |
 | `vulnerability` | 漏洞预警情报源订阅配置 | [系统运维](../operations/) |
 
 ## 超时机制配置 {#timeouts}
@@ -38,4 +41,4 @@ CheeseWAF 在首次启动时会在运行数据目录的 `config/` 目录下自�
 ## 动态热重载范围 {#reload}
 
 - **即时热生效**：在 Web 控制台或通过 REST API 保存站点配置、自定义规则、IP 黑白名单、Bot 挑战策略及 ACL 规则时，系统会在内存中实时原子热重载，无需重启服务进程。
-- **需重启生效**：修改 `server.listen_http`、`server.admin_listen` 等底层物理监听端口或网络驱动层参数后，须重启服务进程（通过 `cheesewaf restart` 或 systemd 服务管理器）。
+- **需重启生效**：修改 `server.listen`、`server.admin_listen` 等底层物理监听端口或网络驱动层参数后，须重启服务进程（通过 `cheesewaf restart` 或 systemd 服务管理器）。

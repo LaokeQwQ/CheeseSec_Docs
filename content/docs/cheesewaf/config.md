@@ -28,6 +28,9 @@ CheeseWAF automatically generates a default `cheesewaf.yaml` configuration file 
 | `monitor` | Prometheus metrics export, Remote Write, and alert notifiers | [Monitoring & Logs](../monitor/) |
 | `apisec` | API asset discovery, request schema contracts, and RBAC matrix | [API Security & Governance](../api-security/) |
 | `performance` | Go runtime Garbage Collection (GC) adaptive tuning (`memory_limit_ratio` / `min_gogc`) | [Architecture & Overview](../intro/) |
+| `time_sync` | NTP sources, synchronization intervals, and clock-offset consensus limits | [Monitoring & Logs](../monitor/) |
+| `captcha_assets` | Local or S3 CAPTCHA image/font assets and resource limits | [Bot & CAPTCHA](../protection/bot-captcha/) |
+| `acme` | ACME certificate issuance and DNS challenge provider settings | [TLS & Certificates](../tls/) |
 | `vulnerability` | Vulnerability CVE feed subscription configurations | [System Operations](../operations/) |
 
 ## Network Timeout Controls {#timeouts}
@@ -38,4 +41,4 @@ CheeseWAF automatically generates a default `cheesewaf.yaml` configuration file 
 ## Dynamic Hot-Reload Scopes {#reload}
 
 - **Atomic In-Memory Hot Reload**: Modifying site definitions, custom regex rules, IP access lists, bot challenge policies, or ACL rules via the Web console or REST API takes effect immediately in memory without process restarts.
-- **Restart Required**: Alterations to physical socket listeners (such as `server.listen_http` or `server.admin_listen`) require restarting the daemon process via `cheesewaf restart` or systemd.
+- **Restart Required**: Alterations to physical socket listeners (such as `server.listen` or `server.admin_listen`) require restarting the daemon process via `cheesewaf restart` or systemd.

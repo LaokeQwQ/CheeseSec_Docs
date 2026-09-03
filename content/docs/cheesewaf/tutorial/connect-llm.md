@@ -13,15 +13,18 @@ In the Web management console, navigate to the **AI** section and configure the 
 | --- | --- | --- |
 | **Enable AI** | `ai.enabled` | Master toggle for ALAP functionality (boolean) |
 | **Provider** | `ai.provider` | API protocol dialect: `openai` or `anthropic` |
-| **Base URL** | `ai.base_url` | API Base URL (e.g., `https://api.openai.com/v1`) |
+| **Base URL** | `ai.api_base` | API Base URL (e.g., `https://api.openai.com/v1`) |
+| **Allow Private Endpoint** | `ai.allow_private_api_base` | Allows connecting to private/local LLM gateways (Ollama, LocalAI; defaults to `false`) |
 | **API Key** | `ai.api_key` | Secret access token / API key provided by your LLM vendor |
 | **Model Name** | `ai.model` | Model identifier (e.g., `gpt-4o-mini`, `claude-3-5-sonnet-latest`) |
-| **Auto-Agreement** | `ai.auto_agree` | When enabled, threats evaluated as `high` or `critical` are automatically persisted as defensive rules |
+| **Auto-Agreement** | `sites[].waf.semantic_policy.auto_agree` | When enabled, threats evaluated as `high` or `critical` are automatically persisted as defensive rules |
+
+**Legacy configuration migration:** The old `ai.base_url` and `ai.auto_agree` keys are not read by the current release. Move `ai.base_url` to `ai.api_base`, and move the approval setting to each site's `sites[].waf.semantic_policy.auto_agree`; save the configuration and reload/restart the service as required.
 
 ## Best Practices & Security Guidelines {#best-practices}
 
 - **Enforce Asynchronous Execution**: Always maintain `ai.async: true` in your configuration to guarantee that the Data Plane never blocks real-time traffic while waiting for model inference.
 - **Connection Testing**: Before enabling rules, click **Test Connection** in the console to validate network routing, DNS resolution, and credential authentication.
-- **Gradual Rollout of Auto-Agreement**: Keep `ai.auto_agree: false` during initial deployment. Review samples manually in the threat queue for 1–2 weeks to verify evaluation fidelity before enabling automated rule generation.
+- **Gradual Rollout of Auto-Agreement**: Keep `sites[].waf.semantic_policy.auto_agree` disabled during initial deployment. Review samples manually in the threat queue for 1–2 weeks to verify evaluation fidelity before enabling automated rule generation.
 
 For details on assistant tool approvals, review queues, and automated self-learning, see [ALAP & Review Queue](../../alap/).

@@ -14,9 +14,9 @@ description: 使用 Docker Compose 编排部署 CheeseWAF，支持容器只读�
 ```yaml
 services:
   cheesewaf:
-    image: cheesewaf:latest
+    image: cheesewaf:dev
     build:
-      context: .
+      context: ../..
       dockerfile: deploy/docker/Dockerfile
     user: "10001:10001"
     restart: unless-stopped
@@ -29,7 +29,7 @@ services:
       - /tmp:size=32m,mode=1777,noexec,nosuid,nodev
     ports:
       - "8080:8080"
-      - "9443:9443"
+      - "127.0.0.1:9443:9443"
     volumes:
       - cheesewaf-data:/var/lib/cheesewaf
       - cheesewaf-logs:/var/log/cheesewaf
@@ -53,14 +53,16 @@ volumes:
 执行以下命令在后台启动容器并观察日志：
 
 ```bash
-docker compose up -d
-docker compose logs -f cheesewaf
+docker compose -f deploy/docker/docker-compose.yml up -d
+docker compose -f deploy/docker/docker-compose.yml logs -f cheesewaf
 ```
 
-容器首次启动时会自动在持久化目录生成初始管理员配置，并为管理平面签发自签名证书。在浏览器中访问 `https://<服务器IP>:9443/setup` 即可进入 Web 初始化向导；亦可执行以下命令通过容器终端进行 CLI 初始化：
+容器首次启动时会自动在持久化目录生成初始管理员配置，并为管理平面签发自签名证书。本 Compose 文件将管理端口仅绑定到 Docker 宿主机回环地址（`127.0.0.1:9443`），请在宿主机浏览器中打开 `https://127.0.0.1:9443/setup`。从其他机器访问时，请先将 `CHEESEWAF_SSH_TARGET` 设置为 SSH 目标，再执行 `ssh -N -L 9443:127.0.0.1:9443 "$CHEESEWAF_SSH_TARGET"` 建立隧道，之后仍使用同一回环地址；如需直接暴露端口，请显式修改绑定并配置相应的访问控制。亦可执行以下命令通过容器终端进行 CLI 初始化：
 
 ```bash
-docker compose exec -it cheesewaf cheesewaf setup
+docker compose -f deploy/docker/docker-compose.yml exec -it cheesewaf \
+  cheesewaf --config /var/lib/cheesewaf/config/cheesewaf.yaml \
+  --data-dir /var/lib/cheesewaf setup
 ```
 
-停止容器（`docker compose down`）时，保存在 `cheesewaf-data`（包含 SQLite 数据库、证书与自定义规则）与 `cheesewaf-logs` 中的持久化数据均会被完整保留。
+停止容器（`docker compose -f deploy/docker/docker-compose.yml down`）时，保存在 `cheesewaf-data`（包含 SQLite 数据库、证书与自定义规则）与 `cheesewaf-logs` 中的持久化数据均会被完整保留。
