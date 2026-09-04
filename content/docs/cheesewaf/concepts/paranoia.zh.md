@@ -9,6 +9,12 @@ CheeseWAF 支持为每个站点独立配置防护等级（`sites[].waf.paranoia_
 
 防护等级机制的核心目标是在保证高检出率的同时最大程度降低误报率。语义分析引擎在对单个解码后的参数值进行检测时，会根据特征形态（独立特征 vs 夹杂特征）与当前防护等级执行分级处置。
 
+{{% pageinfo color="info" %}}
+**双独立开关模型（Two Independent Knobs）**：
+- `waf.paranoia_level`（0～5）驱动的是**语义分析引擎本身**——决定引擎判定载荷形态（独立特征 vs 夹杂特征）的敏感度与严格程度。
+- 代理层的拦截与挑战阈值来自另一个配置项 `protection_policy.web_attack`（可选 `off`、`low`、`smart`、`high`、`strict`，默认 `smart`）。它决定检出威胁后代理层如何处置（严重度与置信度门槛、聚合风险分判断，以及 100ms 检测预算耗尽时的失败降级策略）。两者相互解耦。
+{{% /pageinfo %}}
+
 ## 防护等级对照表 {#levels}
 
 | 等级 | 策略定位 | 独立特征（Isolated） | 夹杂特征（Embedded） | 动态升档支持 |

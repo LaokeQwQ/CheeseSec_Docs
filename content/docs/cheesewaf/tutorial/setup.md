@@ -44,6 +44,8 @@ cheesewaf setup --yes \
   --skip-probe
 ```
 
+> **Note**: In automated mode, `--yes` strictly requires `--password-stdin` to guarantee that the administrator password satisfies the credential policy. Upon completion, the wizard prints the canonical `http://` or `https://` panel URL according to the current administrative TLS state.
+
 ## Option 2: Browser Web Wizard {#web-setup}
 
 {{% steps %}}

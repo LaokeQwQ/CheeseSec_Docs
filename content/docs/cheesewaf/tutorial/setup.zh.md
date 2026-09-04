@@ -44,6 +44,8 @@ cheesewaf setup --yes \
   --skip-probe
 ```
 
+> **注意**：无人值守模式下 `--yes` 必须与 `--password-stdin` 联合使用，确保初始密码满足安全策略要求；向导执行完成后会根据管理端 TLS 状态自动输出正确的 `http://` 或 `https://` 访问面板链接。
+
 ## 方式二：Web 浏览器图形向导 {#web-setup}
 
 {{% steps %}}

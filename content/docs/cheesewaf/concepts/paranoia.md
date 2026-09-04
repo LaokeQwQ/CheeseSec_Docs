@@ -9,6 +9,12 @@ CheeseWAF allows configuring the paranoia level independently for each reverse p
 
 The paranoia level mechanism balances high threat detection rates with false-positive suppression. When inspecting decoded parameter values, the AST semantic engine executes tiered responses based on payload morphology (Isolated vs. Embedded).
 
+{{% pageinfo color="info" %}}
+**Two Independent Knobs**:
+- `waf.paranoia_level` (0–5) drives the **AST semantic engine itself**—determining how strictly the engine identifies attack payload morphology (Isolated vs. Embedded features).
+- Ingress proxy enforcement actions are driven by an entirely separate setting: `protection_policy.web_attack` (`off`, `low`, `smart`, `high`, `strict`, default `smart`). It dictates downstream action thresholds (severity and confidence cutoffs, aggregate risk scoring, and failure policies when the 100ms detection budget is exhausted). The two controls are completely decoupled.
+{{% /pageinfo %}}
+
 ## Paranoia Levels Comparison {#levels}
 
 | Level | Policy Profile | Isolated Payload | Embedded Payload | Auto-Promotion |

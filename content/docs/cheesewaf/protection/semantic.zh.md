@@ -16,13 +16,14 @@ CheeseWAF 的核心检测器采用抽象语法树（AST）语法分析架构，�
 | 引擎标识 | 目标攻击类型与深度检测能力说明 |
 | --- | --- |
 | `sql` | **SQL 注入**：主流 SQL 方言语法树构建；内置 **XPath 注入解析器**；重量级时间盲注（笛卡尔积、`generate_series`）识别；注释空格截断防御 |
-| `xss` | **跨站脚本**：HTML/SVG 标签闭合；混淆 `javascript:` 伪协议拼接识别；`dynsrc`/`lowsrc` 属性探针；JS 字符串逃逸；畸形事件处理器属性防护 |
+| `xss` | **跨站脚本**：HTML/SVG 标签闭合；**全字符离散混淆协议检测**（无死角识别如 `j a v a s c r i p t:`、CDATA 与 HTML 注释离散穿插）；混淆 `javascript:` 伪协议拼接识别；`dynsrc`/`lowsrc` 属性探针；JS 字符串逃逸；畸形事件处理器属性防护 |
 | `rce` | **命令与代码执行**：系统命令表对齐（覆盖 `id`、`ls`、`echo`、`netstat`、`lsof` 等）；换行命令链；绝对路径 Basename 自动提取匹配；`;` + 系统调用组合检测 |
 | `lfi` | **文件包含与目录遍历**：POSIX 与 **Windows 绝对路径识别**（智能排除 `Program Files` 等合法路径防误报）；超长 UTF-8 折叠展开；SSI 服务器包含指令（`<!--#exec`）识别 |
 | `nosql` | **NoSQL 数据库注入**：支持请求头深度分析（如 `X-User-Filter`）；MongoDB Shell 语法逃逸；注入型操作符与合法过滤型操作符隔离分析 |
 | `ssti` | **服务端模板注入**：Jinja2、Twig 等主流语法树识别；引号操作数探针；整值模板表达式智能绕过字段名门限分析 |
 | `ssrf` | **服务端请求伪造**：入站 URL 参数协议检测；整请求体为 URL 时自动识别为 Fetch Sink 并触发防护 |
 | `xxe` | **XML 外部实体注入**：DOCTYPE 实体声明、SYSTEM/PUBLIC 外部资源引用与参数实体攻击拦截 |
+| `webshell` | **Webshell 与恶意脚本**：结合 PHP 执行原语分析与 **香农信息熵（Shannon Entropy $\ge$ 5.2）** 测算，精准识别长 Base64 与多层加密变形一句话木马，有效避免长重复字符、JWT 凭据及前端压缩源码误报 |
 
 {{% pageinfo color="tip" %}}
 建议在生产环境中保持核心引擎全量开启。若明确业务无对应技术栈（例如纯静态网站无需 SQL 引擎），可关闭特定引擎以进一步减少单次请求的 CPU 耗时。

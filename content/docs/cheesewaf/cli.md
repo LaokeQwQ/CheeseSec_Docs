@@ -60,10 +60,10 @@ cheesewaf setup --yes \
 ```
 
 Key flags:
-- `-y, --yes`: Skip all confirmation prompts and commit changes directly.
-- `--username` / `--password-stdin`: Initial root administrator username and password from standard input.
-- `--profile`: Hardware profile tuning (`smart`, `low`, `medium`, `high`, or `custom`; legacy aliases `minimal`, `balanced`, and `performance` remain accepted).
-- `--admin-listen`: Admin management API listen address (default `127.0.0.1:9443`).
+- `-y, --yes`: Skip interactive confirmation prompts and commit directly (headless setup requires `--password-stdin` to ensure strong credential generation).
+- `--username` / `--password-stdin`: Initial root administrator username and password read from standard input.
+- `--profile`: Hardware profile tuning (`smart`, `low`, `medium`, `high`, or `custom`; official aliases `minimal`, `balanced`, and `performance` are fully supported).
+- `--admin-listen`: Admin management API listen address (default `127.0.0.1:9443`; prints `http://` or `https://` based on `admin_tls`).
 - `--skip-probe` / `--skip-external`: Skip hardware autodetection or skip external telemetry (GeoIP/Prometheus/VictoriaLogs) setup.
 
 ### 2. Custom Rules Management (`rules`) {#cmd-rules}
@@ -126,7 +126,7 @@ cheesewaf cluster join \
   --token "$CHEESEWAF_JOIN_TOKEN" \
   --node-id "$CHEESEWAF_NODE_ID" \
   --advertise-addr "$CHEESEWAF_ADVERTISE_ADDR" \
-  --ca-file "$CHEESEWAF_CONTROLLER_CA"
+  --ca-file "$CHEESEWAF_CONTROLLER_CA" # --ca-cert is also accepted
 
 export CHEESEWAF_API_TOKEN='management-token-with-write-cluster'
 

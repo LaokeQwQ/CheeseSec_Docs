@@ -60,10 +60,10 @@ cheesewaf setup --yes \
 ```
 
 常用参数包括：
-- `-y, --yes`：跳过所有交互式确认提示直接提交。
+- `-y, --yes`：跳过所有交互式确认提示直接提交（无人值守时必须同时指定 `--password-stdin` 以保障初始凭据满足复杂度策略）。
 - `--username` / `--password-stdin`：初始超级管理员账号与从标准输入读取的强密码。
-- `--profile`：硬件适配画像（可选 `smart`、`low`、`medium`、`high`、`custom`，兼容别名 `minimal`、`balanced`、`performance`）。
-- `--admin-listen`：指定管理平面监听地址（默认 `127.0.0.1:9443`）。
+- `--profile`：硬件适配画像（可选 `smart`、`low`、`medium`、`high`、`custom`，支持官方别名 `minimal`、`balanced`、`performance`）。
+- `--admin-listen`：指定管理平面监听地址（默认 `127.0.0.1:9443`，向导提交时会自动依据 `admin_tls` 状态打印 `http://` 或 `https://` 面板 URL）。
 - `--skip-probe` / `--skip-external`：跳过 CPU/内存/磁盘自动探测或跳过外部遥测（GeoIP/Prometheus/VictoriaLogs）配置。
 
 ### 2. 自定义规则导入与导出（`rules`） {#cmd-rules}
@@ -125,7 +125,7 @@ cheesewaf cluster join \
   --token "$CHEESEWAF_JOIN_TOKEN" \
   --node-id "$CHEESEWAF_NODE_ID" \
   --advertise-addr "$CHEESEWAF_ADVERTISE_ADDR" \
-  --ca-file "$CHEESEWAF_CONTROLLER_CA"
+  --ca-file "$CHEESEWAF_CONTROLLER_CA" # 亦可使用别名 --ca-cert
 
 export CHEESEWAF_API_TOKEN='management-token-with-write-cluster'
 

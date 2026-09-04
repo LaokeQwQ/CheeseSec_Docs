@@ -44,13 +44,20 @@ custom_rules:
 | `priority` | Integer | Rule execution priority (-1,000,000 to 1,000,000). **Lower numbers execute first** |
 | `enabled` | Boolean | Rule enable flag (default `true`) |
 
+## Deterministic Enforcement & Policy Bypass {#deterministic}
+
+Custom rules represent explicit administrative intent rather than probabilistic detector signals. Within the data plane pipeline:
+- **Direct Execution**: When a request matches a custom rule, the engine **unconditionally and immediately executes the designated action (`block`, `challenge`, or `log`)**.
+- **Exempt from Policy Thresholds**: Unlike semantic detections, custom rule actions **bypass `protection_policy.web_attack` gates (such as minimum severity thresholds, model confidence filters, or aggregate risk score ceilings)**, guaranteeing deterministic enforcement as configured.
+
 ## Security Constraints & Quota Limits {#validation-limits}
 
 To prevent malformed or unbounded rules from causing performance degradation, the configuration validator enforces strict boundaries:
 
-- **Resource Limits**: A single site supports up to **256** custom rules (`maxCustomRulesCount = 256`). Import document size must not exceed **1MB**, and total pattern length across all rules cannot exceed **256KB**.
+- **Resource Limits**: A single site supports up to **256** custom rules (`maxCustomRulesCount = 256`). Import document size must not exceed **1MB**, and total pattern length across all rules cannot exceed **256KB**. The imported document must explicitly define the `custom_rules` root key.
 - **ReDoS Immunity**: Backed by Go's `regexp` (RE2 guarantees linear-time execution, eliminating catastrophic backtracking ReDoS). Expressions exceeding 4096 compiled program instructions are rejected.
 - **Deduplication Check**: Rule IDs must be unique within each site. Duplicate `location + pattern` combinations are strictly rejected.
+- **Content-Disposition Sanitization**: When exporting rule archives (`GET /api/rules/export`), output filenames are strictly sanitized against an `[A-Za-z0-9._-]` whitelist, preventing HTTP response header injection and directory traversal attacks.
 
 ## Batch Import, Export & Template Generation {#import-export}
 

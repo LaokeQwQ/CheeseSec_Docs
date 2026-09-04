@@ -16,13 +16,14 @@ Individual specialized semantic engines can be toggled per site via `sites[].waf
 | Engine Key | Attack Scope & Deep Detection Capabilities |
 | --- | --- |
 | `sql` | **SQL Injection**: Major SQL dialect grammar parsing; integrated **XPath injection parser**; heavy time-blind injection detection (Cartesian product / `generate_series`); whitespace comment truncation resilience |
-| `xss` | **Cross-Site Scripting**: HTML/SVG tag balance analysis; obfuscated `javascript:` URI concatenation regex; `dynsrc`/`lowsrc` attribute probes; JavaScript string escaping; malformed event handler inspection |
+| `xss` | **Cross-Site Scripting**: HTML/SVG tag balance analysis; **fully split protocol scheme detection** (detects scattered tokens like `j a v a s c r i p t:` and CDATA/HTML comment interspersal); obfuscated `javascript:` URI concatenation regex; `dynsrc`/`lowsrc` attribute probes; JavaScript string escaping; malformed event handler inspection |
 | `rce` | **Command & Code Injection**: Comprehensive command table alignment (including `id`, `ls`, `echo`, `netstat`, `lsof`); newline command chains; automatic basename extraction for absolute executable paths; `;` + system function calls |
 | `lfi` | **File Inclusion & Path Traversal**: POSIX and **Windows absolute path traversal** (smart `Program Files` exclusion to eliminate false positives); deep UTF-8 folding; SSI server-side includes (`<!--#exec`) |
 | `nosql` | **NoSQL Injection**: Deep HTTP request header analysis (e.g., `X-User-Filter`); MongoDB shell escaping; isolation of malicious operators from legitimate query filter operators |
 | `ssti` | **Template Injection**: Jinja2, Twig, and common template grammar trees; quoted operand probes; direct expression detection when entire value is a template expression |
 | `ssrf` | **Server-Side Request Forgery**: URI parameter schema inspection; full request body URL detection treating the whole body as a potential fetch sink |
 | `xxe` | **XML External Entity**: DOCTYPE entity declarations, SYSTEM/PUBLIC external resource references, and parameter entity attacks |
+| `webshell` | **Webshell & Malicious Scripts**: Combines PHP execution primitive analysis with **Shannon entropy measurement ($\ge$ 5.2)** to accurately flag high-entropy Base64 one-liners and obfuscated droppers while eliminating false positives on repeated strings, JWT tokens, and minified code |
 
 {{% pageinfo color="tip" %}}
 In production, keeping core engines enabled is recommended. If a service clearly lacks a specific stack (such as a static site without SQL backends), disabling that engine saves CPU cycles.
