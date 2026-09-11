@@ -7,6 +7,8 @@ description: cheesewaf.yaml 主配置文件结构导航、顶层键解析、超�
 
 CheeseWAF 在首次启动时会在运行数据目录的 `config/` 目录下自动生成 `cheesewaf.yaml` 主配置文件（默认 `./data/config/cheesewaf.yaml`）。预设配置模板可参考源码库中的 [`configs/cheesewaf.yaml`](https://github.com/LaokeQwQ/CheeseWAF/blob/dev/configs/cheesewaf.yaml)。
 
+`configs/cheesewaf.yaml` 是源码模板，不是运行时状态文件。初始化、站点管理和控制台保存操作会写入运行时配置；源码构建时请先复制到 `./data/config/cheesewaf.yaml` 或其他明确的数据目录，避免把数据库路径、证书、密钥和站点变更写回 Git 工作区中的模板。
+
 ## 顶层配置块索引 {#top-level-keys}
 
 | 顶层配置键 | 功能模块与定位 | 详细参考章节 |
@@ -19,11 +21,11 @@ CheeseWAF 在首次启动时会在运行数据目录的 `config/` 目录下自�
 | `sites` | 业务反向代理站点、域名与上游配置 | [站点管理](../sites/) |
 | `protection` | 全局安全基线（语义引擎、IP、Bot、限流等） | [安全防护策略](../protection/) |
 | `block_page` | 阻断拦截页模板与自定义响应 HTML 清洗 | [拦截响应页](../protection/block-page/) |
-| `storage` | 内置 SQLite 版本化迁移、外部外发 Sink 与数据备份 | [存储与调度](../storage/) |
+| `storage` | `temporary` SQLite 管理存储；预留但当前会拒绝的 `production` 配置；可选外部日志 Sink | [存储与调度](../storage/) |
 | `logging` | 访问日志输出级别、格式与文件轮转 | [监控与日志](../monitor/) |
 | `ai` | ALAP 大语言模型连接与异步研判参数 | [ALAP 异步审查](../alap/) |
-| `update` | OTA 自动更新与签名校验 | [系统运维](../operations/) |
-| `scheduler` | 自动化清理与定时报表任务调度器 | [存储与调度](../storage/) |
+| `update` | OTA 预留配置；当前运行时尚未实现更新 Worker | [系统运维](../operations/) |
+| `scheduler` | 自动化清理、配置快照与定时报表任务调度器；配置快照不是完整数据库导出 | [存储与调度](../storage/) |
 | `edge` | 边缘响应头注入、静态缓存与 Gzip/Brotli 压缩 | [边缘特性](../edge/) |
 | `monitor` | Prometheus 指标导出、Remote Write 与告警通知器 | [监控与日志](../monitor/) |
 | `apisec` | API 资产发现、Schema 校验与 RBAC 权限矩阵 | [API 接口安全](../api-security/) |

@@ -7,6 +7,8 @@ description: Complete structure navigation for cheesewaf.yaml, top-level key ind
 
 CheeseWAF automatically generates a default `cheesewaf.yaml` configuration file within its runtime data directory under `config/` upon first launch (default `./data/config/cheesewaf.yaml`). A baseline template is maintained in the source repository at [`configs/cheesewaf.yaml`](https://github.com/LaokeQwQ/CheeseWAF/blob/dev/configs/cheesewaf.yaml).
 
+`configs/cheesewaf.yaml` is a source template, not a runtime state file. Setup, site management, and console saves write to the runtime configuration. For source builds, copy it first to `./data/config/cheesewaf.yaml` or another dedicated data directory so database paths, certificates, secrets, and site changes never modify the Git working tree.
+
 ## Top-Level Configuration Index {#top-level-keys}
 
 | Top-Level Key | Functional Area & Role | Documentation Reference |
@@ -19,11 +21,11 @@ CheeseWAF automatically generates a default `cheesewaf.yaml` configuration file 
 | `sites` | Reverse proxy sites, domain bindings, and upstream origin pools | [Site Management](../sites/) |
 | `protection` | Global security baseline (AST engines, IP, Bot, rate limiting, ACL) | [Security Protection Policies](../protection/) |
 | `block_page` | Block response templates and custom HTML branding sanitization | [Block Response Pages](../protection/block-page/) |
-| `storage` | Embedded SQLite versioned migrations, external log sinks, and backups | [Storage & Scheduling](../storage/) |
+| `storage` | `temporary` SQLite management profile; reserved, currently rejected `production` profile; optional external log sinks | [Storage & Scheduling](../storage/) |
 | `logging` | Access log verbosity, structured JSON formats, and log rotation | [Monitoring & Logs](../monitor/) |
 | `ai` | ALAP LLM provider endpoints and asynchronous review parameters | [ALAP Review & Self-Learning](../alap/) |
-| `update` | OTA automated rule updates and cryptographic signature verification | [System Operations](../operations/) |
-| `scheduler` | Automated log cleanup, database backups, and daily security reports | [Storage & Scheduling](../storage/) |
+| `update` | Reserved OTA settings; updater worker is not implemented in the current runtime | [System Operations](../operations/) |
+| `scheduler` | Automated log cleanup, configuration snapshots, and daily security reports; snapshots are not complete database exports | [Storage & Scheduling](../storage/) |
 | `edge` | Edge response header manipulation, static caching, and Brotli compression | [Edge Features](../edge/) |
 | `monitor` | Prometheus metrics export, Remote Write, and alert notifiers | [Monitoring & Logs](../monitor/) |
 | `apisec` | API asset discovery, request schema contracts, and RBAC matrix | [API Security & Governance](../api-security/) |

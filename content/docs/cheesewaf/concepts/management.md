@@ -20,6 +20,7 @@ When `setup.three_end_unified: true` is configured, CheeseWAF synchronizes ident
 - **Universal User Credentials**: Administrator and operator accounts provisioned in the Web console can be used directly for TUI login and API authentication.
 - **Consistent RBAC Enforcement**: API Tokens created in the console's System Management section inherit the exact RBAC permission matrix defined in `apisec.permissions`.
 - **Granular Roles**: Built-in default roles include `admin` (holding full `["*"]` permissions) and `readonly` (scoped to `["read:*", "read:cluster"]`).
+- **Exact identity fields**: Usernames use the canonical 3–32 ASCII-character form documented in the CLI reference. Roles must exactly match configured `apisec.permissions` keys; leading/trailing/embedded Unicode whitespace, control characters (`Cc`), format/invisible characters (`Cf`), and permission expressions such as `*` or `:` are rejected. The server never trims or case-normalizes identity fields.
 
 ## Operational Audit Trail {#audit}
 

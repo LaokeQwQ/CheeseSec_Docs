@@ -33,3 +33,5 @@ CheeseWAF 支持以系统服务、容器编排或单二进制运行于各类主�
 | `cheesewaf-arm64-windows-*-setup.exe` | Windows ARM64 NSIS 图形安装向导 |
 
 安装完成后，请继续参考 [快速上手](../tutorial/) 完成系统初始化与站点接入。
+
+小型主机建议使用轻量档：逻辑核数不超过 2 或内存不超过 2 GB 时，初始化向导会推荐 `low`。探测超时、取消或请求失败也会回退到 `low`。主 WAF 的管理面默认只监听 `127.0.0.1:9443`；`storage.profile: production` 在完整生产接线完成前会拒绝启动，不会静默回退到 SQLite。

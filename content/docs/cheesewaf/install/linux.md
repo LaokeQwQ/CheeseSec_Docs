@@ -50,8 +50,9 @@ sudo mkdir -p /etc/cheesewaf /var/lib/cheesewaf /var/log/cheesewaf /usr/share/ch
 # 3. Deploy Web Console static assets (Essential: required for Web UI to load)
 sudo cp -R ./web/dist/. /usr/share/cheesewaf/web/
 
-# 4. Copy initial configuration template
-sudo cp configs/cheesewaf.yaml /etc/cheesewaf/cheesewaf.yaml
+# 4. Copy the tracked template to the dedicated runtime configuration path
+#    (edit this runtime copy; never write setup state back to configs/)
+sudo install -m 0640 configs/cheesewaf.yaml /etc/cheesewaf/cheesewaf.yaml
 
 # 5. Create unprivileged system user and set ownership
 sudo useradd --system --home /var/lib/cheesewaf --shell /usr/sbin/nologin cheesewaf
@@ -79,6 +80,8 @@ sudo -u cheesewaf /usr/local/bin/cheesewaf \
   --data-dir /var/lib/cheesewaf setup
 ```
 
+While first-install setup is pending, the service log shows only the base `/setup` URL, the protected `/var/lib/cheesewaf/setup.url` path, and an opaque receipt. Read the complete URL from that mode `0600` file within its 10-minute validity period. After setup completes, the token is revoked; expired `setup.url` files are cleaned up.
+
 See [System Initialization](../../tutorial/setup/) for details.
 
 ## Standard Filesystem Hierarchy {#paths}
@@ -88,7 +91,7 @@ See [System Initialization](../../tutorial/setup/) for details.
 | `/usr/local/bin/cheesewaf` | Main application binary |
 | `/usr/share/cheesewaf/web` | Static Web Console frontend assets |
 | `/etc/cheesewaf/cheesewaf.yaml` | Primary configuration file |
-| `/var/lib/cheesewaf` | Runtime data directory (SQLite database, certificates, cache) |
+| `/var/lib/cheesewaf` | Runtime data directory for the default `storage.profile: temporary` SQLite database, certificates, cache, and local state. `storage.postgresql`, when configured, receives external log records only. |
 | `/var/log/cheesewaf` | Access logs (`access.log`) and audit logs (`audit.log`) |
 
 It is recommended to test reverse proxy routes and protection rules before switching production DNS records to the WAF ingress.

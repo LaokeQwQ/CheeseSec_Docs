@@ -9,7 +9,7 @@ CheeseWAF utilizes a unified single-binary (BusyBox pattern) architecture. The e
 
 | Executable Name | Default Execution Behavior |
 | --- | --- |
-| `cheesewaf` | Executes the `serve` command by default, launching both Data Plane reverse proxy and Control Plane management services |
+| `cheesewaf` | Executes the `serve` command by default, launching the Data Plane reverse proxy and the same process's Management Plane API/Web services |
 | `waf-cli` | Launches the interactive Terminal User Interface (TUI, equivalent to `cli`; `panel` is a compatibility alias) |
 
 ## Global Command-Line Flags {#global-flags}
@@ -22,19 +22,28 @@ CheeseWAF utilizes a unified single-binary (BusyBox pattern) architecture. The e
 
 The language resolution hierarchy is: CLI `--lang` flag > Environment variable `CHEESEWAF_LANG` > Saved setting in data directory > Host operating system locale.
 
+## Identity and Password Rules {#identity-rules}
+
+CheeseWAF applies one username rule to the setup wizard, Web Console, REST API, CLI, storage layer, human JWT claims, and CAPTCHA receipts. A username must be 3–32 ASCII characters, start with an ASCII letter, end with an ASCII letter or digit, and contain only ASCII letters, digits, `.`, `_`, and `-`. Non-ASCII characters, Unicode whitespace, control characters (`Cc`), and format/invisible characters (`Cf`) are rejected. The server preserves the exact input and never trims or lowercases usernames, so `admin` and ` admin ` are different strings and the latter is invalid.
+
+The `role` field is also exact. It must match a configured key in `apisec.permissions` (normally `admin` or `readonly`); empty or unknown values, `*`/`:` permission expressions, and leading, trailing, or embedded Unicode whitespace, control characters (`Cc`), or format/invisible characters (`Cf`) are rejected. Roles are not trimmed or case-normalized.
+
+New passwords must contain at least 10 characters and satisfy at least 3 of these 4 classes: uppercase letters, lowercase letters, non-repeating digits, and special characters. Common or simple patterns, including sequential or keyboard-like patterns, are rejected. A password may not equal or contain the username. Existing password hashes are not exposed by these commands.
+
 ## Subcommand Reference Table {#commands}
 
 | Subcommand | Functionality & Description |
 | --- | --- |
-| `serve` | Launches the full WAF daemon (Data Plane reverse proxy + Control Plane API and Web console) |
+| `serve` | Launches the full WAF daemon (Data Plane reverse proxy + Management Plane API and Web console) |
 | `setup` | Interactive or headless terminal initialization wizard for hardware profiling and initial credentials |
 | `rules` | Batch imports, exports, and template generation for site custom regex rules |
+| `crp` | Verifies a local CRP package and can persist it in the local staged slot; it does not promote, execute, or distribute a plugin |
 | `cli` | Launches the interactive TUI terminal management panel (compatibility alias: `panel`) |
 | `status` | Checks daemon health, process PID lease, and runtime status |
 | `healthcheck` | Diagnostic probes for admin API and outbound TLS (used in Docker healthcheck probes) |
 | `stop` | Gracefully terminates the running local daemon process |
 | `restart` | Gracefully stops and restarts the local daemon |
-| `user` | Resets local admin credentials, renames users, and manages 2FA credentials |
+| `user` | Resets local admin credentials, renames users, repairs historical usernames, and manages 2FA credentials |
 | `cluster` | Cluster controller init, worker node join, certificate rotation, token management, and runtime operations |
 | `logs` | Packages service logs into a compressed ZIP support bundle (`logs pack`) |
 | `lang` | Displays or persistently configures the default CLI interface language (`lang show` / `lang set`) |
@@ -65,6 +74,8 @@ Key flags:
 - `--profile`: Hardware profile tuning (`smart`, `low`, `medium`, `high`, or `custom`; official aliases `minimal`, `balanced`, and `performance` are fully supported).
 - `--admin-listen`: Admin management API listen address (default `127.0.0.1:9443`; prints `http://` or `https://` based on `admin_tls`).
 - `--skip-probe` / `--skip-external`: Skip hardware autodetection or skip external telemetry (GeoIP/Prometheus/VictoriaLogs) setup.
+
+`--username` must satisfy the canonical username rule above. `--password-stdin` is the preferred automation input; the password is read from standard input and is not printed in the setup summary.
 
 ### 2. Custom Rules Management (`rules`) {#cmd-rules}
 
@@ -98,7 +109,41 @@ cheesewaf user ensure-admin admin --password-stdin < secret.txt
 
 # Rename an existing user
 cheesewaf user rename old_admin new_admin
+
+# Repair a historical username that contains whitespace or another now-invalid character
+cheesewaf user repair-username USER_ID recovered_admin --reason 'Historical whitespace in imported account'
 ```
+
+Use `user rename` for an account whose current username is already canonical. Both the old and new values must pass the canonical rule. The CLI updates that account and revokes all of its unrevoked sessions, but it does not create a historical-repair audit record; this path cannot select a historical non-canonical username. Only `repair-username` bundles the username change, session revocation, and audit insert in one transaction. Neither command silently trims or lowercases a username.
+
+Use `user repair-username` only for a historical non-canonical username, and pass the immutable user ID rather than the username. The repair rejects a missing user, a canonical current username, or a target username already owned by another account; it never merges accounts. The username change, revocation of every unrevoked admin session for that user, and append-only audit record commit in one SQLite transaction. The existing user ID, password hash, role, TOTP enabled state, and TOTP secret remain unchanged. The audit records the current OS user ID, the supplied reason, the old and new usernames, the number of revoked sessions, and the timestamp.
+
+To find the immutable ID without reading password hashes or TOTP secrets, use the SQLite CLI in read-only mode and select only the ID and a quoted username. Replace the path with the configured `storage.sqlite.path` or the active data directory:
+
+```bash
+DB=/var/lib/cheesewaf/cheesewaf.db
+sqlite3 -readonly "$DB" \
+  'SELECT id, quote(username) AS username FROM users ORDER BY username;'
+```
+
+`quote(username)` makes leading or trailing spaces visible in the result. Do not use `SELECT *`, and do not paste database output into tickets or logs.
+
+The display note attached to a management API token is metadata, not an account username. It is not subject to the account username rule; do not use a token note as the user identity. Management API Tokens default to 90 days and may be set up to 365 days; expired or inactive (180 days) tokens are cleaned by a single coalesced worker and generate audit/notification attempts.
+
+The `user` commands currently use the runnable `storage.profile: temporary` management store backed by SQLite. `storage.profile: production` remains fail-closed until the management PostgreSQL, Coordinator, and native-raft cluster/epoch startup unit is wired. `crp verify` performs offline inspection only. `crp stage` additionally persists an already verified local package in an explicit local staged slot; it does not activate, execute, or fetch a package. Server startup, cluster distribution, promotion approvals, and OTA downloading are not connected.
+
+### CRP local staging
+
+```bash
+cheesewaf crp stage \
+  --package ./plugin.crp \
+  --trust-roots ./trust-roots.json \
+  --sources ./sources.json \
+  --runtime-dir ./data/crp-runtime \
+  --now 2026-09-08T12:00:00Z
+```
+
+The command requires explicit trust roots, source registrations, a runtime directory, and a deterministic `--now`. It verifies the archive and writes only local staged metadata/artifacts. It never promotes a package, starts a plugin, bypasses a confirmation requirement, or contacts a network source. `--high-risk` selects the high-risk signature threshold but does not grant confirmation.
 
 ### 4. Cluster Management (`cluster`) {#cmd-cluster}
 
@@ -118,7 +163,7 @@ export CHEESEWAF_CONTROLLER='https://10.0.0.1:9443'
 export CHEESEWAF_JOIN_TOKEN='one-time-join-token'
 export CHEESEWAF_NODE_ID='node-worker-02'
 export CHEESEWAF_ADVERTISE_ADDR='10.0.0.2:9444'
-export CHEESEWAF_CONTROLLER_CA='/etc/cheesewaf/certs/admin-ca.crt'
+export CHEESEWAF_CONTROLLER_CA='/var/lib/cheesewaf/certs/admin-ca.crt'
 
 # Join a worker node using a one-time token; the CLI creates the local key and CSR
 cheesewaf cluster join \
@@ -143,13 +188,13 @@ cheesewaf cluster status
 cheesewaf cluster export > cluster-export.yaml
 
 # Run the local node heartbeat loop toward the HTTPS interconnect (mTLS) controller
-export CHEESEWAF_INTERCONNECT_CONTROLLER='https://10.0.0.1:9444'
-cheesewaf cluster monitor-node --controller "$CHEESEWAF_INTERCONNECT_CONTROLLER" --interval 10s
+export CHEESEWAF_CLUSTER_CONTROLLER='https://10.0.0.1:9444'
+cheesewaf cluster monitor-node --controller "$CHEESEWAF_CLUSTER_CONTROLLER" --interval 10s
 ```
 
 `--ca-file` for `cluster join` and `cert rotate` verifies the controller's **9443 HTTPS management endpoint**; it is not the cluster CA returned during enrollment. Omit it only when the controller certificate chains to the system trust store; pre-provision a private admin CA when needed. Joining generates a local key/CSR and writes the returned cluster CA and certificate under the node data directory. Certificate rotation requires exactly one token source (`--api-token`, `--api-token-file`, or `--api-token-env`), writes files locally, and takes effect after the service reload/restart procedure.
 
-`cluster monitor-node` posts heartbeats to the cluster **interconnect** (normally HTTPS `:9444`) using the local configured cluster CA/certificate/key. A custom `--controller` value must likewise be an HTTPS interconnect address; `--insecure-skip-verify` is for isolated laboratory testing only.
+`cluster monitor-node` posts heartbeats to the cluster **interconnect** (normally HTTPS `:9444`) using the local configured cluster CA/certificate/key. The fallback environment variable is `CHEESEWAF_CLUSTER_CONTROLLER`; a custom `--controller` value must likewise be an HTTPS interconnect address. `--insecure-skip-verify` is for isolated laboratory testing only.
 
 ### 5. Support Bundle Packaging (`logs`) {#cmd-logs}
 

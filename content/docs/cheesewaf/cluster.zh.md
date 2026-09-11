@@ -5,7 +5,7 @@ weight: 120
 description: 节点加入令牌、mTLS 双向认证健康/心跳互联、外部共识协调、Ansible 自动化编排与 CLI 集群管理工具链。
 ---
 
-在大规模多节点部署场景下，CheeseWAF 提供用于节点 mTLS 身份认证、健康/心跳上报、拓扑状态与编排钩子的集群互联。该互联并不是站点策略复制通道，不会自行同步站点定义、IP 策略或防护规则。内置协调器仅适用于单节点/本地部署，使用内存中的配置版本日志；多节点或共享配置必须接入外部协调器（例如 etcd），不满足条件时服务会拒绝不安全的内置回退。
+在大规模多节点部署场景下，CheeseWAF 提供用于节点 mTLS 身份认证、健康/心跳上报、拓扑状态与编排钩子的集群互联。该互联不是站点策略复制通道。当前可运行路径是单节点 builtin 协调器；选择 etcd 只能记录共享集群要求，当前二进制没有 etcd 后端协调器，因此会 fail-closed，不会从共享部署静默回退到心跳选主。商业化目标是由 native-raft 负责期望状态顺序、epoch fencing 与回滚引用，由 PostgreSQL 保存持久管理真相。在迁移完成前，本页的 etcd 命令只描述 contract，不能据此宣称 native-raft 已交付。
 
 在 Web 管理控制台中可进入 **集群管理** 模块，或通过命令行 `cheesewaf cluster` 与 REST API `/api/cluster/*` 进行管理。
 
@@ -24,14 +24,14 @@ cluster:
     mtls_required: true
 ```
 
-启用集群多节点协同的步骤：
+下面的配置描述当前节点互联和准入 contract；它不会让当前二进制直接变成可用于生产的多节点 HA：
 
-1. 将 `cluster.enabled` 设置为 `true`，并指定全局统一的 `cluster_id`。
+1. 将 `deployment.mode` 设置为 `cluster`、`cluster.enabled` 设置为 `true`，并指定全局统一的 `cluster_id`。
 2. 为每个物理机/虚拟机节点分配唯一的 `node_id`。
 3. 配置 `interconnect.advertise_addr` 为该节点可被集群内其他节点访问的通信地址。
 4. 保持 `mtls_required: true`，并在各节点配置受信的 `ca_file`、`cert_file` 与 `key_file` 证书文件。
 
-内置共识提供方只支持单节点，并且只保留内存中的配置版本日志。多节点或共享配置部署应设置 `cluster.consensus.provider: etcd` 并配置有效的 `etcd_endpoints`；服务不会回退到以内置心跳选主。
+内置共识提供方只支持单节点，并且只保留内存中的配置版本日志。设置 `cluster.consensus.provider: etcd` 并填写 `etcd_endpoints` 只能记录共享集群所需的 contract；当前二进制没有 etcd 后端协调器，因此会保持写保护/保护模式，不会把心跳状态冒充为共识。native-raft contract 见[商业化架构基线](../commercial-architecture/)，独立命令的当前启动和 join 限制见[独立控制面运行时](../control-plane-runtime/)。这两份文档都不会通过当前配置键启用 native-raft。
 
 ### 脑裂与写保护机制
 
@@ -40,7 +40,7 @@ cluster:
 
 ## 2. 集群 CLI 命令行运维工具链 {#cli-tools}
 
-CheeseWAF 提供了开箱即用的集群 CLI 指令集，方便在终端完成控制面初始化与工作节点加入：
+CheeseWAF 提供用于本地集群初始化、令牌/证书操作和心跳检查的 CLI 入口。这些命令暴露的是当前兼容 contract；尚未接线的共享集群后端不能据此视为生产可用：
 
 ### 1. 主控节点初始化与令牌签发
 
@@ -57,7 +57,7 @@ export CHEESEWAF_TOKEN_ID='token-id-to-revoke'
 cheesewaf cluster token revoke "$CHEESEWAF_TOKEN_ID"
 ```
 
-`cluster init` 只写入配置，服务在集群模式启动时才初始化集群身份。接入远程节点前，应将两个地址都改成可路由值（例如使用 `--force --advertise-addr 10.0.0.1:9444 --listen 0.0.0.0:9444` 重新执行），并按上文配置外部 etcd。该命令只校验地址语法，无法证明网络实际可达。
+`cluster init` 只写入配置，服务在集群模式启动时才初始化集群身份。接入远程节点前，应将两个地址都改成可路由值（例如使用 `--force --advertise-addr 10.0.0.1:9444 --listen 0.0.0.0:9444` 重新执行），并按上文填写明确的 etcd contract。由于 etcd 后端和 native-raft 启动单元尚未接线，这仍是本地兼容入口，不能提供生产 HA。该命令只校验地址语法，无法证明网络实际可达。
 
 ### 2. 工作节点加入与证书轮换
 
@@ -66,7 +66,7 @@ export CHEESEWAF_CONTROLLER='https://10.0.0.1:9443'
 export CHEESEWAF_JOIN_TOKEN='one-time-join-token'
 export CHEESEWAF_NODE_ID='node-worker-02'
 export CHEESEWAF_ADVERTISE_ADDR='10.0.0.2:9444'
-export CHEESEWAF_CONTROLLER_CA='/etc/cheesewaf/certs/admin-ca.crt'
+export CHEESEWAF_CONTROLLER_CA='/var/lib/cheesewaf/certs/admin-ca.crt'
 
 # 在工作节点使用一次性令牌与本地 CSR 执行加入
 cheesewaf cluster join \
@@ -93,10 +93,10 @@ cheesewaf cluster status
 
 ## 3. Ansible 批量自动化部署 {#ansible}
 
-为了支持数十至数百台边缘节点的大规模快速交付，CheeseWAF 支持一键导出标准 Ansible 部署包：
+当前 `POST /api/cluster/deploy/ansible` 导出器只生成 CheeseWAF 主服务引导包（inventory、变量、playbook、role、配置模板和 README）。它不包含 CWEDP 代理，也不是拿来就能执行的生产包：运行前必须补充经过校验的二进制 URL 和 SHA-256、服务路径；多节点场景还必须填写生成 role 所需的外部 etcd 地址。可选的 `deploy/ansible/full.yml` 只有在明确设置 `provision_only=true`、补齐外部控制面预检参数以及 CWEDP 代理 URL 和 SHA-256 时，才能执行只拉取代理的主机交接；这仍不会让 CheeseWAF 的 production 存储变为可运行。插件 CRP 的安装、升级、回滚、签名、晋级及认证分发都不会由 Ansible 执行，这些生命周期操作属于 CWEDP：
 
-- **Playbook 导出接口**：调用 `POST /api/cluster/deploy/ansible`，传入目标节点的主机清单、角色（`waf` / `monitor`）、SSH 端口与地域标签。响应为 JSON，`files` 对象将相对文件名（如 `inventory.ini`、`playbook.yml` 及角色文件）映射到文本内容；保存这些条目后再作为 Ansible 包执行。
-- **Web 控制台导出**：在 Web 管理控制台的 **集群管理** 模块中，可直接通过图形界面录入节点拓扑并点击「导出 Ansible 部署包」。
+- **Playbook 导出接口**：调用 `POST /api/cluster/deploy/ansible`，传入目标节点的主机清单、角色（`waf` / `monitor`）、SSH 端口与地域标签。响应为 JSON，`files` 对象将相对文件名（如 `inventory.ini`、`playbook.yml` 及角色文件）映射到文本内容；保存后先填写经过校验的二进制变量和 etcd 设置，人工复核命令，再执行 playbook。
+- **Web 控制台导出**：在 Web 管理控制台的 **集群管理** 模块中，可录入节点拓扑并点击「导出 Ansible 部署包」；下载内容仍需人工补全和复核，不是拿来就能执行的生产包。
 
 ## 4. 集群核心 REST API 参考 {#ops}
 
@@ -109,8 +109,8 @@ cheesewaf cluster status
 | **证书轮换** | `POST /api/cluster/nodes/{id}/rotate-certificate` | 自动化轮换互联 mTLS 通信证书 |
 | **节点下线吊销** | `POST /api/cluster/nodes/{id}/revoke` | 吊销节点证书并踢出集群 |
 | **Ansible 部署包** | `POST /api/cluster/deploy/ansible` | 导出用于批量自动化部署的 Playbook |
-| **滚动升级** | `POST /api/cluster/orchestrate/rolling-upgrade` | 触发集群节点的零停机滚动升级 |
-| **升级回滚** | `POST /api/cluster/orchestrate/rolling-upgrade/{id}/rollback` | 升级异常时一键回滚至上一稳定版本 |
-| **共识状态** | `GET /api/cluster/consensus` | 查看单节点内置内存版本日志或外部 etcd 协调状态 |
+| **滚动升级** | `POST /api/cluster/orchestrate/rolling-upgrade` | 创建按节点顺序编排的任务；当前兼容路径没有远端安装/重启 Worker，也不承诺零停机 |
+| **升级回滚** | `POST /api/cluster/orchestrate/rolling-upgrade/{id}/rollback` | 在存在外部备份时创建逆序回滚任务；native-raft、Canary fencing 和远端恢复 Worker 尚未接线 |
+| **共识状态** | `GET /api/cluster/consensus` | 查看 builtin 内存状态或已配置但未接线的 etcd 要求，不能证明外部协调器正在运行 |
 
-系统默认采用 `builtin` 提供方，仅适用于单节点/本地部署并将版本记录保存在内存中。多节点或共享配置集群必须选择 `etcd` 并配置 `etcd_endpoints`；内置提供方不会复制站点或策略数据，也不会以 Raft 方式替代 etcd。
+系统默认采用 `builtin` 提供方，仅适用于单节点/本地部署并将版本记录保存在内存中。多节点或共享配置必须选择 `etcd` 并配置 `etcd_endpoints`，但当前二进制会在 etcd 后端接线前保持 fail-closed；内置提供方不会复制站点或策略数据。native-raft 仍处于分阶段实施中，不能仅凭本文档存在而视为已上线。

@@ -22,9 +22,9 @@ The Data Plane processes incoming HTTP/1.1, HTTPS, and HTTP/3 traffic through an
 
 The Data Plane operates strictly within the critical request path, adhering to deterministic execution and never blocking on external LLM calls.
 
-### Control Plane {#control-plane}
+### Management Plane {#management-plane}
 
-The Control Plane listens on a dedicated management port to provide system administration and observability capabilities:
+The same `cheesewaf` process starts a dedicated management listener for administration and observability; this is a management plane boundary, not the future standalone commercial control-plane service:
 
 - **`/setup` Initialization Wizard**: Guides initial deployment and provisions administrator credentials.
 - **Web Management Console**: Serves a modern, responsive React-based single-page application.
@@ -47,18 +47,20 @@ Background workers asynchronously query the configured LLM for deep contextual a
 
 ## Delivery Components & Single-Binary Distribution {#what-ships}
 
-CheeseWAF utilizes a self-contained architecture. All core components are compiled into a single binary, requiring no external dependencies such as Redis, Nginx, or separate database daemons:
+CheeseWAF keeps the request path self-contained. The runnable management-storage profile is `storage.profile: temporary`, which stores management state in embedded SQLite. `storage.profile: production` is reserved for a future durable path and currently fails closed with `ErrProductionStorageUnavailable`; PostgreSQL is an optional asynchronous access-log sink, and Redis is not wired as the Bot challenge backend. The internal CRP RuntimeStore can verify and persist a local package in a staged slot, and the CLI exposes `crp verify`/`crp stage`; it does not activate or execute plugins. The separate commercial control plane, native-raft, CWEDP distribution, and Socket Lease services are not connected to startup:
 
 | Component | Role & Functionality |
 | --- | --- |
-| `cheesewaf` | Primary server process; default command is `serve` to launch both data and control planes |
+| `cheesewaf` | Primary server process; default command is `serve` to launch the data and management listeners in one process |
 | `waf-cli` | Same binary (or symbolic link); default command launches the interactive TUI management panel |
 | `cheesewaf-gui` | Browser-based local service controller for Windows and macOS (binds exclusively to loopback) |
-| Web Console | Modern React application embedded within the binary and hosted directly by the control plane |
-| SQLite Engine | CGO-free embedded database (`modernc.org/sqlite`) for persistent configuration and state |
+| Web Console | Modern React application embedded within the binary and hosted by the process's management listener |
+| Storage profiles | Current: `temporary` with embedded SQLite; reserved `production` profile currently rejected at startup; optional PostgreSQL log sink; builtin single-node cluster path, with configured etcd/native-raft coordinators not wired |
+| CRP local state | `crp verify` and `crp stage` verify/persist local packages only; promotion, execution, cluster distribution, and OTA are unavailable |
 
 ## Related Documentation {#related}
 
 - [Request Processing Pipeline](../concepts/pipeline/)
 - [Paranoia Levels & False-Positive Mitigation](../concepts/paranoia/)
+- [Standalone Control Runtime](../control-plane-runtime/)
 - [System Installation & Deployment](../install/)

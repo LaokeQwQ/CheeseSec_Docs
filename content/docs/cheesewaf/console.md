@@ -5,7 +5,7 @@ weight: 140
 description: Modern React-based single-page management console navigation, module routing matrix, and security mechanisms.
 ---
 
-CheeseWAF includes a modern single-page visual management console built with React and hosted directly by the control plane daemon. After completing [System Setup](../tutorial/setup/), navigate to the configured management endpoint. Standalone deployments may use the configured HTTP/HTTPS scheme; the official Docker Compose file publishes the admin listener as HTTPS on the Docker host loopback, so use `https://127.0.0.1:9443/` there (or an SSH tunnel), not a remote host URL unless you explicitly change the bind address.
+CheeseWAF includes a modern single-page visual management console built with React and hosted directly by the `cheesewaf` process on its management listener. After completing [System Setup](../tutorial/setup/), navigate to the configured management endpoint. Standalone deployments may use the configured HTTP/HTTPS scheme; the official Docker Compose file publishes the admin listener as HTTPS on the Docker host loopback, so use `https://127.0.0.1:9443/` there (or an SSH tunnel), not a remote host URL unless you explicitly change the bind address.
 
 The console enforces session cookie statefulness with strict double-submit CSRF defenses (dynamically adjusting `Secure` flags when running on unencrypted local loops and enforcing them under HTTPS), and supports enabling [CAPTCHA challenges on login](../protection/bot-captcha/#login).
 
@@ -28,11 +28,11 @@ The console enforces session cookie statefulness with strict double-submit CSRF 
 | `/apisec` | API Security: Endpoint discovery, schema validation, and rate limiting | [API Security](../api-security/) |
 | `/users` | User Management: Administrator accounts, role scopes, and 2FA credentials | [Operations](../operations/) |
 | `/ops` | Operations & Cron: Automated task scheduler and log maintenance | [Storage & Scheduling](../storage/) |
-| `/updates` | Updates: Version checks and signed OTA release updates | [Operations](../operations/) |
+| `/updates` | Updates: Capability status for the reserved OTA settings; updater is currently unavailable | [Operations](../operations/) |
 | `/block-pages` | Block Pages: Response templates, HTML sanitization, and sandboxed preview | [Block Pages](../protection/block-page/) |
 | `/attack-map` | Threat Map: Global attack visualization with official borders and 100% offline 3D Earth | [Monitoring & Logs](../monitor/) |
-| `/cluster` | Cluster: Node health, token issuance, certificate rotation, Ansible playbooks, and rolling upgrades | [Cluster HA](../cluster/) |
-| `/system` | System: Runtime configurations, NTP synchronization, and backup/restore | [Operations](../operations/) |
+| `/cluster` | Cluster: Node health, token issuance, certificate rotation, Ansible bundle export, and orchestration task views; shared-cluster backend and remote workers are not wired | [Cluster HA](../cluster/) |
+| `/system` | System: Runtime configuration, NTP synchronization, and backup capability status; the current backup/restore API returns 501 | [Operations](../operations/) |
 | `/captcha-lab` | CAPTCHA Lab: Interactive puzzle testing and asset debugging | [Bot & CAPTCHA](../protection/bot-captcha/) |
 
 The console provides light, dark, and custom color accents. Visual preferences are stored locally in the browser and do not impact data plane operations.

@@ -33,7 +33,7 @@ protection:
 | `suspicious_user_agents` | User-Agent substring matches that immediately escalate to full human verification |
 
 {{% pageinfo color="warning" %}}
-Do not check challenge signing `secret` tokens into version control. If omitted, CheeseWAF generates an in-memory random secret on startup (not persisted to disk).
+Do not check challenge signing `secret` values into version control. When the value is empty or a known placeholder, setup/startup generates a strong runtime secret and persists it in the protected runtime configuration or runtime secret file according to the selected deployment; it is not an in-memory-only guarantee. Keep the runtime path and permissions private.
 {{% /pageinfo %}}
 
 ## Challenge Types & Interaction Mechanisms {#kinds}
@@ -48,6 +48,8 @@ Custom background images and iconography can be uploaded via `/api/captcha/asset
 ## Management Console Login Defense {#login}
 
 `console.login.captcha` protects the **Web Management Console login endpoint** (completely isolated from business data plane traffic), supporting slider puzzles with optional PoW verification.
+
+The source template enables the management-login slider CAPTCHA by default (`console.login.captcha.enabled: true`). After initialization, the first browser login therefore requires completing the human-verification challenge in addition to the username and password. For local test fixtures only, set `console.login.captcha.enabled: false` in a runtime configuration copy and restart; do not disable this control in production merely to bypass acceptance checks.
 
 Additionally, enable `console.login.security_entry` to obscure the management portal behind an obfuscated path and pre-shared authorization cookie.
 

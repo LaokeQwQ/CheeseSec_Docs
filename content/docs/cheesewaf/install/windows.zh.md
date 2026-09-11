@@ -7,6 +7,8 @@ description: Windows 环境下的三种运行方式：单文件 CLI、便携 Zip
 
 在 Windows 操作系统中，CheeseWAF 提供三种运行分发形态，底层核心功能与防护引擎完全一致：
 
+初始化向导会根据本机资源推荐档位。逻辑核数不超过 2 或内存不超过 2 GB 时使用 `low`；探测失败或超时也会回退到 `low`。管理面默认只监听 `127.0.0.1:9443`，本地辅助控制器另监听 `127.0.0.1:17943`。
+
 ## 1. 单文件 CLI 与原生 Windows 服务 {#cli}
 
 适用于快速调试、脚本调用或注册为 Windows 系统服务：
@@ -42,6 +44,8 @@ description: Windows 环境下的三种运行方式：单文件 CLI、便携 Zip
 # 启动 WAF 守护进程
 .\cheesewaf.exe serve --config .\data\config\cheesewaf.yaml --data-dir .\data
 ```
+
+首次初始化尚未完成时，进程日志只显示基础 `/setup` 地址、受保护的 `data\setup.url` 路径和不含秘密的随机回执。请在 10 分钟有效期内从权限为 `0600` 的文件读取完整地址。初始化完成后，Token 会被撤销；过期的 `setup.url` 文件会被清理。
 
 ## 3. NSIS 图形安装向导 (推荐) {#nsis}
 
