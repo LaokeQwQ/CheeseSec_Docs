@@ -43,7 +43,7 @@ Connect GitHub repo `LaokeQwQ/CheeseSec_Docs`. Suggested project name: `cheesese
 | Build output directory | `public` |
 | Root directory | `/` (repository root) |
 | `HUGO_VERSION` | `0.165.0` (set on Production **and** Preview; 0.164.0 also meets OINK’s floor) |
-| `GO_VERSION` | `1.24.4` or newer (Hugo modules) |
+| `GO_VERSION` | `1.26.6` or newer (matches `go.mod`) |
 | `SKIP_DEPENDENCY_INSTALL` | `1` |
 
 `baseURL` in `hugo.yaml` is `https://docs.cheesesec.com/`.
@@ -57,9 +57,15 @@ hugo --gc --minify --baseURL "$CF_PAGES_URL"
 Do **not** publish a preview artifact that used `$CF_PAGES_URL` to production.
 Rebuild production with the canonical domain.
 
-After the first successful deploy, attach the custom domain `docs.cheesesec.com` in the Pages project (CNAME to the `*.pages.dev` hostname).
+After the first successful deploy, attach the custom domain `docs.cheesesec.com` in the Pages project. Point the DNS CNAME to the concrete `<project>.pages.dev` hostname shown by that Pages project; do not use the literal `*.pages.dev` text.
 
 ## Related
 
 - Product: https://github.com/LaokeQwQ/CheeseWAF
 - Marketing site: https://github.com/LaokeQwQ/CheeseSec_pages
+
+## Documentation and production-build constraints
+
+- CheeseWAF commands, configuration keys, ports, onboarding-token flow, and security defaults must be validated against the current source and UI before publishing the corresponding English and Chinese pages.
+- CheeseWAF's `@agent-eyes/agent-eyes`, code-inspector, and `codex-acp` are local development/test tooling only. They must never appear in product release packages, production images, or production examples.
+- Source-build instructions must use the repository's `bash scripts/ci/build-web.sh` and a runtime configuration copy rather than writing setup state into the tracked template.

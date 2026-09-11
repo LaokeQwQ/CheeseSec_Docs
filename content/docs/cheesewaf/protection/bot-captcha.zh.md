@@ -33,7 +33,7 @@ protection:
 | `suspicious_user_agents` | 子串包含匹配的可疑客户端标识（User-Agent 包含该值即命中），命中后升级为人机验证 |
 
 {{% pageinfo color="warning" %}}
-挑战签名的 `secret` 密钥若在配置中留空，服务启动时将在内存中自动生成安全随机密钥（不持久化至磁盘）。
+不要把挑战签名的 `secret` 值提交到版本库。配置为空或仍是已知占位符时，初始化/启动流程会按部署方式生成强随机运行时密钥，并写入受保护的运行时配置或运行时密钥文件；不能假定它只存在于内存中。请严格保护运行时路径和文件权限。
 {{% /pageinfo %}}
 
 ## 验证码类型与交互形式 {#kinds}
@@ -48,6 +48,8 @@ protection:
 ## 管理端登录防护 {#login}
 
 配置项 `console.login.captcha` 专用于保护 **Web 管理控制台登录入口**（与数据平面业务隔离），支持滑块验证码与二次 PoW 校验。
+
+源码模板默认开启管理端登录滑块验证码（`console.login.captcha.enabled: true`）。因此初始化完成后首次登录时，除用户名和密码外还必须完成浏览器中的人机验证。测试环境如需关闭，可在运行时配置副本中设置 `console.login.captcha.enabled: false` 并重启；生产环境不建议为了绕过验收而关闭该保护。
 
 此外，可启用 `console.login.security_entry` 为管理登录配置隐藏的混淆路径与前置 Cookie 密钥，防止管理端被公网自动化探测。
 

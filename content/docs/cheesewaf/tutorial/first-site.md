@@ -19,7 +19,7 @@ Specify the origin server address and port (e.g., `10.0.0.10:8000`). When multip
 
 ### 3. Set Baseline Paranoia Level {#paranoia}
 
-For new production sites, set the paranoia level to **3 (Smart Standard Mode)**. In this mode, the system blocks high-confidence standalone payloads while allowing embedded features through to asynchronous ALAP review, ensuring business continuity while collecting threat data.
+New sites default to paranoia level **3 (Smart Standard Mode)**; if the current wizard exposes this option, leave it at 3. In this mode, the system blocks high-confidence standalone payloads while allowing embedded features through to asynchronous ALAP review, ensuring business continuity while collecting threat data.
 
 ### 4. Save & Hot-Reload {#save}
 

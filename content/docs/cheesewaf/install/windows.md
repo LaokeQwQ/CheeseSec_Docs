@@ -43,6 +43,8 @@ The portable package bundles default configuration templates and compiled Web Co
 .\cheesewaf.exe serve --config .\data\config\cheesewaf.yaml --data-dir .\data
 ```
 
+When first-install setup is pending, the process log shows only the base `/setup` URL, the protected `data\setup.url` path, and an opaque receipt. Read the complete URL from the mode `0600` file within its 10-minute validity period. After setup completes, the token is revoked; expired `setup.url` files are cleaned up.
+
 ## 3. NSIS Graphical Installer (Recommended) {#nsis}
 
 Ideal for workstation or production servers requiring guided installation and Windows Service registration:

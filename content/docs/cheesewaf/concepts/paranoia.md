@@ -30,7 +30,7 @@ The paranoia level mechanism balances high threat detection rates with false-pos
 
 At **Paranoia Level 4**, when suspicious embedded payloads are detected within live traffic, the system proactively promotes the site to **Level 5 (Strict Mode)** for a configurable duration defined by `promote_seconds` (e.g., 300 seconds) to prevent reconnaissance-stage exploitation.
 
-- **State Persistence**: The promotion deadline timestamp is stored in the embedded SQLite database, persisting across daemon restarts.
+- **State Persistence**: The promotion deadline timestamp is stored in the current embedded SQLite management store. PostgreSQL is only an optional access-log sink; a separate commercial persistence path is not wired yet.
 - **Automatic Decay**: Once the promotion window elapses without subsequent suspicious triggers, the site seamlessly reverts to its baseline Level 4 configuration.
 
 ## Level 5 Review Constraints {#level-5}

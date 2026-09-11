@@ -41,7 +41,7 @@ hugo --gc --minify
 | **构建输出目录** | `public` | 产物目录 |
 | **根目录** | `/` | 仓库根路径 |
 | **`HUGO_VERSION`** | `0.165.0` | 环境变量（Production 与 Preview 环境均需设置） |
-| **`GO_VERSION`** | `1.24.4` | Hugo 模块解析所需的最低 Go 版本 |
+| **`GO_VERSION`** | `1.26.6` 或更高版本 | 仓库 `go.mod` 当前声明的最低 Go 版本 |
 | **`SKIP_DEPENDENCY_INSTALL`** | `1` | 跳过默认依赖安装 |
 
 ### 预览环境构建说明
@@ -52,9 +52,15 @@ hugo --gc --minify
 hugo --gc --minify --baseURL "$CF_PAGES_URL"
 ```
 
-部署完成后，在 Cloudflare Pages 项目设置中绑定自定义域名 `docs.cheesesec.com`（添加指向 `*.pages.dev` 的 CNAME 记录即可）。
+部署完成后，在 Cloudflare Pages 项目设置中绑定自定义域名 `docs.cheesesec.com`。将 DNS 的 CNAME 指向该 Pages 项目显示的具体 `<project>.pages.dev` 主机名，不要填写字面量 `*.pages.dev`。
 
 ## 生态与相关仓库
 
 - **产品源码**：[LaokeQwQ/CheeseWAF](https://github.com/LaokeQwQ/CheeseWAF)
 - **品牌官网**：[LaokeQwQ/CheeseSec_pages](https://github.com/LaokeQwQ/CheeseSec_pages)
+
+## 文档与生产构建约束
+
+- CheeseWAF 的命令、配置键、端口、初始化 Token 流程和安全默认值必须以当前源码与可执行 UI 验收结果为准；发布前同步中英文页面。
+- CheeseWAF 的 `@agent-eyes/agent-eyes`、code-inspector、`codex-acp` 仅用于本地开发和测试，不能进入产品发布包、生产镜像或线上文档示例。
+- 文档中的源码构建必须使用仓库提供的 `bash scripts/ci/build-web.sh`，并使用运行时配置副本，不能把初始化写回源码模板。

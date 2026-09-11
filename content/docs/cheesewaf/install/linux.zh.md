@@ -7,6 +7,8 @@ description: 在 Linux 环境下安装 CheeseWAF 二进制程序、配置系统�
 
 本指南适用于在 Linux 物理机或虚拟机中以 systemd 服务方式部署 CheeseWAF。
 
+资源建议：逻辑核数不超过 2 或内存不超过 2 GB 的主机使用初始化向导推荐的 `low` 档。探测超时、取消或请求失败时，向导会回退到 `low`。主 WAF 的管理面默认只监听 `127.0.0.1:9443`；`storage.profile: production` 在完整生产启动接线完成前会拒绝启动，不会回退到 SQLite。
+
 ## 1. 下载与解压 {#unpack}
 
 从 GitHub Releases 下载对应架构的完整发布包并解压（以 AMD64 为例，ARM64 或龙芯请替换包名中的架构标识）：
@@ -50,8 +52,9 @@ sudo mkdir -p /etc/cheesewaf /var/lib/cheesewaf /var/log/cheesewaf /usr/share/ch
 # 3. 部署 Web 控制台静态前端资源（关键：缺失会导致管理控制台 404）
 sudo cp -R ./web/dist/. /usr/share/cheesewaf/web/
 
-# 4. 复制配置文件模板
-sudo cp configs/cheesewaf.yaml /etc/cheesewaf/cheesewaf.yaml
+# 4. 将版本库模板复制到专用运行时配置路径
+#    （后续编辑运行时副本，不要把初始化状态写回 configs/）
+sudo install -m 0640 configs/cheesewaf.yaml /etc/cheesewaf/cheesewaf.yaml
 
 # 5. 创建专用系统用户并配置目录归属
 sudo useradd --system --home /var/lib/cheesewaf --shell /usr/sbin/nologin cheesewaf
@@ -79,6 +82,8 @@ sudo -u cheesewaf /usr/local/bin/cheesewaf \
   --data-dir /var/lib/cheesewaf setup
 ```
 
+首次初始化尚未完成时，服务日志只显示基础 `/setup` 地址、受保护的 `/var/lib/cheesewaf/setup.url` 路径和不含秘密的随机回执。请在 10 分钟有效期内，从权限为 `0600` 的文件读取完整地址。初始化完成后，Token 会被撤销；过期的 `setup.url` 文件会被清理。
+
 详细指引请参考 [系统初始化](../../tutorial/setup/)。
 
 ## 系统标准路径参考 {#paths}
@@ -88,7 +93,7 @@ sudo -u cheesewaf /usr/local/bin/cheesewaf \
 | `/usr/local/bin/cheesewaf` | 主程序二进制可执行文件 |
 | `/usr/share/cheesewaf/web` | Web 控制台静态前端资源文件 |
 | `/etc/cheesewaf/cheesewaf.yaml` | 主配置文件 |
-| `/var/lib/cheesewaf` | 运行时数据目录，保存 SQLite 数据库、证书与状态缓存 |
+| `/var/lib/cheesewaf` | 运行时数据目录，默认 `storage.profile: temporary` 时保存 SQLite 数据库、证书和状态缓存。配置 `storage.postgresql` 时，它只接收外部日志记录。 |
 | `/var/log/cheesewaf` | 访问日志（`access.log`）与审计日志（`audit.log`）目录 |
 
 建议在完成站点接入、反向代理与基础防护调试后，再正式将流量切换至 WAF 监听端口。

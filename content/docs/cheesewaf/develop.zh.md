@@ -17,7 +17,7 @@ description: 开发环境依赖、前后端编译流程、单元测试与内置�
 CheeseWAF 采用单二进制打包架构，编译时会将前端 React 产物嵌入 Go 二进制中：
 
 {{% pageinfo color="warning" %}}
-**前端资源嵌入提醒**：从源码构建可执行文件若需包含 Web 控制台，在执行 `go build` 前必须先执行 `bash scripts/ci/build-web.sh`（或 `cd web && npm ci && npm run build` 并同步产物至 `internal/webui/dist/`），否则构建出的二进制运行控制台页面将返回 404。
+**前端资源嵌入提醒**：从源码构建可执行文件若需包含 Web 控制台，必须先执行 `bash scripts/ci/build-web.sh`。该脚本使用 `npm ci --ignore-scripts` 并以 `CHEESEWAF_AGENT_EYES=0` 构建；`@agent-eyes/agent-eyes` 只允许本地开发使用，不得进入发布包或生产镜像。不要直接执行会触发该依赖 monorepo `postinstall` 的裸 `npm ci`。
 {{% /pageinfo %}}
 
 ```bash
@@ -25,19 +25,16 @@ CheeseWAF 采用单二进制打包架构，编译时会将前端 React 产物嵌
 git clone https://github.com/LaokeQwQ/CheeseWAF.git
 cd CheeseWAF
 
-# 1. 编译 Web 控制台前端静态资源
-cd web
-npm ci
-npm run build
-cd ..
-# 将构建产物复制到 Go 嵌入目录
-cp -R web/dist/. internal/webui/dist/
+# 1. 编译 Web 控制台前端静态资源，并同步到 Go 嵌入目录
+bash scripts/ci/build-web.sh
 
 # 2. 编译 Go 主程序二进制
 go build -o bin/cheesewaf ./cmd/cheesewaf
 
-# 3. 运行本地开发服务
-./bin/cheesewaf serve --config ./configs/cheesewaf.yaml
+# 3. 使用运行时配置副本启动本地服务，避免污染模板
+mkdir -p ./data/config
+cp ./configs/cheesewaf.yaml ./data/config/cheesewaf.yaml
+./bin/cheesewaf serve --config ./data/config/cheesewaf.yaml --data-dir ./data
 ```
 
 ## 自动化测试与质量校验 {#tests}
@@ -50,7 +47,7 @@ go test -v ./cmd/... ./internal/...
 go vet ./cmd/... ./internal/...
 
 # 前端 TypeScript 类型检查与单元测试
-cd web && npm run typecheck && npm test && cd ..
+cd web && npm ci --no-audit --no-fund --ignore-scripts && npm run typecheck && npm test && cd ..
 
 # 运行内置攻击语料库压测与 AST 语义分析器评测
 go run ./cmd/cheesewaf-corpus --mode analyzer

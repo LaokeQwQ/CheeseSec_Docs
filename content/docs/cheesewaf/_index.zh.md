@@ -5,9 +5,9 @@ weight: 10
 description: 商用级自托管 Web 应用防火墙。提供系统部署、安全防护、配置参考及运维管理手册。
 ---
 
-CheeseWAF 是一款商用级自托管 Web 应用防火墙（WAF），采用单 Go 二进制分发，内置无 CGO 依赖的 SQLite 存储、现代化 Web 控制台、交互式 TUI 命令行工具以及完整的 RESTful 管理接口，开箱即用且无需外部数据库或代理组件。
+CheeseWAF 是自托管 Web 应用防火墙（WAF），以 Go 核心程序分发。当前运行时使用内置 SQLite 保存管理状态。PostgreSQL 只是可选的异步访问日志 Sink；Redis 尚未接入 Bot 挑战后端。集群协调当前只有单节点 `builtin` 路径；选择 `etcd` 只能记录共享集群要求，当前二进制没有 etcd 后端协调器，会保持 fail-closed。独立商业化控制面、native-raft、CWEDP 和 Socket Lease 服务尚未接入启动路径。CRP 已有本地验证导入和 staged 槽位层（`crp verify` / `crp stage`），但晋级、插件执行、集群分发和 OTA 仍不可用。
 
-在架构设计上，CheeseWAF 实现了**数据平面（Data Plane）与控制平面（Control Plane）的分离**。数据平面负责毫秒级同步流量检测与反向代理，杜绝在实时转发链路中同步调用大语言模型引入不可控时延；控制平面则通过异步 ALAP（AI Large-Language-Model Auto Pilot）机制对可疑请求进行旁路智能研判与规则自学习。
+在架构设计上，CheeseWAF 将**数据平面（Data Plane）**请求路径与**管理平面（Management Plane）**监听及异步 ALAP 工作分开。当前同一个 `cheesewaf` 进程同时启动这两个监听：数据平面负责有界的同步检测与反向代理，管理平面承载 API、控制台和后台审查 Worker；请求路径不会等待远程大模型。独立的商业化控制面仍是尚未接线的后续组件。
 
 {{% pageinfo color="info" %}}
 CheeseWAF 发行包请前往 [GitHub Releases](https://github.com/LaokeQwQ/CheeseWAF/releases) 获取。项目完全开源，遵循 [Apache License 2.0](https://github.com/LaokeQwQ/CheeseWAF/blob/master/LICENSE) 协议。
@@ -27,7 +27,7 @@ CheeseWAF 默认在以下端口提供网络服务：
 | --- | --- | --- |
 | **数据平面** | `http://127.0.0.1:8080` | 接收业务流量，执行同步安全检测并反向代理至上游源站 |
 | **管理平面** | `http://127.0.0.1:9443` | 承载 Web 控制台、REST API 及 `/setup` 初始化向导（Docker 环境下默认启用 HTTPS） |
-| **集群平面** | `https://127.0.0.1:9444` | 高可用模式下用于节点身份、健康/心跳、拓扑与编排的 TLS/mTLS 互联；不是通用站点/策略状态复制通道 |
+| **集群平面** | `https://127.0.0.1:9444` | `cluster.enabled: true` 时才启用的可选 TLS/mTLS 互联，用于节点身份、健康/心跳、拓扑与编排钩子；不是通用站点/策略复制通道 |
 | **本地控制器** | `http://127.0.0.1:17943` | Windows 与 macOS 桌面环境下的本地辅助控制器端口 |
 
 ## 文档导航 {#start-here}
@@ -37,4 +37,6 @@ CheeseWAF 默认在以下端口提供网络服务：
 {{< nav-card title="快速上手" link="/zh/docs/cheesewaf/tutorial/" icon="fa-solid fa-rocket" desc="分步指引：完成系统初始化、接入首个反向代理站点并配置大模型审查。" />}}
 {{< nav-card title="核心概念" link="/zh/docs/cheesewaf/concepts/" icon="fa-solid fa-diagram-project" desc="深入解析请求生命周期、防护等级机制、独立与夹杂特征及多端统一权限体系。" />}}
 {{< nav-card title="安全防护" link="/zh/docs/cheesewaf/protection/" icon="fa-solid fa-shield" desc="语义分析引擎、自定义正则规则、IP/GeoIP、Bot 挑战、滑动窗口限流与 ACL。" />}}
+{{< nav-card title="隔离环境运维" link="/zh/docs/cheesewaf/operations/" icon="fa-solid fa-lock" desc="当前可用的离线校验与存储维护；插件出站、诊断上传和恢复流程仍是设计阶段 contract。" />}}
+{{< nav-card title="独立控制面运行时" link="/zh/docs/cheesewaf/control-plane-runtime/" icon="fa-solid fa-server" desc="说明 cheesewaf-control 的当前参数、fail-closed 启动检查、本地探针和 join 模式限制。" />}}
 {{< /nav-cards >}}

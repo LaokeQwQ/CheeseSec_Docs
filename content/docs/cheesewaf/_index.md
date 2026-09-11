@@ -5,9 +5,9 @@ weight: 10
 description: Commercial-grade self-hosted Web Application Firewall. Complete documentation for deployment, security policies, configuration, and operations.
 ---
 
-CheeseWAF is a commercial-grade, self-hosted Web Application Firewall (WAF) distributed as a single Go binary. It features an embedded, CGO-free SQLite database, a modern Web console, an interactive TUI command-line utility, and a comprehensive RESTful management API—delivering an out-of-the-box experience without external database or proxy dependencies.
+CheeseWAF is a self-hosted Web Application Firewall (WAF) distributed as a Go core. The current runtime uses embedded SQLite for management state. PostgreSQL is an optional asynchronous access-log sink; Redis is not wired as the Bot challenge backend. Cluster coordination currently runs only through builtin for single-node deployments; selecting etcd records the shared-cluster requirement but the current binary has no etcd-backed coordinator and remains fail-closed. The commercial control-plane, native-raft, CWEDP, and Socket Lease services are not wired into startup yet. CRP now has a local verified-import and staged-slot layer (`crp verify` / `crp stage`), but promotion, plugin execution, cluster distribution, and OTA remain unavailable.
 
-Architecturally, CheeseWAF enforces a strict **separation between the Data Plane and Control Plane**. The Data Plane performs sub-millisecond synchronous traffic inspection and reverse proxying without blocking on remote LLMs. Concurrently, the Control Plane leverages an asynchronous ALAP (AI Large-Language-Model Auto Pilot) engine for out-of-band intelligent threat analysis and rule self-learning.
+Architecturally, CheeseWAF keeps the **Data Plane** request path separate from the **Management Plane** listener and its asynchronous ALAP work. The same `cheesewaf` process starts both listeners: the Data Plane performs bounded synchronous inspection and reverse proxying, while the Management Plane hosts the API, console, and background review workers without waiting on remote LLMs in the request path. A separate commercial control-plane service remains a future, unwired component.
 
 {{% pageinfo color="info" %}}
 Official releases are available on [GitHub Releases](https://github.com/LaokeQwQ/CheeseWAF/releases). The project is open-source under the [Apache License 2.0](https://github.com/LaokeQwQ/CheeseWAF/blob/master/LICENSE).
@@ -27,7 +27,7 @@ CheeseWAF exposes services on the following default listener endpoints:
 | --- | --- | --- |
 | **Data Plane** | `http://127.0.0.1:8080` | Ingests business traffic, performs synchronous security inspection, and proxies upstream |
 | **Management Plane** | `http://127.0.0.1:9443` | Hosts the Web console, REST API, and `/setup` initialization wizard (defaults to HTTPS in Docker) |
-| **Cluster Plane** | `https://127.0.0.1:9444` | TLS/mTLS interconnect for node identity, health/heartbeat, topology, and orchestration in HA mode; it is not a general site/policy state-replication channel |
+| **Cluster Plane** | `https://127.0.0.1:9444` | Optional TLS/mTLS interconnect when `cluster.enabled: true`; it handles node identity, health/heartbeat, topology, and orchestration hooks but is not a general site/policy replication channel |
 | **Local Controller** | `http://127.0.0.1:17943` | Local loopback auxiliary controller port for Windows and macOS desktop environments |
 
 ## Documentation Roadmap {#start-here}
@@ -37,4 +37,6 @@ CheeseWAF exposes services on the following default listener endpoints:
 {{< nav-card title="Quick Start" link="/docs/cheesewaf/tutorial/" icon="fa-solid fa-rocket" desc="Initial system setup, reverse proxy site onboarding, and connecting LLM review providers." />}}
 {{< nav-card title="Core Concepts" link="/docs/cheesewaf/concepts/" icon="fa-solid fa-diagram-project" desc="In-depth breakdown of the request lifecycle, paranoia levels, payload isolation, and unified RBAC." />}}
 {{< nav-card title="Security Policies" link="/docs/cheesewaf/protection/" icon="fa-solid fa-shield" desc="AST semantic engine, custom regex rules, IP/GeoIP filtering, bot challenges, sharded sliding-window counter rate limiting, and ACLs." />}}
+{{< nav-card title="Air-gapped Operations" link="/docs/cheesewaf/operations/" icon="fa-solid fa-lock" desc="Current offline verification and storage maintenance; full plugin egress, upload, and recovery workflows remain design-stage contracts." />}}
+{{< nav-card title="Standalone Control Runtime" link="/docs/cheesewaf/control-plane-runtime/" icon="fa-solid fa-server" desc="Current cheesewaf-control flags, fail-closed startup checks, local probes, and join-mode limits." />}}
 {{< /nav-cards >}}
