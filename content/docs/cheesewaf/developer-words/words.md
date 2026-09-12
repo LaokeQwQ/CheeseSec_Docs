@@ -52,6 +52,6 @@ Anyone with ideas, feedback, or constructive critiques is warmly invited to conn
 Finally, my sincere gratitude for your trust and confidence in CheeseWAF, and my deepest respect to everyone who loves open source and security craftsmanship.
 
 <div style="text-align: right; margin-top: 2rem; font-style: italic;">
-— Laoke (老可), Creator &amp; Core Developer of CheeseWAF<br>
+— Laoke , Creator &amp; Core Developer of CheeseWAF<br>
 September 2026
 </div>
