@@ -40,6 +40,16 @@ CheeseWAF 在首次启动时会在运行数据目录的 `config/` 目录下自�
 - **接入层超时**：`server.read_timeout`、`server.write_timeout` 与 `server.idle_timeout` 控制客户端与 WAF 之间的 HTTP 连接生命周期。
 - **反向代理超时**：`sites[].waf.performance.proxy_timeout` 控制 WAF 向后端上游源站发起请求与等待响应的最大超时时间。
 
+## 防护模式与请求体限制 {#modes-and-limits}
+
+- **WAF 防护模式 (`waf.mode`)**：支持 `block`（阻断恶意请求）、`monitor`（仅记录告警不拦截）以及 `off`（完全关闭防护）。历史配置别名 `log` 会被系统自动识别并归一化为 `monitor`。
+- **请求体截断保护 (`max_body_bytes`)**：当入站请求体大小超出配置的 `max_body_bytes` 上限时，数据平面直接向客户端响应 HTTP `413 Request Entity Too Large`，避免大请求体绕过或耗尽内存。
+
+## 网关适配器认证与代理穿透 {#adapter-auth}
+
+- **专用适配器令牌 (`CHEESEWAF_ADAPTER_TOKEN`)**：使用外部网关适配器（[CheeseWAF-Adapters](../adapters/)）时，调用方必须通过独立的 `X-CheeseWAF-Adapter-Token` 请求头传递密钥；它不是 Bearer Token，严禁放入 `Authorization` 头部。
+- **可信代理网段 (`trusted_cidrs`)**：默认可信 CIDR 列表为空。若 CheeseWAF 部署在可信前置代理（如 CDN 或云负载均衡器）之后，需显式配置 `sites[].waf.access_control.trusted_cidrs`（例如 `127.0.0.1/32` 或 `::1/128`），才能安全解析 `X-Forwarded-For` 中的真实客户端 IP。
+
 ## 动态热重载范围 {#reload}
 
 - **即时热生效**：在 Web 控制台或通过 REST API 保存站点配置、自定义规则、IP 黑白名单、Bot 挑战策略及 ACL 规则时，系统会在内存中实时原子热重载，无需重启服务进程。

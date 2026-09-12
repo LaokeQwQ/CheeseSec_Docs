@@ -49,7 +49,7 @@ languages:
           pageRef: /docs/cheesewaf
           weight: 10
           params:
-            icon: fa-solid fa-shield-halved
+            icon: fa-solid fa-cheese
             description: Self-hosted Web Application Firewall
         - identifier: github
           name: GitHub
@@ -79,7 +79,7 @@ languages:
           pageRef: /docs/cheesewaf
           weight: 10
           params:
-            icon: fa-solid fa-shield-halved
+            icon: fa-solid fa-cheese
             description: 自托管的 Web 应用防火墙
         - identifier: github
           name: GitHub

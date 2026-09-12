@@ -28,11 +28,11 @@ CheeseWAF 内置了基于 React 构建的单页可视化管理控制台，由 `c
 | `/apisec` | API 安全：接口发现、Schema 校验与路由限流 | [API 接口安全](../api-security/) |
 | `/users` | 用户管理：管理员账号、角色划分与 2FA/TOTP 维护 | [系统运维](../operations/) |
 | `/ops` | 运维调度：自动化任务调度与日志清理维护 | [存储与调度](../storage/) |
-| `/updates` | 检查更新：查看 OTA 预留配置的能力状态；当前更新器不可用 | [系统运维](../operations/) |
+| `/updates` | 检查更新：系统版本状态、发布渠道与更新检测 | [系统运维](../operations/) |
 | `/block-pages` | 拦截页面：拦截页模板管理、HTML 安全清洗与沙箱预览 | [拦截响应页](../protection/block-page/) |
 | `/attack-map` | 攻击大屏：实时全球攻击态势大屏、内置规范中国国界线与 100% 纯离线 3D 地球 | [监控与日志](../monitor/) |
-| `/cluster` | 集群管理：节点状态、加入令牌、证书轮换、Ansible 引导包导出和编排任务查看；共享集群后端与远端 Worker 尚未接线 | [集群高可用](../cluster/) |
-| `/system` | 系统配置：运行时参数、NTP 同步与备份能力状态；当前备份/还原 API 返回 501 | [系统运维](../operations/) |
+| `/cluster` | 集群管理：节点状态、加入令牌、证书轮换、Ansible 引导包导出和编排任务查看 | [集群高可用](../cluster/) |
+| `/system` | 系统配置：运行时参数、NTP 同步状态与系统备份管理 | [系统运维](../operations/) |
 | `/captcha-lab` | 验证码实验室：人机挑战题型调试与素材定制 | [Bot 与验证码](../protection/bot-captcha/) |
 
 控制台内置了浅色、深色及多套主题色系，个性化配置仅在浏览器本地生效，不会对数据平面的请求转发造成任何影响。

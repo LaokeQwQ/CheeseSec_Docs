@@ -40,6 +40,16 @@ CheeseWAF automatically generates a default `cheesewaf.yaml` configuration file 
 - **Ingress Connection Timeouts**: `server.read_timeout`, `server.write_timeout`, and `server.idle_timeout` govern the lifecycle of HTTP connections between clients and the WAF.
 - **Reverse Proxy Timeouts**: `sites[].waf.performance.proxy_timeout` defines the maximum allowable duration when connecting and streaming responses to/from backend origin servers.
 
+## Protection Modes & Request Body Limits {#modes-and-limits}
+
+- **WAF Modes (`waf.mode`)**: Supports `block` (actively drops and mitigates attacks), `monitor` (logs alerts without blocking), and `off` (disables inspection). The legacy alias `log` is automatically recognized and normalized to `monitor`.
+- **Request Body Size Guard (`max_body_bytes`)**: If an incoming request body exceeds the configured `max_body_bytes` limit, the data plane immediately responds with HTTP `413 Request Entity Too Large`, preventing memory exhaustion and partial-body evasion.
+
+## Gateway Adapter Authentication & Proxy Ingress {#adapter-auth}
+
+- **Dedicated Adapter Token (`CHEESEWAF_ADAPTER_TOKEN`)**: When integrating with external reverse proxy adapters ([CheeseWAF-Adapters](../adapters/)), callers must supply the token via the dedicated `X-CheeseWAF-Adapter-Token` HTTP header. It is not a Bearer token and must never be placed in the `Authorization` header.
+- **Trusted CIDR Blocks (`trusted_cidrs`)**: By default, the trusted CIDR list is empty. When running behind an upstream proxy (such as a CDN or cloud load balancer), configure `sites[].waf.access_control.trusted_cidrs` (e.g., `127.0.0.1/32` or `::1/128`) to securely parse client IP addresses from `X-Forwarded-For`.
+
 ## Dynamic Hot-Reload Scopes {#reload}
 
 - **Atomic In-Memory Hot Reload**: Modifying site definitions, custom regex rules, IP access lists, bot challenge policies, or ACL rules via the Web console or REST API takes effect immediately in memory without process restarts.

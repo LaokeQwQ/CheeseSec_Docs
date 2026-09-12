@@ -28,11 +28,11 @@ The console enforces session cookie statefulness with strict double-submit CSRF 
 | `/apisec` | API Security: Endpoint discovery, schema validation, and rate limiting | [API Security](../api-security/) |
 | `/users` | User Management: Administrator accounts, role scopes, and 2FA credentials | [Operations](../operations/) |
 | `/ops` | Operations & Cron: Automated task scheduler and log maintenance | [Storage & Scheduling](../storage/) |
-| `/updates` | Updates: Capability status for the reserved OTA settings; updater is currently unavailable | [Operations](../operations/) |
+| `/updates` | Updates: Version status, release channel information, and update checks | [Operations](../operations/) |
 | `/block-pages` | Block Pages: Response templates, HTML sanitization, and sandboxed preview | [Block Pages](../protection/block-page/) |
 | `/attack-map` | Threat Map: Global attack visualization with official borders and 100% offline 3D Earth | [Monitoring & Logs](../monitor/) |
-| `/cluster` | Cluster: Node health, token issuance, certificate rotation, Ansible bundle export, and orchestration task views; shared-cluster backend and remote workers are not wired | [Cluster HA](../cluster/) |
-| `/system` | System: Runtime configuration, NTP synchronization, and backup capability status; the current backup/restore API returns 501 | [Operations](../operations/) |
+| `/cluster` | Cluster: Node health, token issuance, certificate rotation, Ansible bundle export, and orchestration task views | [Cluster HA](../cluster/) |
+| `/system` | System: Runtime configuration, NTP synchronization, and backup management | [Operations](../operations/) |
 | `/captcha-lab` | CAPTCHA Lab: Interactive puzzle testing and asset debugging | [Bot & CAPTCHA](../protection/bot-captcha/) |
 
 The console provides light, dark, and custom color accents. Visual preferences are stored locally in the browser and do not impact data plane operations.

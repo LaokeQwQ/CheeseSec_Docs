@@ -38,6 +38,7 @@ CheeseWAF 采用单一二进制（BusyBox 模式）设计，通过调用文件�
 | `setup` | 引导式或无交互命令行初始化向导，配置系统画像与初始管理员凭证 |
 | `rules` | 站点自定义正则规则批量导入、导出与模板生成 |
 | `crp` | 验证本地 CRP 包，并可将其写入本地 staged 槽位；不会晋级、执行或分发插件 |
+| `temporary-online` | 显式临时出站网络探测，要求管理员标准输入凭据与 TLS 叶证书 Pin，记录元数据审计 |
 | `cli` | 启动交互式 TUI 终端控制台（兼容别名：`panel`） |
 | `status` | 查询本地服务进程运行状态与 PID 租约 |
 | `healthcheck` | 执行健康检查探测（不健康时返回非 0 退出码，常用于 Docker 容器探针与出站 TLS 诊断） |
@@ -129,7 +130,7 @@ sqlite3 -readonly "$DB" \
 
 管理 API Token 的显示备注属于元数据，不是账号用户名，不套用账号用户名规则。不要把 Token 备注当作用户身份。管理 API Token 默认有效期为 90 天，最长可设为 365 天；过期或连续 180 天无活动的 Token 会由单个合并清理 worker 处理，并尝试写入审计和管理员通知。
 
-`user` 命令当前使用可运行的 `storage.profile: temporary` 管理存储，即 SQLite。`storage.profile: production` 在管理 PostgreSQL、Coordinator 和 native-raft 集群 / epoch 启动单元接入前，会被当前二进制拒绝。`crp verify` 只做离线检查；`crp stage` 还可以把已验证的本地包写入指定 staged 槽位，但不会激活、执行或联网拉取。服务启动、集群分发、晋级审批和 OTA 下载当前都未接入。
+`user` 命令用于操作本地管理存储中的用户账号、角色与凭据数据。对于 CRP 插件包，`crp verify` 提供本地离线验签能力，`crp stage` 则可将校验通过的本地包写入指定 staged 槽位。
 
 ### CRP 本地暂存
 
@@ -143,6 +144,20 @@ cheesewaf crp stage \
 ```
 
 该命令必须显式提供信任根、来源注册、运行时目录和确定性的 `--now`。它会验证归档，并只把本地 staged 元数据和 artifact 写入指定目录；不会晋级包、启动插件、绕过确认要求，也不会访问网络来源。`--high-risk` 只选择高风险签名阈值，不会自动授予确认。
+
+```bash
+# 显式执行一次性临时 HTTPS 出站网络探测（要求管理员从标准输入提供密码并绑定 TLS 叶证书 Pin）
+cheesewaf temporary-online probe \
+  --administrator admin \
+  --password-stdin \
+  --plugin-id my-plugin \
+  --plugin-version 1.0.0 \
+  --host updates.cheesesec.com \
+  --leaf-pin sha256:0123456789abcdef... \
+  --ttl 60s
+```
+
+该探测命令只执行受限的 HEAD/GET 握手，将仅含结构化元数据的只读审计记录写入 `<data-dir>/audit/netlease.jsonl`，不启动后台常驻下载器，亦不参与主服务数据转发。
 
 ### 4. 集群节点管理（`cluster`） {#cmd-cluster}
 

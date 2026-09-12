@@ -14,7 +14,9 @@ CheeseWAF can be deployed as a system service, containerized workload, or standa
 {{< nav-card title="macOS" link="/docs/cheesewaf/install/macos/" icon="fa-brands fa-apple" desc="Install as a desktop DMG application or run via portable tar.gz command-line archive." />}}
 {{< /nav-cards >}}
 
-## Release Package Matrix {#release-files}
+## Release Package Matrix & Distribution Strategy {#release-files}
+
+Beginning with stable releases (v0.3.9+), CheeseWAF enforces a **server-first** distribution model: stable releases prioritize certified Linux server packages accompanied by Sigstore cryptographic signatures and SBOM attestations. Windows and macOS desktop packages are provided as optional operator-side builds.
 
 Pre-compiled production binaries can be downloaded directly from GitHub Releases:
 

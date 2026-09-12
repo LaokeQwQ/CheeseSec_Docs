@@ -14,7 +14,10 @@ CheeseWAF 项目源代码采用 [Apache License 2.0](https://github.com/LaokeQwQ
 | 仓库名称 | 仓库定位与职责说明 |
 | --- | --- |
 | [LaokeQwQ/CheeseWAF](https://github.com/LaokeQwQ/CheeseWAF) | CheeseWAF 产品核心源码与发行包分发 |
+| [LaokeQwQ/CheeseWAF-Adapters](https://github.com/LaokeQwQ/CheeseWAF-Adapters) | 面向 NGINX、Envoy 等主流网关的自托管 Go 适配器组件（adapterd） |
+| [LaokeQwQ/CheeseSec_Plugin](https://github.com/LaokeQwQ/CheeseSec_Plugin) | 插件目录、发布元数据与 CRP 准入政策仓库 |
+| [LaokeQwQ/CheeseSec_Plugin_Docs](https://github.com/LaokeQwQ/CheeseSec_Plugin_Docs) | 插件开发者手册、CRP v1 规范与离线扩展契约 |
 | [LaokeQwQ/CheeseSec_Docs](https://github.com/LaokeQwQ/CheeseSec_Docs) | 官方产品手册与技术文档源码 |
 | [LaokeQwQ/CheeseSec_pages](https://github.com/LaokeQwQ/CheeseSec_pages) | 官方品牌与营销站点源码 |
 
-若在使用中发现软件缺陷或有功能建议，欢迎在 [CheeseWAF Issue Tracker](https://github.com/LaokeQwQ/CheeseWAF/issues) 中反馈；文档相关的错漏或优化建议请提交至 [CheeseSec_Docs Issue Tracker](https://github.com/LaokeQwQ/CheeseSec_Docs/issues)。
+若在使用中发现软件缺陷或有功能建议，欢迎在各项目 Issue Tracker 中反馈。详细的问题反馈渠道、邮件沟通方式及严重安全漏洞报告规范，请参阅 [问题反馈与安全报告](../feedback/)。

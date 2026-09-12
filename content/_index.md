@@ -14,7 +14,7 @@ The primary product currently documented is **CheeseWAF**. Source code and pre-b
 ## Products {#cheesewaf}
 
 {{< nav-cards cols="1" >}}
-{{< nav-card title="CheeseWAF" link="/docs/cheesewaf/" icon="fa-solid fa-shield-halved" desc="Commercial-grade self-hosted Web Application Firewall featuring AST semantic analysis, bot mitigation, API security, and asynchronous LLM-driven threat review." />}}
+{{< nav-card title="CheeseWAF" link="/docs/cheesewaf/" icon="fa-solid fa-cheese" desc="Commercial-grade self-hosted Web Application Firewall featuring AST semantic analysis, bot mitigation, API security, and asynchronous LLM-driven threat review." />}}
 {{< /nav-cards >}}
 
 ## Quick Navigation {#start}

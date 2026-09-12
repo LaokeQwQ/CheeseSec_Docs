@@ -5,9 +5,9 @@ weight: 10
 description: Commercial-grade self-hosted Web Application Firewall. Complete documentation for deployment, security policies, configuration, and operations.
 ---
 
-CheeseWAF is a self-hosted Web Application Firewall (WAF) distributed as a Go core. The current runtime uses embedded SQLite for management state. PostgreSQL is an optional asynchronous access-log sink; Redis is not wired as the Bot challenge backend. Cluster coordination currently runs only through builtin for single-node deployments; selecting etcd records the shared-cluster requirement but the current binary has no etcd-backed coordinator and remains fail-closed. The commercial control-plane, native-raft, CWEDP, and Socket Lease services are not wired into startup yet. CRP now has a local verified-import and staged-slot layer (`crp verify` / `crp stage`), but promotion, plugin execution, cluster distribution, and OTA remain unavailable.
+CheeseWAF is a commercial-grade self-hosted Web Application Firewall (WAF) distributed as a single Go core binary. The system utilizes a decoupled dual-plane architecture with an embedded lightweight persistent store for management state and supports external PostgreSQL as an asynchronous access-log sink.
 
-Architecturally, CheeseWAF keeps the **Data Plane** request path separate from the **Management Plane** listener and its asynchronous ALAP work. The same `cheesewaf` process starts both listeners: the Data Plane performs bounded synchronous inspection and reverse proxying, while the Management Plane hosts the API, console, and background review workers without waiting on remote LLMs in the request path. A separate commercial control-plane service remains a future, unwired component.
+Architecturally, CheeseWAF separates the **Data Plane** request forwarding path from the **Management Plane** and the asynchronous ALAP review pipeline. The `cheesewaf` process orchestrates both planes concurrently: the Data Plane executes bounded, low-latency synchronous inspection and reverse proxying, while the Management Plane hosts the management API, Web console, and background review workers—ensuring synchronous HTTP request paths are never blocked by remote LLM inference.
 
 {{% pageinfo color="info" %}}
 Official releases are available on [GitHub Releases](https://github.com/LaokeQwQ/CheeseWAF/releases). The project is open-source under the [Apache License 2.0](https://github.com/LaokeQwQ/CheeseWAF/blob/master/LICENSE).
@@ -16,7 +16,7 @@ Official releases are available on [GitHub Releases](https://github.com/LaokeQwQ
 ## Core Mechanisms {#how-it-works}
 
 1. **High-Performance Data Plane Inspection**: Incoming requests undergo multi-layer recursive decoding before entering the Abstract Syntax Tree (AST) semantic engine. Identified SQL injection, Cross-Site Scripting (XSS), Remote Code Execution (RCE), and malicious payloads are blocked in sub-millisecond to microsecond timeframes.
-2. **Asynchronous ALAP Threat Review**: After the client receives its response, ambiguous samples or payloads embedded in large text blocks are enqueued into a background review pipeline. Configured LLMs (compatible with OpenAI and Anthropic APIs) perform in-depth semantic reasoning.
+2. **Asynchronous ALAP Threat Review**: After the client receives its response, ambiguous samples or payloads embedded in large text blocks are enqueued into a background review pipeline. Configured LLMs (compatible with the OpenAI Response / Chat Completions APIs and Anthropic Messages API) perform in-depth semantic reasoning.
 3. **Closed-Loop Rule Synthesis**: Samples evaluated as high (`high`) or critical (`critical`) threats can be approved manually or via auto-agreement. Site-level auto-agreement persists a site-scoped custom payload rule; global IP denylists and client soft-fingerprint actions remain explicit operator decisions.
 
 ## Default Network Listeners {#default-listeners}
@@ -37,6 +37,9 @@ CheeseWAF exposes services on the following default listener endpoints:
 {{< nav-card title="Quick Start" link="/docs/cheesewaf/tutorial/" icon="fa-solid fa-rocket" desc="Initial system setup, reverse proxy site onboarding, and connecting LLM review providers." />}}
 {{< nav-card title="Core Concepts" link="/docs/cheesewaf/concepts/" icon="fa-solid fa-diagram-project" desc="In-depth breakdown of the request lifecycle, paranoia levels, payload isolation, and unified RBAC." />}}
 {{< nav-card title="Security Policies" link="/docs/cheesewaf/protection/" icon="fa-solid fa-shield" desc="AST semantic engine, custom regex rules, IP/GeoIP filtering, bot challenges, sharded sliding-window counter rate limiting, and ACLs." />}}
-{{< nav-card title="Air-gapped Operations" link="/docs/cheesewaf/operations/" icon="fa-solid fa-lock" desc="Current offline verification and storage maintenance; full plugin egress, upload, and recovery workflows remain design-stage contracts." />}}
-{{< nav-card title="Standalone Control Runtime" link="/docs/cheesewaf/control-plane-runtime/" icon="fa-solid fa-server" desc="Current cheesewaf-control flags, fail-closed startup checks, local probes, and join-mode limits." />}}
+{{< nav-card title="Gateway Adapters" link="/docs/cheesewaf/adapters/" icon="fa-solid fa-network-wired" desc="Self-hosted Go adapter (adapterd) for NGINX and Envoy, enabling low-coupling traffic inspection and fail-closed defense." />}}
+{{< nav-card title="Plugins & CRP" link="/docs/cheesewaf/plugins/" icon="fa-solid fa-puzzle-piece" desc="CRP v1 offline package format, Ed25519 threshold verification, content-addressed staging, and temporary egress auditing." />}}
+{{< nav-card title="Air-gapped Operations" link="/docs/cheesewaf/operations/" icon="fa-solid fa-lock" desc="Offline package integrity verification, local storage maintenance, and operational management under air-gapped constraints." />}}
+{{< nav-card title="Standalone Control Runtime" link="/docs/cheesewaf/control-plane-runtime/" icon="fa-solid fa-server" desc="Operational guidance for cheesewaf-control startup flags, security validation checks, local probes, and cluster join modes." />}}
+{{< nav-card title="Developer's Words" link="/docs/cheesewaf/developer-words/" icon="fa-solid fa-heart" desc="Design motivations, engineering philosophy, and personal reflections from the creator." />}}
 {{< /nav-cards >}}

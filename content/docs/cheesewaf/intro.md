@@ -24,7 +24,7 @@ The Data Plane operates strictly within the critical request path, adhering to d
 
 ### Management Plane {#management-plane}
 
-The same `cheesewaf` process starts a dedicated management listener for administration and observability; this is a management plane boundary, not the future standalone commercial control-plane service:
+The management plane provides administrative and observability capabilities through a dedicated listener endpoint:
 
 - **`/setup` Initialization Wizard**: Guides initial deployment and provisions administrator credentials.
 - **Web Management Console**: Serves a modern, responsive React-based single-page application.
@@ -47,16 +47,16 @@ Background workers asynchronously query the configured LLM for deep contextual a
 
 ## Delivery Components & Single-Binary Distribution {#what-ships}
 
-CheeseWAF keeps the request path self-contained. The runnable management-storage profile is `storage.profile: temporary`, which stores management state in embedded SQLite. `storage.profile: production` is reserved for a future durable path and currently fails closed with `ErrProductionStorageUnavailable`; PostgreSQL is an optional asynchronous access-log sink, and Redis is not wired as the Bot challenge backend. The internal CRP RuntimeStore can verify and persist a local package in a staged slot, and the CLI exposes `crp verify`/`crp stage`; it does not activate or execute plugins. The separate commercial control plane, native-raft, CWEDP distribution, and Socket Lease services are not connected to startup:
+CheeseWAF ships as a self-contained single binary (BusyBox model) delivering all core security engines, management services, and interactive utilities:
 
 | Component | Role & Functionality |
 | --- | --- |
-| `cheesewaf` | Primary server process; default command is `serve` to launch the data and management listeners in one process |
+| `cheesewaf` | Primary server process; default command is `serve` to launch data and management listeners in one process |
 | `waf-cli` | Same binary (or symbolic link); default command launches the interactive TUI management panel |
-| `cheesewaf-gui` | Browser-based local service controller for Windows and macOS (binds exclusively to loopback) |
-| Web Console | Modern React application embedded within the binary and hosted by the process's management listener |
-| Storage profiles | Current: `temporary` with embedded SQLite; reserved `production` profile currently rejected at startup; optional PostgreSQL log sink; builtin single-node cluster path, with configured etcd/native-raft coordinators not wired |
-| CRP local state | `crp verify` and `crp stage` verify/persist local packages only; promotion, execution, cluster distribution, and OTA are unavailable |
+| `cheesewaf-gui` | Local service controller for Windows and macOS (binds exclusively to loopback) |
+| Web Console | Modern React application embedded within the binary and hosted by the management listener |
+| Storage Engines | Embedded SQLite for management state persistence; supports external PostgreSQL for asynchronous access logs |
+| CRP Local Staging | Offline Ed25519 signature verification and content-addressed staging via `crp verify` and `crp stage` |
 
 ## Related Documentation {#related}
 

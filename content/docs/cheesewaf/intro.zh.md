@@ -24,7 +24,7 @@ description: 解析数据平面与 ALAP 异步研判的分工体系、旁路审�
 
 ### 管理平面（Management Plane） {#management-plane}
 
-当前同一个 `cheesewaf` 进程独立监听管理端口，提供系统管理与运维能力；这是管理平面边界，不是未来独立的商业化控制面服务：
+管理平面通过独立的监听端口提供系统管理与运维能力：
 
 - **`/setup` 初始化向导**：首次部署引导与管理员账号凭据初始化。
 - **Web 管理控制台**：基于 React 构建的可视化管理界面。
@@ -47,16 +47,16 @@ description: 解析数据平面与 ALAP 异步研判的分工体系、旁路审�
 
 ## 交付组件与单二进制分发 {#what-ships}
 
-CheeseWAF 保持请求数据面自包含。当前可运行的管理存储配置是 `storage.profile: temporary`，使用内置 SQLite 保存管理状态。`storage.profile: production` 预留给未来的持久管理路径，但当前启动会以 `ErrProductionStorageUnavailable` 失败；PostgreSQL 只是可选的异步访问日志 Sink，Redis 尚未接入 Bot 挑战后端。内部 CRP RuntimeStore 已能对本地包做验证并写入 staged 槽位，CLI 提供 `crp verify` / `crp stage`；它不会激活或执行插件。独立商业化控制面、native-raft、CWEDP 分发和 Socket Lease 服务尚未接入启动路径：
+CheeseWAF 采用单一二进制（BusyBox 模式）交付，包含核心引擎、管理控制台及交互工具：
 
 | 组件名称 | 角色与功能说明 |
 | --- | --- |
-| `cheesewaf` | 主服务程序，默认运行 `serve` 命令在同一进程中启动数据监听与管理监听 |
-| `waf-cli` | 与主程序同二进制（或符号链接），默认启动交互式 TUI 管理面板 |
-| `cheesewaf-gui` | Windows 与 macOS 平台专用的浏览器本地服务控制器（仅监听本地回环地址） |
-| Web 控制台 | 内置于二进制中的现代化 React 单页应用，由进程的管理监听器托管 |
-| 存储配置 | 当前运行时：`temporary` 使用内置 SQLite；`production` 预留但启动会拒绝；可选 PostgreSQL 日志 Sink；集群当前仅有 builtin 单节点路径，etcd/native-raft 协调器尚未接线 |
-| CRP 本地状态 | `crp verify` 与 `crp stage` 只验证并暂存本地包；晋级、执行、集群分发和 OTA 当前不可用 |
+| `cheesewaf` | 主服务程序，默认运行 `serve` 命令在同一进程中启动数据平面与管理平面监听 |
+| `waf-cli` | 统一二进制（或符号链接），默认启动交互式 TUI 管理面板 |
+| `cheesewaf-gui` | Windows 与 macOS 平台专用的本地服务控制器（仅监听本地回环地址） |
+| Web 控制台 | 内置于二进制中的现代化 React 单页应用，由管理平面监听端口直接托管 |
+| 存储引擎 | 默认采用嵌入式 SQLite 保存管理状态，并支持外接 PostgreSQL 作为异步访问日志存储 |
+| CRP 本地安全验证 | 支持通过 `crp verify` 与 `crp stage` 离线校验资源包 Ed25519 签名与槽位暂存 |
 
 ## 相关阅读 {#related}
 

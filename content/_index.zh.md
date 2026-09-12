@@ -14,7 +14,7 @@ no_list: true
 ## 产品矩阵 {#cheesewaf}
 
 {{< nav-cards cols="1" >}}
-{{< nav-card title="CheeseWAF" link="/zh/docs/cheesewaf/" icon="fa-solid fa-shield-halved" desc="企业级自托管 Web 应用防火墙。提供语义分析、Bot 防护、API 安全及异步大模型审查能力。" />}}
+{{< nav-card title="CheeseWAF" link="/zh/docs/cheesewaf/" icon="fa-solid fa-cheese" desc="企业级自托管 Web 应用防火墙。提供语义分析、Bot 防护、API 安全及异步大模型审查能力。" />}}
 {{< /nav-cards >}}
 
 ## 快速导航 {#start}

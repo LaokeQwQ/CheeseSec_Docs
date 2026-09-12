@@ -14,7 +14,9 @@ CheeseWAF 支持以系统服务、容器编排或单二进制运行于各类主�
 {{< nav-card title="macOS" link="/zh/docs/cheesewaf/install/macos/" icon="fa-brands fa-apple" desc="提供 DMG 图形应用与 tar.gz 命令行分发包。" />}}
 {{< /nav-cards >}}
 
-## 发行包列表 {#release-files}
+## 发行包列表与发布策略 {#release-files}
+
+从正式稳定版（v0.3.9+）起，CheeseWAF 遵循**服务器优先（Server-First）**发布策略：稳定 Release 默认优先分发经 Sigstore 签名校验与 SBOM 物料清单认证的 Linux 服务器架构发行包；Windows 与 macOS 桌面版作为可选的操作端构建产物提供。
 
 可前往 GitHub Releases 下载官方发布的预编译包：
 

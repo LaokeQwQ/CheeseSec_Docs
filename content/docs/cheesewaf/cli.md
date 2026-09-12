@@ -38,6 +38,7 @@ New passwords must contain at least 10 characters and satisfy at least 3 of thes
 | `setup` | Interactive or headless terminal initialization wizard for hardware profiling and initial credentials |
 | `rules` | Batch imports, exports, and template generation for site custom regex rules |
 | `crp` | Verifies a local CRP package and can persist it in the local staged slot; it does not promote, execute, or distribute a plugin |
+| `temporary-online` | Explicit temporary outbound network probe; requires administrator stdin password and TLS leaf pin, records metadata-only audit |
 | `cli` | Launches the interactive TUI terminal management panel (compatibility alias: `panel`) |
 | `status` | Checks daemon health, process PID lease, and runtime status |
 | `healthcheck` | Diagnostic probes for admin API and outbound TLS (used in Docker healthcheck probes) |
@@ -130,7 +131,7 @@ sqlite3 -readonly "$DB" \
 
 The display note attached to a management API token is metadata, not an account username. It is not subject to the account username rule; do not use a token note as the user identity. Management API Tokens default to 90 days and may be set up to 365 days; expired or inactive (180 days) tokens are cleaned by a single coalesced worker and generate audit/notification attempts.
 
-The `user` commands currently use the runnable `storage.profile: temporary` management store backed by SQLite. `storage.profile: production` remains fail-closed until the management PostgreSQL, Coordinator, and native-raft cluster/epoch startup unit is wired. `crp verify` performs offline inspection only. `crp stage` additionally persists an already verified local package in an explicit local staged slot; it does not activate, execute, or fetch a package. Server startup, cluster distribution, promotion approvals, and OTA downloading are not connected.
+The `user` command manages user accounts, roles, and credentials within the local management store. For CRP plugin packages, `crp verify` provides local offline signature verification, and `crp stage` persists verified local packages into designated staged slots.
 
 ### CRP local staging
 
@@ -144,6 +145,21 @@ cheesewaf crp stage \
 ```
 
 The command requires explicit trust roots, source registrations, a runtime directory, and a deterministic `--now`. It verifies the archive and writes only local staged metadata/artifacts. It never promotes a package, starts a plugin, bypasses a confirmation requirement, or contacts a network source. `--high-risk` selects the high-risk signature threshold but does not grant confirmation.
+
+```bash
+# Execute an explicit, one-time temporary HTTPS outbound probe
+# (requires admin password on stdin and pinned TLS leaf certificate)
+cheesewaf temporary-online probe \
+  --administrator admin \
+  --password-stdin \
+  --plugin-id my-plugin \
+  --plugin-version 1.0.0 \
+  --host updates.cheesesec.com \
+  --leaf-pin sha256:0123456789abcdef... \
+  --ttl 60s
+```
+
+The probe command executes only restricted HEAD/GET handshakes and writes a structured, read-only metadata audit record to `<data-dir>/audit/netlease.jsonl`. It does not start a persistent background downloader, nor does it participate in main proxy data routing.
 
 ### 4. Cluster Management (`cluster`) {#cmd-cluster}
 
