@@ -5,3 +5,6 @@
 name = "cheesesec-docs"
 compatibility_date = "2026-08-16"
 pages_build_output_dir = "public"
+
+[vars]
+HUGO_VERSION = "0.165.0"
