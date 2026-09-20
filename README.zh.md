@@ -11,6 +11,9 @@
 - **文档主题**：[OINK](https://github.com/pgsty/oink) `v0.4.1`（已固化于 `_vendor/` 目录，无需额外拉取）。
 - **轻量化设计**：文档构建无需依赖 Node.js、npm 或 PostCSS 环境。
 
+Dependabot 每周检查根目录 Go 模块和 GitHub Actions 依赖，并将更新目标设为
+`main`；配置文件位于 `.github/dependabot.yml`。
+
 ## 本地开发与预览
 
 使用 Hugo 启动本地调试服务：

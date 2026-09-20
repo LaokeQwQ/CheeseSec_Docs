@@ -13,6 +13,9 @@ Production URL: `https://docs.cheesesec.com/`
 - Theme: [OINK](https://github.com/pgsty/oink) `v0.4.1` (vendored in `_vendor/`)
 - No Node.js, npm, or PostCSS in this repository
 
+Dependabot checks the root Go module and GitHub Actions dependencies weekly and
+targets `main`; its configuration is in `.github/dependabot.yml`.
+
 ## Local preview
 
 ```bash
