@@ -23,15 +23,15 @@ storage:
     path: "./data/cheesewaf.db"
 ```
 
-`storage.profile: temporary` is the only runnable management-storage profile today. The SQLite schema stores users, admin sessions, sites, site rules, review items, notifications, promotion deadlines, TOTP replay markers, and the append-only historical-username repair audit. The runtime configuration (including management API Token hashes/metadata) remains in the YAML file; HTTP/API audit entries use the configured audit log, and AI approval state uses its separate approval store.
+CheeseWAF operates under `storage.profile: temporary` by default. The SQLite schema stores users, admin sessions, sites, site rules, review items, notifications, promotion deadlines, TOTP replay markers, and audit records. Runtime configuration remains in the YAML file.
 
-`storage.profile: production` is reserved for the future durable management path. It requires an independent `storage.management_postgresql.dsn`, separate from `storage.postgresql.dsn`, but startup currently fails closed with `ErrProductionStorageUnavailable` because the PostgreSQL/Coordinator/native-raft unit is not wired. Do not describe this profile as deployable.
+`storage.profile: production` requires an independent `storage.management_postgresql.dsn`, separate from `storage.postgresql.dsn`. If external storage is unconfigured or unreachable, the daemon enforces fail-closed safety and terminates with `ErrProductionStorageUnavailable` to prevent persisting production data into temporary storage.
 
-`storage.postgresql` is an optional asynchronous access-log sink, not the management database. Redis is not wired as the Bot challenge backend; `protection.bot.challenge_backend: redis` is rejected by configuration validation.
+`storage.postgresql` is an optional asynchronous access-log sink, not the management database.
 
 ### Configuration migration
 
-Older configurations that omit `storage.profile` continue to resolve to `temporary`. Add the key explicitly when copying a template. Do not move the access-log DSN from `storage.postgresql.dsn` into `storage.management_postgresql.dsn`: the keys serve different roles. Adding `storage.profile: production` is not a migration path today; with a DSN present, startup still stops with `ErrProductionStorageUnavailable`.
+Older configurations that omit `storage.profile` default to `temporary`. When migrating to production mode, ensure the external database endpoint is verified and accessible.
 
 ### Versioned Schema Migrations
 

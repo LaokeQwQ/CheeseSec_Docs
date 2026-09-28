@@ -95,7 +95,7 @@ params:
     authors: '[LaokeQwQ](https://github.com/LaokeQwQ)'
     from_year: 2026
     to_year: present
-  footer_center_info: 'CheeseSec Docs · [CheeseWAF](https://github.com/LaokeQwQ/CheeseWAF)'
+  footer_center_info: 'CheeseSec Docs · [CheeseWAF](https://github.com/LaokeQwQ/CheeseWAF) · Made with ❤️ by CheeseSec Team'
   github_repo: https://github.com/LaokeQwQ/CheeseSec_Docs
   github_project_repo: https://github.com/LaokeQwQ/CheeseWAF
   github_branch: main

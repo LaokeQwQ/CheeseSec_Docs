@@ -19,11 +19,11 @@ cheesewaf setup
 
 The wizard inspects host resources (logical CPU cores, visible RAM, and an 8 MiB sequential write test) and recommends a runtime profile:
 
-- **`low`**: Recommended for hosts with ≤2 logical cores, ≤2048 MB RAM, or a failed disk write test. A 2-core / 2 GB host belongs in this tier (alias: `minimal`).
-- **`medium`**: Requires ≥3 logical cores, ≥4096 MB RAM, and a passing disk write test (alias: `balanced`).
-- **`high`**: Requires ≥4 logical cores, ≥8192 MB RAM, and sequential writes of at least 50 MB/s (alias: `performance`).
-- **`smart`**: A manually selected adaptive profile matching `web_attack: smart`; it is not a fixed result of the hardware probe.
-- **`custom`**: Allows manual tuning of performance and security thresholds.
+- **`low` (Lightweight)**: Best for 1–2 CPU cores / 1–2 GB RAM; requests exceeding inspection budgets automatically fall back here.
+- **`smart` (Smart, default)**: Recommended for standard servers (2–4 CPU cores / 4–8 GB RAM); dynamically tunes inspection depth based on request risk.
+- **`medium` (Balanced)**: Fixed inspection depth 2 with a 50 ms timeout per request.
+- **`high` (Performance)**: Best for 4+ CPU cores / 8+ GB RAM on core gateways; performs full deep semantic analysis.
+- **`custom` (Custom)**: Allows manual tuning of inspection depth and timeout budgets.
 
 The probe runs for at most 30 seconds. If it times out, is cancelled, or the Web probe request fails, the wizard recommends the conservative `low` tier. In non-interactive mode, `--skip-probe` also selects `low` unless an explicit `--profile` is provided.
 

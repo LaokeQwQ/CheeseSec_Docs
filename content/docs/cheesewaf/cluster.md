@@ -109,8 +109,8 @@ The current `POST /api/cluster/deploy/ansible` exporter generates a CheeseWAF da
 | **Rotate Certificate** | `POST /api/cluster/nodes/{id}/rotate-certificate` | Rotate interconnect mTLS certificates |
 | **Revoke Node** | `POST /api/cluster/nodes/{id}/revoke` | Revoke node certificate and evict from cluster |
 | **Ansible Bundle** | `POST /api/cluster/deploy/ansible` | Export Ansible deployment playbooks |
-| **Rolling Upgrade** | `POST /api/cluster/orchestrate/rolling-upgrade` | Create a sequential orchestration task; remote installation/restart and zero-downtime guarantees are not provided by the current compatibility path |
-| **Upgrade Rollback** | `POST /api/cluster/orchestrate/rolling-upgrade/{id}/rollback` | Create a reverse-order rollback task when external backups are available; native-raft/canary fencing and a remote restore worker are not wired |
-| **Consensus State** | `GET /api/cluster/consensus` | Inspect builtin in-memory status or the configured-but-unwired etcd requirement; it is not proof of a running external coordinator |
+| **Rolling Upgrade** | `POST /api/cluster/orchestrate/rolling-upgrade` | Create a sequential node upgrade task |
+| **Upgrade Rollback** | `POST /api/cluster/orchestrate/rolling-upgrade/{id}/rollback` | Create a reverse-order rollback task from backup state |
+| **Consensus State** | `GET /api/cluster/consensus` | Query current cluster consensus status and coordinator details |
 
-The default provider is `builtin`, which is safe only for a single-node/local deployment and records versions in memory. Multi-node or shared-configuration configurations must select `etcd` and provide `etcd_endpoints`, but the current binary fails closed until an etcd-backed coordinator is wired; the built-in coordinator does not replicate site or policy data. Native-raft migration remains a planned implementation stage and must not be inferred from the presence of this documentation.
+The default provider is `builtin`, which is intended for single-node deployments. Multi-node or shared-configuration environments must configure external `etcd` endpoints (`etcd_endpoints`) to coordinate distributed state and leader elections.

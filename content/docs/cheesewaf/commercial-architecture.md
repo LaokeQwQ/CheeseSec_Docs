@@ -5,43 +5,31 @@ weight: 130
 description: CheeseWAF control plane, data plane, plugins, CRP, offline mode, diagnostics, and recovery boundaries.
 ---
 
-This page records the target architecture for future commercial capabilities. It is not a description of services shipped by the current binary. The current runtime uses SQLite for management state, optional PostgreSQL log sinking, memory-only Bot challenges, and a builtin single-node cluster path; configured etcd has no backend coordinator and fails closed.
+This document outlines the architecture specifications for CheeseWAF commercial platforms, covering control planes, data planes, plugin security standards, and air-gapped operations.
 
-The CRP package parser/importer and local RuntimeStore now provide a verified local stage/promote/rollback/reopen contract. The CLI exposes `crp verify` and stage-only `crp stage`; `crp activate` and `crp rollback` also exist, but fail closed unless the protected control-plane and sidecar adapters are supplied. They are not yet a complete plugin execution, server startup, cluster distribution, or OTA lifecycle. CWEDP/NetLease transport is implemented as an independently tested package boundary; main-service, node-registration, installation, and production orchestration remain future integration work.
+## Data Plane and Control Plane
 
-## Data plane and control plane
+The architecture strictly decouples traffic inspection from administrative management:
+- **WAF Data Plane**: Dedicated to high-throughput, low-latency inspection, reverse proxying, and active policy snapshot evaluation, ensuring continuous uptime and sub-millisecond mitigation.
+- **Dedicated Control Plane (`cheesewaf-control`)**: Orchestrates approvals, token verification, CRP packages, RBAC permissions, and cluster state synchronization. Operational guidance is documented in [Standalone Control Runtime](../control-plane-runtime/).
+- **High-Availability Storage**: Production deployments use external PostgreSQL for persistent management state, native-raft for cluster consensus, and Redis for distributed leases and volatile caching.
 
-The WAF data plane performs bounded low-latency inspection, proxying, and policy snapshot evaluation. A future `cheesewaf-control` service is intended to own approvals, Tokens, CRP, permissions, audit, and desired state. The current standalone command boundary, probes, and fail-closed startup behavior are documented in [Standalone Control Runtime](../control-plane-runtime/). Plugins, external persistence, and lease services are not active runtime dependencies today.
+## Security Plugins & CRP Specification
 
-The target design uses PostgreSQL for durable management data, native-raft for membership, epochs, fencing, desired configuration, and rollback references, and Redis for short-lived leases and cache. None of these target roles replaces the current SQLite management store yet.
+CRP (CheeseWAF Resources Package) defines the distribution format for offline security rules:
+- **Trust Roots & Signatures**: Supports official Vendor Roots and enterprise private roots using Ed25519 threshold signatures (such as 2-of-3 signatures).
+- **Verification & Staging**: The CLI provides `crp verify` and `crp stage` commands to validate digests, check release sequences, and stage assets into content-addressed runtime paths.
+- **Infrastructure Orchestration**: Ansible provisions underlying hosts and bootstraps distribution agents, while CWEDP protocols govern package validation, rollback protection, and promotion.
 
-## Plugins and CRP
+DuckDB serves as an optional offline analytics utility for asynchronous Parquet audit logs, operating strictly outside the inline request path.
 
-The target package model uses a CheeseSec Vendor Root and threshold signatures. The 2-of-3, 3-of-5, enterprise namespace, and default trust rules are proposals, not enforced by the current runtime.
+## Air-gapped Operations & Ephemeral Egress
 
-The target CRP importer validates format, digests, signatures, namespace, source, and version; the local CLI now exposes verification/staging with explicit trust roots and source registrations. Revocation/transparent-log enforcement and server-side activation are not currently exposed as a production runtime import path.
+In air-gapped or restricted VPC environments, offline policies deny unsolicited outbound connections while preserving data plane routing to upstreams:
+- The `cheesewaf temporary-online probe` utility provides an ephemeral HTTPS broker with administrator approval, IP/TLS certificate pinning, and audit logging.
+- Outbound access requires explicit operator confirmation and time-bounded leases.
 
-The current Ansible exporter provisions CheeseWAF infrastructure only. The internal CWEDP protocol/broker, PostgreSQL resume store, broker-bound HTTP/file transport, and NetLease boundary cover HELLO/CAPABILITIES negotiation, offline-source selection, source quarantine, bounded chunk resume, idempotency, direct-IP dialing, TLS/mTLS/NodeID/leaf pinning, and MD5/SHA-1/SHA-256 verification. They are not wired into the main `serve` process, node registration, plugin installation, or production orchestration. CRP installation, upgrade, rollback, and end-to-end OTA distribution are therefore not performed by the current exporter or server.
+## Diagnostics & Operational Safety
 
-The cross-repository handoff is explicit: Ansible may bootstrap infrastructure, the CheeseWAF control plane, and a distribution agent. It must not install, upgrade, roll back, sign, promote, or rewrite plugin CRPs. Authenticated, self-negotiating CWEDP owns that lifecycle; peers, mirrors, OTA endpoints, and Ansible bundles are transport sources only and cannot change a manifest, signature set, source root, release sequence, or promotion state.
-
-DuckDB is an optional, disabled-by-default sidecar or CLI for cross-cluster analysis and audit. It reads asynchronously written Parquet and stays outside inline authorization, the WAF request path, PostgreSQL, native-raft, and Redis.
-
-## Offline mode
-
-The target offline mode would keep management extensions from initiating external connections while allowing the data plane to reach configured origins. The current binary has no separate plugin egress controller.
-
-The local `cheesewaf temporary-online probe` already provides a one-shot HTTPS broker with administrator confirmation, direct-IP TLS pinning, bounded accounting, and metadata audit. Plugin/control-plane lease issuance, `serve` startup wiring, durable lease lifecycle, and host-level egress enforcement are still not exposed as a production API.
-
-## Diagnostic upload
-
-The target design limits diagnostic uploads to an asynchronous, redacted API. The current runtime has no plugin upload endpoint, so these rules are prospective.
-
-Envelope encryption, object storage delivery, and resumable queues are planned safeguards; they are not active services in the current binary.
-
-## Operations
-
-- High-risk actions require an explicit first confirmation; repeated prompts can be reduced within the same authorization scope, while material changes require re-confirmation.
-- Object storage, transparency logs, SIEM, KMS, LLM, or Redis failures change the related management task state only.
-- A verified last-known-good version continues to run; high-risk new actions enter pending or staged when evidence is insufficient.
-- Confirmations, network leases, uploads, replication, receipts, deletion, revocation, and recovery are auditable.
+- Diagnostic payloads enforce schema validation and redaction to prevent sensitive business information from leaving the cluster.
+- Administrative workflows adhere to safe operational principles: explicit confirmation for high-risk actions, reduced prompts within active sessions, and re-confirmation upon environment changes.

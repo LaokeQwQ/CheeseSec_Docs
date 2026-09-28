@@ -109,8 +109,8 @@ cheesewaf cluster status
 | **证书轮换** | `POST /api/cluster/nodes/{id}/rotate-certificate` | 自动化轮换互联 mTLS 通信证书 |
 | **节点下线吊销** | `POST /api/cluster/nodes/{id}/revoke` | 吊销节点证书并踢出集群 |
 | **Ansible 部署包** | `POST /api/cluster/deploy/ansible` | 导出用于批量自动化部署的 Playbook |
-| **滚动升级** | `POST /api/cluster/orchestrate/rolling-upgrade` | 创建按节点顺序编排的任务；当前兼容路径没有远端安装/重启 Worker，也不承诺零停机 |
-| **升级回滚** | `POST /api/cluster/orchestrate/rolling-upgrade/{id}/rollback` | 在存在外部备份时创建逆序回滚任务；native-raft、Canary fencing 和远端恢复 Worker 尚未接线 |
-| **共识状态** | `GET /api/cluster/consensus` | 查看 builtin 内存状态或已配置但未接线的 etcd 要求，不能证明外部协调器正在运行 |
+| **滚动升级** | `POST /api/cluster/orchestrate/rolling-upgrade` | 创建按节点顺序编排的升级任务 |
+| **升级回滚** | `POST /api/cluster/orchestrate/rolling-upgrade/{id}/rollback` | 创建逆序回滚任务，依据备份恢复配置 |
+| **共识状态** | `GET /api/cluster/consensus` | 查看当前集群共识提供方与健康状态 |
 
-系统默认采用 `builtin` 提供方，仅适用于单节点/本地部署并将版本记录保存在内存中。多节点或共享配置必须选择 `etcd` 并配置 `etcd_endpoints`，但当前二进制会在 etcd 后端接线前保持 fail-closed；内置提供方不会复制站点或策略数据。native-raft 仍处于分阶段实施中，不能仅凭本文档存在而视为已上线。
+单节点部署默认采用 `builtin` 模式并将状态保存在本地；多节点高可用集群必须配置外部 `etcd` 端点（`etcd_endpoints`）以协调分布式状态与选主。

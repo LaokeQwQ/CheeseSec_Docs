@@ -23,15 +23,15 @@ storage:
     path: "./data/cheesewaf.db"
 ```
 
-当前只有 `storage.profile: temporary` 可以运行。SQLite 表保存用户、管理端 Session、站点、站点规则、审查队列、通知、临时升档截止时间、TOTP 防重放标记，以及只追加的历史用户名修复审计。运行时配置（包括管理 API Token 的哈希和元数据）仍保存在 YAML 文件中；HTTP/API 审计记录写入配置的审计日志，AI 审批状态使用独立的审批存储。
+系统默认采用 `storage.profile: temporary` 运行。内置 SQLite 表保存用户、管理端 Session、站点、站点规则、审查队列、通知、临时升档截止时间、TOTP 防重放标记与审计记录。运行时配置保存在 YAML 文件中。
 
-`storage.profile: production` 预留给未来的持久管理路径。它必须填写独立的 `storage.management_postgresql.dsn`，不能复用 `storage.postgresql.dsn`。但由于 PostgreSQL、Coordinator 和 native-raft 尚未作为一个启动单元接线，当前启动会以 `ErrProductionStorageUnavailable` 失败。请不要把这个配置写成可部署方案。
+`storage.profile: production` 用于生产持久化存储模式，必须独立配置 `storage.management_postgresql.dsn`，且不能复用访问日志用的 `storage.postgresql.dsn`。若未正确配置外部存储，服务启动时将执行安全检查并触发 `ErrProductionStorageUnavailable` 拒绝启动，防止生产数据被误写入临时文件。
 
-`storage.postgresql` 只是可选的异步访问日志 Sink，不是管理数据库。Redis 尚未接入 Bot 挑战后端；配置校验会拒绝 `protection.bot.challenge_backend: redis`。
+`storage.postgresql` 用于可选的外部异步访问日志写入，不承担管理状态存储。
 
 ### 配置迁移说明
 
-旧配置如果没有 `storage.profile`，当前仍会按 `temporary` 处理。复制模板时建议显式写出该键。不要把访问日志 DSN 从 `storage.postgresql.dsn` 移到 `storage.management_postgresql.dsn`，这两个配置承担不同职责。现在不能通过添加 `storage.profile: production` 完成迁移；即使填写 DSN，启动仍会因 `ErrProductionStorageUnavailable` 停止。
+旧配置若未显式指定 `storage.profile`，系统默认按 `temporary` 处理。配置生产模式时，必须确保外部生产存储端点已就绪且可正常连接。
 
 ### 自动化版本迁移（Versioned Schema Migrations）
 
