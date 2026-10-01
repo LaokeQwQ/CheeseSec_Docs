@@ -10,18 +10,19 @@ description: CheeseWAF 控制面、数据面、插件、CRP、离线模式、诊
 ## 数据面和控制面
 
 系统采用控制平面与数据平面分离的架构设计：
-- **WAF 数据面**：负责高并发、低延迟检测、反向代理以及生效策略快照评估，保证线上业务的连续性与极致吞吐。
-- **独立控制面（`cheesewaf-control`）**：负责审批工作流、Token 鉴权、CRP 扩展包、权限管理、审计与期望状态分发。独立命令运行说明详见[独立控制面运行时](../control-plane-runtime/)。
-- **高可用与状态存储**：生产环境推荐使用外部 PostgreSQL 保存管理数据，通过 native-raft 管理集群拓扑、选举与配置代次，Redis 承担短期租约与安全辅助缓存。
+- **WAF 数据面**：处理请求检测、反向代理和当前策略快照评估。本文不对延迟或吞吐量作数值承诺。
+- **独立控制面（`cheesewaf-control`）**：当前命令可连接 PostgreSQL 与 native-raft，提供 loopback 绑定的健康、就绪、状态和提案接口；它还不是完整的远程管理 API 或主 WAF 的高可用控制平面。运行边界见[独立控制面运行时](../control-plane-runtime/)。
+- **状态存储**：代码包含 PostgreSQL、Redis 和 native-raft 适配器。生产模式要求显式配置依赖，缺失时 fail-closed；这些适配器本身不等于已完成多节点部署或灾备验收。
 
 ## 插件与 CRP 规范
 
 CRP（CheeseWAF Resources Package）是平台定义的标准化资源扩展包：
 - **信任根与签名校验**：支持官方 Vendor Root 与企业私有根，采用 Ed25519 阈值签名（如 2-of-3 签名）防篡改。
 - **本地校验与暂存**：CLI 提供 `crp verify` 与 `crp stage` 命令，在显式指定信任根与来源的前提下进行离线解包、摘要校验与受控目录暂存。
-- **自动化分发协同**：Ansible 负责基础设施初始化与控制面引导；资源包的更新、降级防护与生效晋级由 CWEDP 协议与控制面负责。
+- **激活与回滚**：生产 CRP 路由通过 PostgreSQL 授权、native-raft fencing 和 mTLS sidecar 执行；缺少必要依赖时拒绝操作。该流程不代表插件代码已全部具备可运行的扩展宿主。
+- **OTA 状态**：当前 OTA 客户端只校验只读 HTTPS 索引并保留 last-known-good 文件状态；候选版本不会触发下载、安装或激活。
 
-DuckDB 作为可选的离线分析工具，只读取后台异步导出的 Parquet 格式审计日志，不进入 WAF 在线请求路径，不影响代理转发性能。
+DuckDB 分析是规划中的 Plugin 扩展：由宿主提供引擎，以异步一次性任务读取已验证的脱敏 Parquet 快照，只输出 `analysis-record/v1`。它不得进入请求热路径或直接改变 WAF 策略。当前 CheeseWAF 尚无 DuckDB 作业运行时或审计导出器；接入前还需落实输入验证、OS 沙箱和资源限制。
 
 ## 离线模式与临时出站
 

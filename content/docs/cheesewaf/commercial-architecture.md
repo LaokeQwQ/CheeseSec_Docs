@@ -10,18 +10,19 @@ This document outlines the architecture specifications for CheeseWAF commercial 
 ## Data Plane and Control Plane
 
 The architecture strictly decouples traffic inspection from administrative management:
-- **WAF Data Plane**: Dedicated to high-throughput, low-latency inspection, reverse proxying, and active policy snapshot evaluation, ensuring continuous uptime and sub-millisecond mitigation.
-- **Dedicated Control Plane (`cheesewaf-control`)**: Orchestrates approvals, token verification, CRP packages, RBAC permissions, and cluster state synchronization. Operational guidance is documented in [Standalone Control Runtime](../control-plane-runtime/).
-- **High-Availability Storage**: Production deployments use external PostgreSQL for persistent management state, native-raft for cluster consensus, and Redis for distributed leases and volatile caching.
+- **WAF Data Plane**: Handles request inspection, reverse proxying, and evaluation against the active policy snapshot. This document makes no numeric latency or throughput guarantee.
+- **Dedicated Control Plane (`cheesewaf-control`)**: The current command can connect to PostgreSQL and native-raft and exposes loopback-bound health, readiness, status, and proposal endpoints. It is not yet a complete remote management API or the main WAF's high-availability control plane. See [Standalone Control Runtime](../control-plane-runtime/) for its runtime boundary.
+- **State Storage**: The code includes PostgreSQL, Redis, and native-raft adapters. Production mode requires explicit dependencies and fails closed when they are missing; the adapters alone do not prove a completed multi-node deployment or disaster-recovery drill.
 
 ## Security Plugins & CRP Specification
 
 CRP (CheeseWAF Resources Package) defines the distribution format for offline security rules:
 - **Trust Roots & Signatures**: Supports official Vendor Roots and enterprise private roots using Ed25519 threshold signatures (such as 2-of-3 signatures).
 - **Verification & Staging**: The CLI provides `crp verify` and `crp stage` commands to validate digests, check release sequences, and stage assets into content-addressed runtime paths.
-- **Infrastructure Orchestration**: Ansible provisions underlying hosts and bootstraps distribution agents, while CWEDP protocols govern package validation, rollback protection, and promotion.
+- **Activation & Rollback**: Production CRP routes use PostgreSQL authorization, native-raft fencing, and an mTLS sidecar; operations fail closed when required dependencies are missing. This does not mean every plugin has an executable runtime.
+- **OTA Status**: The current OTA client validates a read-only HTTPS index and retains last-known-good file state. A candidate does not trigger download, installation, or activation.
 
-DuckDB serves as an optional offline analytics utility for asynchronous Parquet audit logs, operating strictly outside the inline request path.
+DuckDB analysis is a planned plugin extension: the host supplies the engine, and an asynchronous one-shot job reads verified, redacted Parquet snapshots and emits only `analysis-record/v1`. It must stay outside the request path and cannot change WAF policy directly. CheeseWAF has no DuckDB job runtime or audit exporter yet; integration still requires input verification, an OS sandbox, and resource limits.
 
 ## Air-gapped Operations & Ephemeral Egress
 

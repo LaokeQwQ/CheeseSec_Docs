@@ -5,7 +5,7 @@ weight: 105
 description: CheeseSec 插件分发体系、CRP v1 离线资源包结构、Ed25519 签名验证、暂存运行机制及生态扩展边界。
 ---
 
-CheeseSec 插件体系采用安全优先的离线化设计。为了消除不可控依赖与供应链投毒风险，所有扩展组件均通过结构严格受限的 **CRP (CheeseWAF Resources Package)** 资源包进行发布、验签、暂存与分发。发布源与开发者规范由 [CheeseSec_Plugin](https://github.com/LaokeQwQ/CheeseSec_Plugin) 与 [CheeseSec_Plugin_Docs](https://github.com/LaokeQwQ/CheeseSec_Plugin_Docs) 维护。
+CheeseWAF 用 **CRP (CheeseWAF Resources Package)** 定义签名资源包格式，并提供本地离线校验与暂存命令。这些命令不代表每种扩展的运行时、商店/OTA 安装或远程分发都已接入。发布政策与开发者规范由 [CheeseSec_Plugin](https://github.com/LaokeQwQ/CheeseSec_Plugin) 和 [CheeseSec_Plugin_Docs](https://github.com/LaokeQwQ/CheeseSec_Plugin_Docs) 维护。
 
 ## CRP v1 归档结构规范 {#crp-spec}
 
@@ -99,4 +99,4 @@ cheesewaf temporary-online probe \
 
 ## 扩展分析边界（DuckDB） {#duckdb}
 
-DuckDB 仅规划作为可选的离线分析与审计 CLI/Sidecar 扩展，**严禁引入实时 WAF 请求转发热路径**。日志数据由异步流管道写入 Parquet 文件，分析进程以只读快照形式读取，不与 CheeseWAF 核心共享数据库写句柄，亦不充当集群协调器。
+DuckDB 的扩展契约规划为宿主提供的异步 `one-shot-job`，不是常驻 sidecar 或任意 SQL 命令行工具。任务只读取受信导出器生成的脱敏 Parquet 快照，并只输出 `analysis-record/v1`；`contain`、`isolate` 等建议不能直接变更 WAF 策略。当前 CheeseWAF 尚未接入 DuckDB 作业运行时或 Parquet 审计导出器，因此该能力尚未发布。接入前必须验证输入签名、文件摘要和 schema，并用 OS 沙箱限制文件、网络与资源访问。
