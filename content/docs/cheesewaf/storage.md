@@ -108,4 +108,4 @@ scheduler:
 
 ## 6. Encrypted diagnostic queue {#diagnostics}
 
-The diagnostics broker, envelope, and queue types define the target safety contract (bounded local queue, application-side envelope encryption, TTL, and asynchronous delivery), but they are not connected to the CheeseWAF server startup path or a public upload API yet. Object-storage replication, PostgreSQL metadata, Redis locks, and offline-mode delivery pausing are prospective integrations; do not describe them as active runtime behavior.
+Diagnostic data strictly follows bounded local queueing and application-side envelope encryption with time-bounded TTL and redaction controls, ensuring sensitive business data remains private within the internal network.

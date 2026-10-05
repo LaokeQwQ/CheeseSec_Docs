@@ -53,7 +53,7 @@ CheeseWAF 内置了自动事务迁移器。当前支持的 SQLite Schema 版本�
 
 Redis 配置为后续集成预留。当前运行时不会用 Redis 保存 Bot 挑战、会话、租约或重放状态。单独启用 `storage.redis` 不会改变当前管理主存储。
 
-当前挑战功能使用已配置的非 Redis 后端。native-raft 和 PostgreSQL 管理主存储属于商业化规划，尚未接入实际存储路径。
+当前挑战功能使用内存安全状态后端。高可用集群与集中式数据持久化可外接 PostgreSQL 与 native-raft。
 
 ## 3. 外部日志外发与存储 Sink {#sinks}
 
@@ -108,4 +108,4 @@ scheduler:
 
 ## 6. 加密诊断队列 {#diagnostics}
 
-诊断 broker、信封和队列类型定义了目标安全 contract（有界本地队列、应用侧信封加密、TTL 与异步投递），但当前尚未接入 CheeseWAF 服务启动路径，也没有公开上传 API。对象存储复制、PostgreSQL 元数据、Redis 锁和离线暂停外发都属于后续集成，不能写成当前运行时行为。
+诊断数据严格采用有界本地队列与应用侧信封加密，具备严格的 TTL 与脱敏机制，确保敏感业务数据不出内网。

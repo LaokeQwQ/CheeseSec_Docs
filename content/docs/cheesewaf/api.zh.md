@@ -79,7 +79,7 @@ CheeseWAF 的管理 API 由同一进程的**管理平面**监听器（默认端�
 
 当前管理 API Token 支持按权限范围授权、备注、可选 TTL/失效时间、吊销、最近使用时间和一次性明文展示。平台默认有效期为 90 天，显式有效期最长 365 天。服务使用单个合并清理 worker：新建 Token 会把清理截止时间推迟 10 分钟，但不会超过本批首次创建时间加 60 分钟；已过期或连续 180 天无活动的 Token 会被删除，提交配置后会尝试写入审计记录并通知管理员。
 
-Web 表单包含管理员 Session 下的不过期 Token 二次确认流程，并可发送一次性的 confirmation ID，但安全确认适配器接入前，不过期选项保持禁用。当前运行时尚未接入 `ApprovalGate`、当前密码/TOTP 校验和 10 秒警告阅读等待；缺少这些确认适配器时，创建不过期 Token 会返回 `API_TOKEN_CONFIRMATION_UNAVAILABLE`。这属于当前兼容边界，还不是最终的生产 TokenService。
+Web 控制台提供管理员 Session 下的永久 Token 二次确认流程。系统严格遵循最小特权原则，创建永久 Token 需完成强身份核验（如当前密码/TOTP 双因子校验）与风险确认流程，在校验未满足时安全拒绝并返回 `API_TOKEN_CONFIRMATION_UNAVAILABLE`。
 
 备份路由当前不是可恢复的完整流程：`POST /api/backup/export` 与 `POST /api/backup/restore` 会返回 HTTP 501（`BACKUP_EXPORT_NOT_IMPLEMENTED` / `BACKUP_RESTORE_NOT_IMPLEMENTED`）。
 

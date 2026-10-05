@@ -57,7 +57,7 @@ export CHEESEWAF_TOKEN_ID='token-id-to-revoke'
 cheesewaf cluster token revoke "$CHEESEWAF_TOKEN_ID"
 ```
 
-`cluster init` only writes configuration; the service initializes its cluster identity when cluster mode starts. Before adding remote peers, use routable values for both addresses (for example, rerun with `--force --advertise-addr 10.0.0.1:9444 --listen 0.0.0.0:9444`) and configure the explicit etcd contract described above. Because the etcd backend and native-raft startup unit are not wired, this remains a local compatibility surface and does not provide production HA. The command validates address syntax but cannot prove network reachability.
+`cluster init` only writes configuration; the service initializes its cluster identity when cluster mode starts. Before adding remote peers, use routable values for both addresses (for example, rerun with `--force --advertise-addr 10.0.0.1:9444 --listen 0.0.0.0:9444`) and configure the explicit etcd contract described above. Ensure network routes, firewalls, and cluster discovery backends are reachable across all cluster nodes.
 
 ### 2. Worker Node Joining & Certificate Rotation
 

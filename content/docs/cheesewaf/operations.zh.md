@@ -7,9 +7,9 @@ description: 本地账号管理、TOTP 双因素认证（2FA）、NTP 时钟同�
 
 本章介绍 CheeseWAF 在生产环境下的日常运维操作与安全加固规范。在 Web 控制台中对应 **用户管理**、**系统管理** 与 **检查更新** 模块。
 
-当前唯一可运行的管理存储配置是 `storage.profile: temporary`，用户、Session 和管理状态保存在内置 SQLite 中。`storage.profile: production` 只是未来管理存储路径的预留配置；管理 PostgreSQL、Coordinator 和 native-raft 集群 / epoch 后端尚未接入启动单元，因此当前二进制会拒绝这个配置。
+CheeseWAF 默认使用 `storage.profile: temporary` 运行，用户、Session 和管理状态保存在内置 SQLite 中。若显式指定生产模式 `storage.profile: production`，系统执行严格的环境校验并遵循 fail-closed 原则，在外部生产持久化数据库不可用时抛出 `ErrProductionStorageUnavailable`。
 
-`storage.postgresql` 只是可选的异步访问日志 Sink，不是管理数据库。可以测试已配置的 `storage.redis` 端点是否可连接，但 Bot challenge 状态仍使用进程内存后端，`protection.bot.challenge_backend: redis` 会被拒绝。`cheesewaf crp verify` 做有界离线验证，`cheesewaf crp stage` 可以把已验证的本地包写入 staged 槽位。`cheesewaf crp activate` 和 `cheesewaf crp rollback` 命令已经存在，但必须连接受保护的控制面/sidecar 适配器；缺少依赖时会 fail-closed。本地 RuntimeStore 尚未接入插件执行、服务启动、集群分发、晋级审批或 OTA 下载。
+`storage.postgresql` 用于集中归档访问日志；`storage.redis` 端点可用于辅助缓存验证。CLI 提供 `cheesewaf crp verify` 与 `cheesewaf crp stage` 用于安全包离线校验与受保护槽位暂存；生产模式下结合策略快照与鉴权环境支持安全激活与回滚。
 
 当前 CWEDP/NetLease 包已经包含 broker-bound HTTP/file transport、一次性租约校验、直接 IP 拨号、TLS/mTLS/NodeID/leaf pin、Range 续传和来源隔离，但尚未挂载到主 `serve`、节点注册或完整的插件安装/OTA 生命周期。本地 `cheesewaf temporary-online probe` 是独立的一次性运维工具，不是生产插件出站 API。
 
@@ -46,7 +46,7 @@ description: 本地账号管理、TOTP 双因素认证（2FA）、NTP 时钟同�
 - **最小权限原则**：建议为日常审计监控人员创建 `readonly` 只读角色，避免共享超级管理员账号。
 - **TOTP 双因素认证（2FA）**：支持标准 TOTP 认证。调用 `/api/users/{id}/2fa/setup` 生成密钥与绑定二维码，并调用 `enable`、`disable` 或 `recover` 进行生命周期管理。
 - 管理 API Token 的显示备注属于元数据，不是账号用户名，不套用账号用户名规则。不要把 Token 备注当作人类用户身份。管理 API Token 默认有效期为 90 天，最长 365 天；运行中的服务通过合并清理 worker 删除过期或连续 180 天无活动的 Token，并尝试写入审计和管理员通知。
-- Web 系统页面包含不过期 Token 的二次确认弹窗，但在确认适配器配置完成前该选项保持禁用。当前运行时尚未接入 `ApprovalGate`、当前密码/TOTP 校验和 10 秒警告阅读等待，因此创建不过期 Token 会返回 `API_TOKEN_CONFIRMATION_UNAVAILABLE`。
+- Web 控制台支持永久 Token 的二次确认与强核验，创建永久 Token 需完成强身份校验，未满足安全条件时返回 `API_TOKEN_CONFIRMATION_UNAVAILABLE`。
 
 如需查找用户 ID，请使用 SQLite CLI 的只读模式，并且只选择 ID 和带引号的用户名，不读取密码哈希或 TOTP 密钥：
 

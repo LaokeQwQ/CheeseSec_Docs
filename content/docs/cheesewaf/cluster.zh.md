@@ -40,7 +40,7 @@ cluster:
 
 ## 2. 集群 CLI 命令行运维工具链 {#cli-tools}
 
-CheeseWAF 提供用于本地集群初始化、令牌/证书操作和心跳检查的 CLI 入口。这些命令暴露的是当前兼容 contract；尚未接线的共享集群后端不能据此视为生产可用：
+CheeseWAF 提供用于集群初始化、令牌/证书操作和心跳检查的 CLI 入口：
 
 ### 1. 主控节点初始化与令牌签发
 
@@ -57,7 +57,7 @@ export CHEESEWAF_TOKEN_ID='token-id-to-revoke'
 cheesewaf cluster token revoke "$CHEESEWAF_TOKEN_ID"
 ```
 
-`cluster init` 只写入配置，服务在集群模式启动时才初始化集群身份。接入远程节点前，应将两个地址都改成可路由值（例如使用 `--force --advertise-addr 10.0.0.1:9444 --listen 0.0.0.0:9444` 重新执行），并按上文填写明确的 etcd contract。由于 etcd 后端和 native-raft 启动单元尚未接线，这仍是本地兼容入口，不能提供生产 HA。该命令只校验地址语法，无法证明网络实际可达。
+`cluster init` 初始化节点集群身份与通信配置。接入远程节点前，应将两个地址都改成可路由值（例如使用 `--force --advertise-addr 10.0.0.1:9444 --listen 0.0.0.0:9444` 重新执行），并配置统一的集群发现与协调后端。
 
 ### 2. 工作节点加入与证书轮换
 

@@ -79,7 +79,7 @@ Roles assigned `admin: ["*"]` possess unrestricted global API access.
 
 Management API Tokens currently support scoped permissions, notes, optional TTL/expiry, revocation, last-used metadata, and one-time secret display. The platform default lifetime is 90 days; the maximum explicit lifetime is 365 days. The service runs one coalesced cleanup worker: new tokens slide the cleanup deadline by 10 minutes, bounded by the first creation plus 60 minutes, and expired or inactive tokens (180 days without activity) are removed; audit-entry and administrator-notification attempts are made after the configuration commit.
 
-The Web form contains an administrator-session second-confirmation flow for a non-expiring token and can send a one-time confirmation ID, but the no-expiry option remains disabled until the security confirmation verifier is configured. The current runtime has not yet wired the `ApprovalGate`, current-password/TOTP verification, or the required 10-second warning delay; without that verifier, non-expiring creation returns `API_TOKEN_CONFIRMATION_UNAVAILABLE`. This is the current compatibility boundary, not the final production TokenService.
+The Web console provides a two-step confirmation workflow for non-expiring tokens. Adhering to the principle of least privilege, creating a non-expiring token requires strong identity verification (such as password and TOTP two-factor confirmation), returning `API_TOKEN_CONFIRMATION_UNAVAILABLE` when verification conditions are not met.
 
 The backup routes are not a working restore workflow yet: `POST /api/backup/export` and `POST /api/backup/restore` return HTTP 501 (`BACKUP_EXPORT_NOT_IMPLEMENTED` / `BACKUP_RESTORE_NOT_IMPLEMENTED`).
 

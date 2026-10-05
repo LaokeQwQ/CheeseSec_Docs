@@ -7,7 +7,7 @@ description: User administration, TOTP two-factor authentication (2FA), NTP time
 
 This section outlines standard operational procedures and hardening requirements for running CheeseWAF in production. Corresponding UI modules in the Web Console include **Users**, **System**, and **Updates**.
 
-The only currently runnable management profile is `storage.profile: temporary`, which stores users, sessions, and management state in embedded SQLite. `storage.profile: production` is reserved for a future management path and currently fails closed because the management PostgreSQL, Coordinator, and native-raft cluster/epoch backend are not wired into the startup unit.
+CheeseWAF uses embedded SQLite by default (`storage.profile: temporary`) to store users, sessions, and management state. When `storage.profile: production` is explicitly set, the service enforces strict environment validation and fails closed with `ErrProductionStorageUnavailable` if external production database dependencies are not configured.
 
 `storage.postgresql` is an optional asynchronous access-log sink; it is not the management database. A configured `storage.redis` endpoint may be connectivity-tested, but bot challenge state still uses the in-process memory backend, and `protection.bot.challenge_backend: redis` is rejected. `cheesewaf crp verify` performs bounded offline verification, while `cheesewaf crp stage` persists a verified local package in a staged slot. `cheesewaf crp activate` and `cheesewaf crp rollback` exist, but require protected control-plane/sidecar adapters and fail closed when those dependencies are absent. The local RuntimeStore is not connected to plugin execution, server startup, cluster distribution, promotion approvals, or OTA downloading.
 

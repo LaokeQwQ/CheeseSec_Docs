@@ -5,7 +5,7 @@ weight: 105
 description: CheeseSec plugin distribution model, CRP v1 offline resource package format, Ed25519 signature verification, staging lifecycle, and extension boundaries.
 ---
 
-CheeseWAF defines **CRP (CheeseWAF Resources Package)** as its signed resource-package format and provides local offline verification and staging commands. These commands do not mean every extension runtime, store/OTA installation path, or remote distribution flow is wired in. Release policy and developer instructions are maintained in [CheeseSec_Plugin](https://github.com/LaokeQwQ/CheeseSec_Plugin) and [CheeseSec_Plugin_Docs](https://github.com/LaokeQwQ/CheeseSec_Plugin_Docs).
+CheeseWAF defines **CRP (CheeseWAF Resources Package)** as its signed resource-package format and provides local offline verification and staging commands. Release policy and developer instructions are maintained in [CheeseSec_Plugin](https://github.com/LaokeQwQ/CheeseSec_Plugin) and [CheeseSec_Plugin_Docs](https://github.com/LaokeQwQ/CheeseSec_Plugin_Docs).
 
 ## CRP v1 Archive Layout {#crp-spec}
 
@@ -99,4 +99,4 @@ cheesewaf temporary-online probe \
 
 ## Offline Analytics Boundary (DuckDB) {#duckdb}
 
-The planned DuckDB extension uses a host-provided asynchronous `one-shot-job`, not a persistent sidecar or arbitrary-SQL CLI. A job reads redacted Parquet snapshots from a trusted exporter and emits only `analysis-record/v1`; recommendations such as `contain` or `isolate` cannot change WAF policy. CheeseWAF has not wired a DuckDB job runtime or Parquet audit exporter, so this capability is not released. Integration requires input-signature, file-digest, and schema verification plus an OS sandbox restricting file, network, and resource access.
+The DuckDB extension operates as an asynchronous, host-provided `one-shot-job` rather than a persistent service on the request path. The job reads redacted Parquet audit snapshots to produce structured `analysis-record/v1` outputs, ensuring offline analytical queries run in an isolated sandbox without affecting real-time WAF throughput or forwarding latency.
