@@ -21,7 +21,18 @@ curl -fsSL https://github.com/LaokeQwQ/CheeseWAF/releases/latest/download/instal
 curl -fsSL https://github.com/LaokeQwQ/CheeseWAF/releases/latest/download/install-linux.sh | bash
 ```
 
-脚本需要从 `/dev/tty` 读取语言、确认和安全入口输入，因此即使脚本内容通过标准输入传入，也不会把交互输入误当作脚本内容。无人值守环境请下载脚本后在终端运行，并显式提供对应的非交互参数；不要把密码或安装 Token 写入命令行历史。
+脚本需要从 `/dev/tty` 读取语言、安装根目录和安全入口输入，因此即使脚本内容通过标准输入传入，也不会把交互输入误当作脚本内容。无人值守环境请设置文档列出的 `CHEESEWAF_*` 环境变量后运行已下载的脚本；不要把密码或安装 Token 写入命令行历史。
+
+选择语言后，交互流程会询问应用安装根目录。例如输入 `/opt/cheesewaf`，二进制、Web 资源、运行时配置、数据和日志会分别放在该目录下的 `bin/`、`web/`、`config/`、`data/`、`logs/` 子目录。直接回车则保留下面列出的分散式 FHS 默认布局。除非显式设置 `CHEESEWAF_UNIT_DIR`，systemd 单元仍安装在 `/etc/systemd/system`。
+
+自动化部署时，可在调用安装器前设置 `CHEESEWAF_INSTALL_DIR`。如果同时设置 `CHEESEWAF_PREFIX`、`CHEESEWAF_WEB_DIR`、`CHEESEWAF_CONFIG_DIR`、`CHEESEWAF_DATA_DIR` 或 `CHEESEWAF_LOG_DIR`，对应的单独目录覆盖根目录派生值：
+
+```bash
+curl -fsSL https://github.com/LaokeQwQ/CheeseWAF/releases/latest/download/install-linux.sh \
+  | sudo env CHEESEWAF_INSTALL_DIR=/opt/cheesewaf bash
+```
+
+安装根目录必须是绝对路径，并且每个路径段只能使用 ASCII 字母、数字、`.`、`_` 或 `-`；共享系统目录以及含 Shell 元字符的路径会被拒绝。
 
 安装过程会依次完成：
 
@@ -65,7 +76,7 @@ sudo journalctl -u cheesewaf -n 100 --no-pager
 
 检查输出中的版本和架构是否与目标服务器匹配，并确认管理端口只由预期进程监听。完成初始化后，再到控制台接入第一个站点和配置数据面监听。
 
-标准路径如下：
+默认 FHS 路径如下：
 
 | 路径 | 用途 |
 | --- | --- |
@@ -75,6 +86,8 @@ sudo journalctl -u cheesewaf -n 100 --no-pager
 | `/etc/cheesewaf/cheesewaf.yaml` | 运行时配置副本 |
 | `/var/lib/cheesewaf` | 数据、证书和一次性初始化状态 |
 | `/var/log/cheesewaf` | 访问日志与审计日志 |
+
+当设置 `CHEESEWAF_INSTALL_DIR=/opt/cheesewaf` 时，对应的应用路径为 `/opt/cheesewaf/bin/cheesewaf`、`/opt/cheesewaf/web`、`/opt/cheesewaf/config/cheesewaf.yaml`、`/opt/cheesewaf/data` 和 `/opt/cheesewaf/logs`。
 
 ## 4. 离线或手动安装 {#offline}
 

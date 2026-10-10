@@ -11,6 +11,8 @@ Start with the one-line Linux installer. It asks for a language, downloads and v
 curl -fsSL https://github.com/LaokeQwQ/CheeseWAF/releases/latest/download/install-linux.sh | sudo bash
 ```
 
+The installer asks for an application root after the language prompt. Enter `/opt/cheesewaf` to keep the binary, Web assets, configuration, data, and logs together, or press Enter to use the standard FHS layout; see the [Linux installation guide](../install/linux/) for automation variables.
+
 {{< nav-cards cols="1" >}}
 {{< nav-card title="1. System Initialization" link="/docs/cheesewaf/tutorial/setup/" icon="fa-solid fa-key" desc="Access the /setup wizard, create your initial administrator account, securely archive master keys, and verify management boundaries." />}}
 {{< nav-card title="2. Onboard Your First Site" link="/docs/cheesewaf/tutorial/first-site/" icon="fa-solid fa-globe" desc="Configure public domain names, backend upstream server addresses, and set the baseline paranoia level to Level 3 (Smart Protection)." />}}

@@ -21,7 +21,18 @@ When already running as `root`, omit `sudo`:
 curl -fsSL https://github.com/LaokeQwQ/CheeseWAF/releases/latest/download/install-linux.sh | bash
 ```
 
-The script reads language, confirmation, and entry-name input from `/dev/tty`, so interactive answers are not consumed as script source. For unattended provisioning, download the script first and invoke its documented non-interactive options; never put passwords or setup tokens in shell arguments or history.
+The script reads language, install-root, and entry-name input from `/dev/tty`, so interactive answers are not consumed as script source. For unattended provisioning, set the documented `CHEESEWAF_*` environment variables and invoke the downloaded script; never put passwords or setup tokens in shell arguments or history.
+
+During the interactive flow, choose an application install root after selecting the language. Entering `/opt/cheesewaf`, for example, places the binary, Web assets, runtime configuration, data, and logs under `bin/`, `web/`, `config/`, `data/`, and `logs/` beneath that root. Press Enter to keep the split FHS layout shown below. The systemd unit remains under `/etc/systemd/system` unless `CHEESEWAF_UNIT_DIR` is explicitly overridden.
+
+For automation, set `CHEESEWAF_INSTALL_DIR` before invoking the installer. Individual `CHEESEWAF_PREFIX`, `CHEESEWAF_WEB_DIR`, `CHEESEWAF_CONFIG_DIR`, `CHEESEWAF_DATA_DIR`, and `CHEESEWAF_LOG_DIR` values take precedence for their respective paths:
+
+```bash
+curl -fsSL https://github.com/LaokeQwQ/CheeseWAF/releases/latest/download/install-linux.sh \
+  | sudo env CHEESEWAF_INSTALL_DIR=/opt/cheesewaf bash
+```
+
+Install roots must be absolute dedicated directories whose path components contain only ASCII letters, digits, `.`, `_`, or `-`; shared system directories and paths containing shell metacharacters are rejected.
 
 The installer will:
 
@@ -65,7 +76,7 @@ sudo journalctl -u cheesewaf -n 100 --no-pager
 
 Confirm that the version and architecture match the target host and that the expected process owns the management port. After first setup, add the first protected site and configure the data-plane listener from the Console.
 
-Standard paths:
+Default FHS paths:
 
 | Path | Purpose |
 | --- | --- |
@@ -75,6 +86,8 @@ Standard paths:
 | `/etc/cheesewaf/cheesewaf.yaml` | Runtime configuration copy |
 | `/var/lib/cheesewaf` | Data, certificates, and bootstrap state |
 | `/var/log/cheesewaf` | Access and audit logs |
+
+With `CHEESEWAF_INSTALL_DIR=/opt/cheesewaf`, the corresponding application paths are `/opt/cheesewaf/bin/cheesewaf`, `/opt/cheesewaf/web`, `/opt/cheesewaf/config/cheesewaf.yaml`, `/opt/cheesewaf/data`, and `/opt/cheesewaf/logs`.
 
 ## 4. Offline or manual installation {#offline}
 
