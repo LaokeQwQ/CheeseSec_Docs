@@ -49,7 +49,7 @@ CheeseWAF exposes services on the following default listener endpoints:
 | Plane / Service | Default Address | Description |
 | --- | --- | --- |
 | **Data Plane** | `http://127.0.0.1:8080` | Ingests business traffic, performs synchronous security inspection, and proxies upstream |
-| **Management Plane** | `http://127.0.0.1:9443` | Hosts the Web console, REST API, and `/setup` initialization wizard (defaults to HTTPS in Docker) |
+| **Management Plane** | `https://PUBLIC_IP:9443/setup` → `https://PUBLIC_IP:9443/SECURITY_ENTRY` | Initialization uses fixed `/setup` with a one-time token; after setup, the symbol-free security entry signs a Cookie and redirects to login |
 | **Cluster Plane** | `https://127.0.0.1:9444` | Optional TLS/mTLS interconnect when `cluster.enabled: true`; it handles node identity, health/heartbeat, topology, and orchestration hooks but is not a general site/policy replication channel |
 | **Local Controller** | `http://127.0.0.1:17943` | Local loopback auxiliary controller port for Windows and macOS desktop environments |
 

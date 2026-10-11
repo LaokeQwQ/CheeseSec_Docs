@@ -8,7 +8,7 @@ description: 详细介绍 CheeseWAF 的部署方案及安装过程，包括 Linu
 CheeseWAF 支持以系统服务、容器编排或单二进制运行于各类主流操作系统。根据生产或测试环境的实际架构，选择对应的安装方式：
 
 {{< nav-cards cols="2" >}}
-{{< nav-card title="Linux" link="/zh/docs/cheesewaf/install/linux/" icon="fa-brands fa-linux" desc="配置 systemd 守护进程、独立运行用户与 /etc/cheesewaf 目录。" />}}
+{{< nav-card title="Linux" link="/zh/docs/cheesewaf/install/linux/" icon="fa-brands fa-linux" desc="可选择集中式应用根目录或标准 FHS 布局，并配置 systemd 与独立运行用户。" />}}
 {{< nav-card title="Docker" link="/zh/docs/cheesewaf/install/docker/" icon="fa-brands fa-docker" desc="使用 Docker Compose 部署，支持只读根文件系统与非 root 安全运行。" />}}
 {{< nav-card title="Windows" link="/zh/docs/cheesewaf/install/windows/" icon="fa-brands fa-windows" desc="支持单文件 CLI、便携 Zip 包及 NSIS 安装程序，附带本地控制器。" />}}
 {{< nav-card title="macOS" link="/zh/docs/cheesewaf/install/macos/" icon="fa-brands fa-apple" desc="提供 DMG 图形应用与 tar.gz 命令行分发包。" />}}
@@ -36,4 +36,4 @@ CheeseWAF 支持以系统服务、容器编排或单二进制运行于各类主�
 
 安装完成后，请继续参考 [快速上手](../tutorial/) 完成系统初始化与站点接入。
 
-小型主机建议使用轻量档：逻辑核数不超过 2 或内存不超过 2 GB 时，初始化向导会推荐 `low`。探测超时、取消或请求失败也会回退到 `low`。主 WAF 的管理面默认只监听 `127.0.0.1:9443`；`storage.profile: production` 在完整生产接线完成前会拒绝启动，不会静默回退到 SQLite。
+小型主机建议使用轻量档：逻辑核数不超过 2 或内存不超过 2 GB 时，初始化向导会推荐 `low`。探测超时、取消或请求失败也会回退到 `low`。程序配置的安全默认值仍是 `127.0.0.1:9443`；官方 Linux 一键安装器会明确启用公网 HTTPS 引导，并要求管理员保管一次性 Token 与安全入口。`storage.profile: production` 在完整生产接线完成前会拒绝启动，不会静默回退到 SQLite。

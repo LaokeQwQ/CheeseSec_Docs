@@ -5,7 +5,13 @@ weight: 30
 description: 三步快速完成 CheeseWAF 系统初始化、首个站点接入及大模型异步审查配置。
 ---
 
-在完成服务安装与启动后，按照以下三个核心步骤即可快速建立完整的 Web 安全防护能力：
+先执行 Linux 一键安装。脚本会询问语言、拉取并校验最新稳定版、生成公网 HTTPS 管理入口并输出短期初始化地址，然后按照以下三个核心步骤完成防护：
+
+```bash
+curl -fsSL https://github.com/LaokeQwQ/CheeseWAF/releases/latest/download/install-linux.sh | sudo bash
+```
+
+语言选择后，安装器会询问应用安装根目录。输入 `/opt/cheesewaf` 可将二进制、Web 资源、配置、数据和日志集中在同一目录；直接回车则使用标准 FHS 布局。自动化变量和路径约束请参考 [Linux 安装指南](../install/linux/)。
 
 {{< nav-cards cols="1" >}}
 {{< nav-card title="1. 系统初始化" link="/zh/docs/cheesewaf/tutorial/setup/" icon="fa-solid fa-key" desc="访问 /setup 向导，创建首个系统管理员账号，妥善保存初始化密钥并确认管理网络边界。" />}}
@@ -14,5 +20,7 @@ description: 三步快速完成 CheeseWAF 系统初始化、首个站点接入�
 {{< /nav-cards >}}
 
 {{% pageinfo color="info" %}}
+请妥善保管完整 HTTPS 初始化地址。URL fragment 中包含一次性 Token，浏览器会将它转换为 `X-CheeseWAF-Setup-Token` 请求头，初始化完成后立即撤销。目标服务器无法访问 GitHub 时，请从 [发行页](https://github.com/LaokeQwQ/CheeseWAF/releases) 下载带签名的发行包和校验文件，再按离线安装章节操作。
+
 即使尚未配置大模型接入，CheeseWAF 的数据平面依然能基于内置 AST 语义引擎提供全量实时的攻击检测与阻断。未配置 `ai` 参数前，ALAP 异步审查队列将保持待机状态。
 {{% /pageinfo %}}

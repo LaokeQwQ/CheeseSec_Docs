@@ -42,7 +42,7 @@ cheesewaf setup
 cheesewaf setup --yes \
   --username admin \
   --password-stdin < /etc/cheesewaf/secrets/admin_pass.txt \
-  --admin-listen 127.0.0.1:9443 \
+  --admin-listen 0.0.0.0:9443 \
   --skip-probe
 ```
 
@@ -54,13 +54,13 @@ cheesewaf setup --yes \
 
 ### 1. 打开初始化向导网页
 
-- **独立部署或非 Docker 本机**：使用浏览器打开 `http://127.0.0.1:9443/setup`。
-- **远程服务器（非 Docker）**：在管理监听可达且已启用 TLS 时访问配置的管理地址（例如 `https://10.0.0.10:9443/setup`；如使用自签名证书，首次访问需在浏览器中信任）。
-- **Docker Compose**：默认 Compose 文件仅将管理端口绑定到 Docker 宿主机回环地址（`127.0.0.1:9443`），请在该宿主机打开 `https://127.0.0.1:9443/setup`。从其他机器访问时，请先将 `CHEESEWAF_SSH_TARGET` 设置为 SSH 目标，再执行 `ssh -N -L 9443:127.0.0.1:9443 "$CHEESEWAF_SSH_TARGET"` 建立隧道，之后仍使用同一回环地址；如需直接暴露端口，请显式修改绑定。
+初始化期间，使用安装器输出的 `https://PUBLIC_IP:9443/setup#setup_token=ONE_TIME_TOKEN` 地址。初始化路由固定为 `/setup`；Token 只允许短期使用一次。
 
-启动日志不会打印初始化 Token 或完整地址，只显示基础初始化 URL（例如 `http://127.0.0.1:9443/setup`）、受保护的运行时文件路径（`setup.url`）和不含秘密的随机回执。
+一键安装路径默认启用 HTTPS 并允许从公网访问管理面。投入生产前，请使用云安全组、主机防火墙和管理员 IP 白名单限制 `9443`，并将临时自签名证书替换为受信证书。若你明确需要仅本机管理，可将 `server.admin_listen` 改为 `127.0.0.1:9443` 并使用 SSH 隧道；这是主动加固选项，不是一键安装默认行为。
 
-完整 URL 保存在 `setup.url` 中。文件权限为 `0600`，有效期为 10 分钟。初始化完成后，Token 会被撤销；过期的 `setup.url` 文件会被清理。
+URL fragment 中携带短期一次性 Token。浏览器读取后会清理地址栏，并且只通过 `X-CheeseWAF-Setup-Token` 请求头提交；Token 不会放在查询参数、Cookie 或 `localStorage` 中。初始化完成后 Token 会撤销，受保护的 `setup.url` 文件会被删除或失效。
+
+初始化完成后，访问 `https://PUBLIC_IP:9443/SECURITY_ENTRY`。安全入口只包含 ASCII 字母和数字，由安装器默认生成，也可以使用通过校验的自定义值；入口会签发访问 Cookie 并跳转到登录页。初始化路由与完成后的安全入口是两个独立路径。
 
 初始化完成后，初始化 Token 也会失效。如果启动前设置了 `CHEESEWAF_SETUP_TOKEN`，也不要把它写入日志或 Shell 历史。浏览器从 URL fragment 读取 `setup_token`，立即清除地址栏内容，并且只通过 `X-CheeseWAF-Setup-Token` Header 发送。
 
@@ -75,8 +75,8 @@ cheesewaf setup --yes \
 
 ### 3. 配置管理网络边界
 
-- 生产单机环境中建议将管理监听（`server.admin_listen`）绑定至本地回环地址（`127.0.0.1:9443`）。
-- 若确需跨公网访问 Web 控制台，请保持启用 `server.admin_tls` 并配置受信的 SSL 证书与访问控制白名单。
+- 请保持 `server.admin_tls` 启用，并使用云安全组、主机防火墙和 IP 白名单限制管理入口。
+- 如确需仅本机管理，可显式将 `server.admin_listen` 改为 `127.0.0.1:9443`，再通过 SSH 隧道访问；这不是一键安装的默认路径。
 
 {{% /steps %}}
 

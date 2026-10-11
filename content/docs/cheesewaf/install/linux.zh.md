@@ -2,98 +2,104 @@
 title: Linux 部署（systemd）
 linkTitle: Linux
 weight: 10
-description: 在 Linux 环境下安装 CheeseWAF 二进制程序、配置系统独立用户、静态 Web 资源与 systemd 守护进程。
+description: 通过一键脚本或离线发行包安装 CheeseWAF，并完成公网 HTTPS 管理入口与一次性初始化。
 ---
 
-本指南适用于在 Linux 物理机或虚拟机中以 systemd 服务方式部署 CheeseWAF。
+本指南适用于 Linux 物理机、云服务器和虚拟机。在线安装会自动选择语言、识别 CPU 架构、拉取最新稳定版发行包、校验完整性、安装 systemd 服务并输出初始化地址；无法访问 GitHub 时，请使用文末的离线流程。
 
-资源建议：逻辑核数不超过 2 或内存不超过 2 GB 的主机使用初始化向导推荐的 `low` 档。探测超时、取消或请求失败时，向导会回退到 `low`。主 WAF 的管理面默认只监听 `127.0.0.1:9443`；`storage.profile: production` 在完整生产启动接线完成前会拒绝启动，不会回退到 SQLite。
+## 1. 一键安装（推荐） {#one-click}
 
-## 1. 下载与解压 {#unpack}
-
-从 GitHub Releases 下载对应架构的完整发布包并解压（以 AMD64 为例，ARM64 或龙芯请替换包名中的架构标识）：
+只需复制并粘贴以下命令。脚本会在交互终端中询问语言，随后自动完成下载、校验和安装：
 
 ```bash
-tar -xzf cheesewaf-amd64-linux-*.tar.gz
-cd cheesewaf-*
+curl -fsSL https://github.com/LaokeQwQ/CheeseWAF/releases/latest/download/install-linux.sh | sudo bash
 ```
 
-{{% pageinfo color="info" %}}
-官方发布的 `.tar.gz` 压缩包内不仅包含 `cheesewaf` 主程序，还包含了编译好的 Web 控制台静态资源目录（`web/dist`）、配置模板（`configs/`）、systemd 单元文件以及自动化安装脚本。
-{{% /pageinfo %}}
-
-## 2. 自动化一键安装（推荐） {#automated-install}
-
-解压包根目录下附带了符合 Linux FHS 规范的官方安装脚本，一键完成文件分发、系统用户创建与权限配置：
+如果当前用户已经是 `root`，可以省略 `sudo`：
 
 ```bash
+curl -fsSL https://github.com/LaokeQwQ/CheeseWAF/releases/latest/download/install-linux.sh | bash
+```
+
+脚本需要从 `/dev/tty` 读取语言、安装根目录和安全入口输入，因此即使脚本内容通过标准输入传入，也不会把交互输入误当作脚本内容。无人值守环境请设置文档列出的 `CHEESEWAF_*` 环境变量后运行已下载的脚本；不要把密码或安装 Token 写入命令行历史。
+
+选择语言后，交互流程会询问应用安装根目录。例如输入 `/opt/cheesewaf`，二进制、Web 资源、运行时配置、数据和日志会分别放在该目录下的 `bin/`、`web/`、`config/`、`data/`、`logs/` 子目录。直接回车则保留下面列出的分散式 FHS 默认布局。除非显式设置 `CHEESEWAF_UNIT_DIR`，systemd 单元仍安装在 `/etc/systemd/system`。
+
+自动化部署时，可在调用安装器前设置 `CHEESEWAF_INSTALL_DIR`。如果同时设置 `CHEESEWAF_PREFIX`、`CHEESEWAF_WEB_DIR`、`CHEESEWAF_CONFIG_DIR`、`CHEESEWAF_DATA_DIR` 或 `CHEESEWAF_LOG_DIR`，对应的单独目录覆盖根目录派生值：
+
+```bash
+curl -fsSL https://github.com/LaokeQwQ/CheeseWAF/releases/latest/download/install-linux.sh \
+  | sudo env CHEESEWAF_INSTALL_DIR=/opt/cheesewaf bash
+```
+
+安装根目录必须是绝对路径，并且每个路径段只能使用 ASCII 字母、数字、`.`、`_` 或 `-`；共享系统目录以及含 Shell 元字符的路径会被拒绝。
+
+安装过程会依次完成：
+
+1. 选择中文或 English，并检测 Linux、架构、磁盘空间、`curl`、`tar`、`systemd` 等前置条件。
+2. 从 GitHub Releases 拉取最新稳定版服务器发行包，校验 `SHA256SUMS` 与签名；校验失败会立即停止，不会启动旧或未知来源的程序。
+3. 将二进制、Web 控制台、运行时配置和 systemd 单元安装到标准路径，并创建无登录权限的 `cheesewaf` 系统用户。
+4. 生成 HTTPS 管理监听、一次性初始化 Token 和安全入口。入口路径只允许 ASCII 字母和数字；脚本会默认生成随机值，也允许你输入自定义值，不符合规则时会拒绝继续。
+5. 启动服务，检查端口和健康状态，并打印版本、架构、安装路径、配置/数据/日志路径、服务状态、入口地址、Token 有效期和后续操作。
+
+安装结束时请保存终端输出中的完整初始化地址。Token 只在首次初始化阶段有效，默认短期有效且完成初始化后立即撤销；不要把完整地址提交到工单、截图、Shell 历史或日志。
+
+## 2. 首次初始化与公网入口 {#first-setup}
+
+初始化期间，使用安装器输出的 `https://` 地址打开向导。初始化地址固定使用 `/setup` 路径：
+
+```text
+https://PUBLIC_IP:9443/setup#setup_token=ONE_TIME_TOKEN
+```
+
+其中 `ONE_TIME_TOKEN` 是一次性初始化 Token。浏览器会从 URL fragment 读取 Token，随后清理地址栏，并通过 `X-CheeseWAF-Setup-Token` 请求头提交；Token 不会放在查询参数、Cookie 或 `localStorage` 中。
+
+初始化完成后，访问 `https://PUBLIC_IP:9443/SECURITY_ENTRY`。安全入口只包含 ASCII 字母和数字，由安装器默认生成，也可以使用通过校验的自定义值。入口会签发访问 Cookie 并跳转到登录页；初始化路由与完成后的安全入口是两个独立路径。
+
+公网管理面默认使用 HTTPS。生产环境应进一步限制安全组、防火墙和反向代理来源，只允许受信管理网络访问 `9443`；不要把初始化地址分享给其他人。若证书由本机临时生成，浏览器首次访问会显示证书警告，生产环境请替换为受信证书。
+
+向导完成后，初始化 Token 立即失效。遗失地址时，可在服务器上查看权限为 `0600` 的运行时文件，或在管理员尚未创建前重置 Token：
+
+```bash
+sudo -u cheesewaf cheesewaf setup token reset
+```
+
+重置后必须使用命令输出的新地址；旧地址不可恢复。
+
+## 3. 安装后检查 {#verify}
+
+```bash
+systemctl status cheesewaf --no-pager
+ss -ltnp | grep ':9443'
+sudo journalctl -u cheesewaf -n 100 --no-pager
+```
+
+检查输出中的版本和架构是否与目标服务器匹配，并确认管理端口只由预期进程监听。完成初始化后，再到控制台接入第一个站点和配置数据面监听。
+
+默认 FHS 路径如下：
+
+| 路径 | 用途 |
+| --- | --- |
+| `/usr/local/bin/cheesewaf` | 主程序二进制 |
+| `/usr/local/bin/waf-cli` | CLI 符号链接 |
+| `/usr/share/cheesewaf/web` | Web 控制台静态文件 |
+| `/etc/cheesewaf/cheesewaf.yaml` | 运行时配置副本 |
+| `/var/lib/cheesewaf` | 数据、证书和一次性初始化状态 |
+| `/var/log/cheesewaf` | 访问日志与审计日志 |
+
+当设置 `CHEESEWAF_INSTALL_DIR=/opt/cheesewaf` 时，对应的应用路径为 `/opt/cheesewaf/bin/cheesewaf`、`/opt/cheesewaf/web`、`/opt/cheesewaf/config/cheesewaf.yaml`、`/opt/cheesewaf/data` 和 `/opt/cheesewaf/logs`。
+
+## 4. 离线或手动安装 {#offline}
+
+在可联网机器上，从 [GitHub Releases](https://github.com/LaokeQwQ/CheeseWAF/releases) 下载与服务器架构匹配的完整 `.tar.gz`、`SHA256SUMS` 和签名文件，再将它们传到目标服务器。在下载目录先校验并解压，然后进入解压目录执行安装器：
+
+```bash
+sha256sum --check SHA256SUMS --ignore-missing
+tar -xzf cheesewaf-*-linux-*.tar.gz
+cd cheesewaf-*-linux-*
 sudo ./install-linux.sh
 ```
 
-该脚本将自动执行以下标准化操作：
-- 安装主程序至 `/usr/local/bin/cheesewaf`，并创建符号链接 `/usr/local/bin/waf-cli`。
-- 安装 Web 控制台静态文件至 `/usr/share/cheesewaf/web`。
-- 安装默认配置文件至 `/etc/cheesewaf/cheesewaf.yaml`。
-- 安装 systemd 单元文件至 `/etc/systemd/system/cheesewaf.service`。
-- 创建专用无登录权限系统用户 `cheesewaf`，并设置 `/var/lib/cheesewaf` 数据目录权限。
+离线脚本仍会在本地交互选择语言、生成安全入口并启动服务，但不会尝试重新下载发行包。若系统没有 systemd，请改用手动方式复制二进制和 `web/dist`，并由现有进程管理器启动；必须保留运行时配置副本与数据目录，不能直接修改仓库中的 `configs/cheesewaf.yaml` 模板。
 
-## 3. 手动分步安装指南 {#manual-install}
-
-若您的生产环境有严格的目录定制规范或通过配置管理工具部署，可执行以下手动步骤：
-
-```bash
-# 1. 安装主程序与 CLI 符号链接
-sudo install -m 0755 cheesewaf /usr/local/bin/cheesewaf
-sudo ln -sfn /usr/local/bin/cheesewaf /usr/local/bin/waf-cli
-
-# 2. 创建系统标准目录
-sudo mkdir -p /etc/cheesewaf /var/lib/cheesewaf /var/log/cheesewaf /usr/share/cheesewaf/web
-
-# 3. 部署 Web 控制台静态前端资源（关键：缺失会导致管理控制台 404）
-sudo cp -R ./web/dist/. /usr/share/cheesewaf/web/
-
-# 4. 将版本库模板复制到专用运行时配置路径
-#    （后续编辑运行时副本，不要把初始化状态写回 configs/）
-sudo install -m 0640 configs/cheesewaf.yaml /etc/cheesewaf/cheesewaf.yaml
-
-# 5. 创建专用系统用户并配置目录归属
-sudo useradd --system --home /var/lib/cheesewaf --shell /usr/sbin/nologin cheesewaf
-sudo chown -R cheesewaf:cheesewaf /etc/cheesewaf /var/lib/cheesewaf /var/log/cheesewaf
-
-# 6. 配置 systemd 单元文件
-sudo cp systemd/cheesewaf.service /etc/systemd/system/cheesewaf.service
-```
-
-## 4. 启动与管理 systemd 服务 {#systemd}
-
-重载 systemd 守护进程并启动 CheeseWAF：
-
-```bash
-sudo systemctl daemon-reload
-sudo systemctl enable --now cheesewaf
-sudo systemctl status cheesewaf
-```
-
-服务启动后，管理平面默认仅绑定回环地址（`server.admin_listen: 127.0.0.1:9443`）。远程服务器推荐通过 SSH 隧道端口转发访问（`ssh -L 9443:127.0.0.1:9443 user@server` 后在本地访问 `http://127.0.0.1:9443/setup`）。若直接在服务器终端初始化，必须显式指向 systemd 使用的配置与数据目录，避免在当前目录另建一套配置：
-
-```bash
-sudo -u cheesewaf /usr/local/bin/cheesewaf \
-  --config /etc/cheesewaf/cheesewaf.yaml \
-  --data-dir /var/lib/cheesewaf setup
-```
-
-首次初始化尚未完成时，服务日志只显示基础 `/setup` 地址、受保护的 `/var/lib/cheesewaf/setup.url` 路径和不含秘密的随机回执。请在 10 分钟有效期内，从权限为 `0600` 的文件读取完整地址。初始化完成后，Token 会被撤销；过期的 `setup.url` 文件会被清理。
-
-详细指引请参考 [系统初始化](../../tutorial/setup/)。
-
-## 系统标准路径参考 {#paths}
-
-| 文件与目录路径 | 用途说明 |
-| --- | --- |
-| `/usr/local/bin/cheesewaf` | 主程序二进制可执行文件 |
-| `/usr/share/cheesewaf/web` | Web 控制台静态前端资源文件 |
-| `/etc/cheesewaf/cheesewaf.yaml` | 主配置文件 |
-| `/var/lib/cheesewaf` | 运行时数据目录，默认 `storage.profile: temporary` 时保存 SQLite 数据库、证书和状态缓存。配置 `storage.postgresql` 时，它只接收外部日志记录。 |
-| `/var/log/cheesewaf` | 访问日志（`access.log`）与审计日志（`audit.log`）目录 |
-
-建议在完成站点接入、反向代理与基础防护调试后，再正式将流量切换至 WAF 监听端口。
+不要使用未经校验的二进制、第三方镜像或旧版安装脚本。完整安装包包含 `cheesewaf`、Web 资源、配置模板、systemd 单元和本安装脚本；缺少其中任一项时应停止并重新下载。
