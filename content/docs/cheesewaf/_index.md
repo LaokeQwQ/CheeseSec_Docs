@@ -2,67 +2,60 @@
 title: CheeseWAF
 linkTitle: CheeseWAF
 weight: 10
-description: Commercial-grade self-hosted Web Application Firewall. Complete documentation for deployment, security policies, configuration, and operations.
+description: Self-hosted Web Application Firewall with a single-binary data plane, management console, and asynchronous threat review.
 ---
 
-CheeseWAF is a commercial-grade self-hosted Web Application Firewall (WAF) distributed as a single Go core binary. The system utilizes a decoupled dual-plane architecture with an embedded lightweight persistent store for management state and supports external PostgreSQL as an asynchronous access-log sink.
-
-Architecturally, CheeseWAF separates the **Data Plane** request forwarding path from the **Management Plane** and the asynchronous ALAP review pipeline. The `cheesewaf` process orchestrates both planes concurrently: the Data Plane executes bounded, low-latency synchronous inspection and reverse proxying, while the Management Plane hosts the management API, Web console, and background review workers—ensuring synchronous HTTP request paths are never blocked by remote LLM inference.
+CheeseWAF is a self-hosted reverse-proxy WAF. It keeps deterministic request inspection on the data plane and runs optional model-assisted review out of band, so an external model is never required to serve normal traffic.
 
 {{% pageinfo color="info" %}}
-Official releases are available on [GitHub Releases](https://github.com/LaokeQwQ/CheeseWAF/releases). The project is open-source under the [Apache License 2.0](https://github.com/LaokeQwQ/CheeseWAF/blob/master/LICENSE).
+The shortest supported path is: run the one-line Linux installer, open the HTTPS setup URL it prints, complete `/setup`, and onboard one test site. Download releases from [GitHub Releases](https://github.com/LaokeQwQ/CheeseWAF/releases). The Apache License 2.0 is available in the [source repository](https://github.com/LaokeQwQ/CheeseWAF/blob/master/LICENSE).
 {{% /pageinfo %}}
 
-## Why CheeseWAF {#why-cheesewaf}
+## Choose a path {#start-here}
 
-Modern Web security solutions usually force teams into painful tradeoffs:
-1. **Traditional Regex WAFs (e.g., ModSecurity / CRS)**: Maintaining thousands of regular expressions is tedious. Attackers bypass signatures using character case variations, malformed encodings, or SQL comments. False positives are frequent, forcing operators to constantly tune exception lists.
-2. **Synchronous LLM WAFs**: Routing every HTTP request to an LLM adds 500 ms to 2 s of latency to each response, burns API token budgets, and risks full outages whenever external endpoints experience latency spikes.
-3. **Heavy Container Stacks (e.g., SafeLine / 雷池)**: Requiring 5 to 10 Docker containers (Tengine, Postgres, Redis, management daemons) consuming 1 to 2 GB+ of RAM, which quickly overburdens budget cloud instances and small VPSs.
-4. **Commercial Cloud WAFs (e.g., Cloudflare / Cloud Provider WAFs)**: All traffic must route through third-party infrastructure, raising privacy, data residency, and compliance concerns. Bandwidth billing is unpredictable, and air-gapped operation is impossible.
-
-CheeseWAF takes a balanced approach: **an in-process AST semantic parser provides sub-millisecond inline blocking, while an out-of-band LLM auto-pilot (ALAP) reviews ambiguous samples in the background and synthesizes persistent custom rules without adding latency to live requests.**
-
-### Comparison Overview
-
-| Dimension | Regex WAF (e.g., ModSecurity) | Synchronous LLM WAF | Heavy Container Stack | Commercial Cloud WAF | CheeseWAF |
-| :--- | :--- | :--- | :--- | :--- | :--- |
-| **Detection Engine** | Regex pattern matching | Synchronous LLM per request | Regex + statistical analysis | Signature sets + threat feed | **AST syntax analysis + Async LLM Auto-Pilot (ALAP)** |
-| **Inline Latency Added** | 1–10 ms | **500–2000 ms** (high) | 2–15 ms | Dependent on CDN routing | **< 1 ms** (sub-millisecond, zero model wait) |
-| **API / Token Cost** | None | Extremely high (all traffic) | None | Bandwidth & tier billing | **Low** (reviews only ambiguous samples out-of-band) |
-| **Evasion & False Positives** | Easily bypassed by encodings | Prone to hallucinations | Complex rule maintenance | Vendor-dependent updates | **Parses syntax trees; immune to obfuscation; FPR < 0.8%** |
-| **Footprint & Deployment** | Requires custom Nginx build | External API dependency | 5–10 containers, 1–2 GB+ RAM | Cloud-only | **Single binary / single container, embedded SQLite, tens of MB RAM** |
-| **Architectural Disruption** | Bound to web server | Modifies primary traffic path | Replaces primary gateway | DNS / reverse proxy takeover | **Runs as standalone reverse proxy or sidecar via `adapterd`** |
-| **Data Privacy & Compliance** | Local | Full traffic sent to external API | Local | Traffic traverses public cloud | **100% on-premises; optional private self-hosted LLM** |
-| **Air-gapped Environments** | Supported | Not supported (requires cloud API) | Partially supported | Not supported | **Fully supported with offline Ed25519 CRP verification** |
-
-## Core Mechanisms {#how-it-works}
-
-1. **High-Performance Data Plane Inspection**: Incoming requests undergo multi-layer recursive decoding before entering the Abstract Syntax Tree (AST) semantic engine. Identified SQL injection, Cross-Site Scripting (XSS), Remote Code Execution (RCE), and malicious payloads are blocked in sub-millisecond to microsecond timeframes.
-2. **Asynchronous ALAP Threat Review**: After the client receives its response, ambiguous samples or payloads embedded in large text blocks are enqueued into a background review pipeline. Configured LLMs (compatible with the OpenAI Response / Chat Completions APIs and Anthropic Messages API) perform in-depth semantic reasoning.
-3. **Closed-Loop Rule Synthesis**: Samples evaluated as high (`high`) or critical (`critical`) threats can be approved manually or via auto-agreement. Site-level auto-agreement persists a site-scoped custom payload rule; global IP denylists and client soft-fingerprint actions remain explicit operator decisions.
-
-## Default Network Listeners {#default-listeners}
-
-CheeseWAF exposes services on the following default listener endpoints:
-
-| Plane / Service | Default Address | Description |
-| --- | --- | --- |
-| **Data Plane** | `http://127.0.0.1:8080` | Ingests business traffic, performs synchronous security inspection, and proxies upstream |
-| **Management Plane** | `https://PUBLIC_IP:9443/setup` → `https://PUBLIC_IP:9443/SECURITY_ENTRY` | Initialization uses fixed `/setup` with a one-time token; after setup, the symbol-free security entry signs a Cookie and redirects to login |
-| **Cluster Plane** | `https://127.0.0.1:9444` | Optional TLS/mTLS interconnect when `cluster.enabled: true`; it handles node identity, health/heartbeat, topology, and orchestration hooks but is not a general site/policy replication channel |
-| **Local Controller** | `http://127.0.0.1:17943` | Local loopback auxiliary controller port for Windows and macOS desktop environments |
-
-## Documentation Roadmap {#start-here}
+Start with the task you need to complete:
 
 {{< nav-cards cols="2" >}}
-{{< nav-card title="Deployment & Installation" link="/docs/cheesewaf/install/" icon="fa-solid fa-download" desc="Step-by-step guides for Linux (systemd), Docker Compose, Windows, and macOS environments." />}}
-{{< nav-card title="Quick Start" link="/docs/cheesewaf/tutorial/" icon="fa-solid fa-rocket" desc="Initial system setup, reverse proxy site onboarding, and connecting LLM review providers." />}}
-{{< nav-card title="Core Concepts" link="/docs/cheesewaf/concepts/" icon="fa-solid fa-diagram-project" desc="In-depth breakdown of the request lifecycle, paranoia levels, payload isolation, and unified RBAC." />}}
-{{< nav-card title="Security Policies" link="/docs/cheesewaf/protection/" icon="fa-solid fa-shield" desc="AST semantic engine, custom regex rules, IP/GeoIP filtering, bot challenges, sharded sliding-window counter rate limiting, and ACLs." />}}
-{{< nav-card title="Gateway Adapters" link="/docs/cheesewaf/adapters/" icon="fa-solid fa-network-wired" desc="Self-hosted Go adapter (adapterd) for NGINX and Envoy, enabling low-coupling traffic inspection and fail-closed defense." />}}
-{{< nav-card title="Plugins & CRP" link="/docs/cheesewaf/plugins/" icon="fa-solid fa-puzzle-piece" desc="CRP v1 offline package format, Ed25519 threshold verification, content-addressed staging, and temporary egress auditing." />}}
-{{< nav-card title="Air-gapped Operations" link="/docs/cheesewaf/operations/" icon="fa-solid fa-lock" desc="Offline package integrity verification, local storage maintenance, and operational management under air-gapped constraints." />}}
-{{< nav-card title="Standalone Control Runtime" link="/docs/cheesewaf/control-plane-runtime/" icon="fa-solid fa-server" desc="Operational guidance for cheesewaf-control startup flags, security validation checks, local probes, and cluster join modes." />}}
-{{< nav-card title="Developer's Words" link="/docs/cheesewaf/developer-words/" icon="fa-solid fa-heart" desc="Design motivations, engineering philosophy, and personal reflections from the creator." />}}
+{{< nav-card title="Quick Start" link="/docs/cheesewaf/tutorial/" icon="fa-solid fa-rocket" desc="Install, initialize the console, verify the service, and protect one test site." />}}
+{{< nav-card title="Linux (recommended)" link="/docs/cheesewaf/install/linux/" icon="fa-brands fa-linux" desc="Install with the one-line installer or a verified archive, then run as a systemd service." />}}
+{{< nav-card title="Docker" link="/docs/cheesewaf/install/docker/" icon="fa-brands fa-docker" desc="Run an isolated evaluation or compose-based deployment with explicit port and data mounts." />}}
+{{< nav-card title="Production operations" link="/docs/cheesewaf/operations/" icon="fa-solid fa-shield-halved" desc="Review network boundaries, storage, backups, upgrades, and air-gapped operation." />}}
+{{< /nav-cards >}}
+
+## Five-minute path {#five-minute-path}
+
+1. Prepare a supported Linux host with `sudo`, enough disk for the release and runtime data, and an administration path to port `9443`.
+2. Run the one-line installer. It downloads and verifies the latest stable release, installs the systemd service when available, and prints the HTTPS setup URL. Follow the verified archive path in the [Linux guide](install/linux/) when the host cannot reach GitHub.
+3. Open the printed HTTPS URL, create the first administrator, and keep the one-time token out of tickets, screenshots, shell history, and logs.
+4. Follow [Quick Start](tutorial/) to add a test site before changing production DNS.
+
+The installer creates a dedicated `cheesewaf` system user, copies the Web Console assets, installs the runtime configuration only when it does not already exist, enables HTTPS on the management listener, and places the systemd unit under `/etc/systemd/system` by default. It does not replace an existing configuration.
+
+## What CheeseWAF provides {#capabilities}
+
+- **Data plane:** reverse proxying, request normalization, AST-based semantic inspection, ACLs, IP and fingerprint controls, rate limiting, and bot challenges.
+- **Management plane:** Web Console, REST API, CLI/TUI workflows, setup wizard, RBAC, audit records, and operational health endpoints.
+- **Asynchronous review:** optional ALAP review for ambiguous samples. The review queue is out of band; it must not be treated as the inline enforcement path.
+- **Storage choices:** the default `temporary` profile uses the local runtime store. Production deployments must explicitly provide the required external storage and must fail closed instead of silently falling back.
+- **Adapters and plugins:** adapterd integrates existing gateways; CRP packages provide signed offline resources. Review [Plugins & CRP](plugins/) before enabling third-party packages.
+- **Air-gapped operation:** release archives, checksums, signed resources, and local runtime data can be managed without making the data plane depend on an external model.
+
+## Default network boundaries {#default-listeners}
+
+| Plane / service | Default address | Purpose |
+| --- | --- | --- |
+| Data plane | `http://127.0.0.1:8080` | Business traffic inspection and reverse proxying |
+| Management plane | `https://PUBLIC_IP:9443/setup` → `https://PUBLIC_IP:9443/SECURITY_ENTRY` | First setup uses a fixed `/setup` path with a one-time token; after setup, the generated security entry signs an access Cookie and redirects to login |
+| Cluster plane | `https://127.0.0.1:9444` | Optional mTLS node interconnect when clustering is enabled |
+| Local controller | `http://127.0.0.1:17943` | Desktop helper controller for Windows and macOS |
+
+The one-line installer binds the management listener on all interfaces, enables HTTPS, and gates first setup with a one-time token and a generated security entry. Restrict port `9443` to trusted administration networks before exposing it. The shipped configuration template and the setup wizard default to `0.0.0.0:9443` with `server.admin_public: true`. A configuration that omits the `server` keys falls back to the loader default `127.0.0.1:9443`. A public listener still requires management TLS, a valid certificate, and an external access policy. Do not expose `/setup` or the management port to the Internet as a substitute for those controls.
+
+## Continue
+
+{{< nav-cards cols="2" >}}
+{{< nav-card title="Core concepts" link="/docs/cheesewaf/concepts/" icon="fa-solid fa-diagram-project" desc="Understand the request lifecycle, management boundaries, storage profiles, and enforcement order." />}}
+{{< nav-card title="Security policies" link="/docs/cheesewaf/protection/" icon="fa-solid fa-lock" desc="Configure semantic inspection, ACLs, IP controls, challenges, and rate limits." />}}
+{{< nav-card title="Gateway adapters" link="/docs/cheesewaf/adapters/" icon="fa-solid fa-network-wired" desc="Connect NGINX or Envoy through the authenticated adapter contract." />}}
+{{< nav-card title="Configuration reference" link="/docs/cheesewaf/config/" icon="fa-solid fa-sliders" desc="Look up supported keys, defaults, validation rules, and runtime boundaries." />}}
 {{< /nav-cards >}}
