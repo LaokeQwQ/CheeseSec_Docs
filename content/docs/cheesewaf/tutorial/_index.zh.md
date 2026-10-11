@@ -11,7 +11,7 @@ description: 三步快速完成 CheeseWAF 系统初始化、首个站点接入�
 curl -fsSL https://github.com/LaokeQwQ/CheeseWAF/releases/latest/download/install-linux.sh | sudo bash
 ```
 
-语言选择后，安装器会询问应用安装根目录。输入 `/opt/cheesewaf` 可将二进制、Web 资源、配置、数据和日志集中在同一目录；直接回车则使用标准 FHS 布局。自动化变量和路径约束请参考 [Linux 安装指南](../install/linux/)。
+语言选择后，安装器会询问应用安装根目录。输入 `/opt/cheesewaf` 可将二进制、Web 资源、配置、数据和日志集中在同一目录；直接回车则使用标准 FHS 布局。安装完成后会输出公网和检测到的内网初始化地址；需要指定版本时设置 `CHEESEWAF_RELEASE=vX.Y.Z[-beta]`。自动化变量、升级行为和安全入口说明请参考 [Linux 安装指南](../install/linux/)。
 
 {{< nav-cards cols="1" >}}
 {{< nav-card title="1. 系统初始化" link="/zh/docs/cheesewaf/tutorial/setup/" icon="fa-solid fa-key" desc="访问 /setup 向导，创建首个系统管理员账号，妥善保存初始化密钥并确认管理网络边界。" />}}

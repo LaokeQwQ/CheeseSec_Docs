@@ -11,7 +11,7 @@ Start with the one-line Linux installer. It asks for a language, downloads and v
 curl -fsSL https://github.com/LaokeQwQ/CheeseWAF/releases/latest/download/install-linux.sh | sudo bash
 ```
 
-The installer asks for an application root after the language prompt. Enter `/opt/cheesewaf` to keep the binary, Web assets, configuration, data, and logs together, or press Enter to use the standard FHS layout; see the [Linux installation guide](../install/linux/) for automation variables.
+The installer asks for an application root after the language prompt. Enter `/opt/cheesewaf` to keep the binary, Web assets, configuration, data, and logs together, or press Enter to use the standard FHS layout. It prints public and detected private setup addresses; use `CHEESEWAF_RELEASE=vX.Y.Z[-beta]` when you need a specific release. See the [Linux installation guide](../install/linux/) for automation variables, upgrades, and security-entry handling.
 
 {{< nav-cards cols="1" >}}
 {{< nav-card title="1. System Initialization" link="/docs/cheesewaf/tutorial/setup/" icon="fa-solid fa-key" desc="Access the /setup wizard, create your initial administrator account, securely archive master keys, and verify management boundaries." />}}
