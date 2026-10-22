@@ -7,6 +7,8 @@ description: CheeseSec 插件分发体系、CRP v1 离线资源包结构、Ed255
 
 CheeseWAF 用 **CRP (CheeseWAF Resources Package)** 定义签名资源包格式，并提供本地离线校验与暂存命令。发布政策与开发者规范由 [CheeseSec_Plugin](https://github.com/LaokeQwQ/CheeseSec_Plugin) 和 [CheeseSec_Plugin_Docs](https://github.com/LaokeQwQ/CheeseSec_Plugin_Docs) 维护。
 
+完整开发指南见[插件手册](/zh/docs/plugins/)。实际已发布的条目可在[插件商店](https://store.cheesesec.com/)中查看。
+
 ## CRP v1 归档结构规范 {#crp-spec}
 
 当前 CheeseWAF CRP v1 解析器要求资源包必须为标准 ZIP 归档，且内部**必须且仅允许**包含以下三类条目，包含任何多余文件或未知目录均会被硬阻断（Hard Reject）：

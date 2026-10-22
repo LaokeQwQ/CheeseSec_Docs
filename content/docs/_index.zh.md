@@ -7,6 +7,7 @@ description: CheeseSec 产品文档与使用指南。
 
 本站汇总 CheeseSec 各安全产品的技术文档与运维参考。
 
-{{< nav-cards cols="1" >}}
+{{< nav-cards cols="2" >}}
 {{< nav-card title="CheeseWAF" link="/zh/docs/cheesewaf/" icon="fa-solid fa-shield-halved" desc="自托管的 Web 应用防火墙，涵盖系统安装、配置管理、安全防护及日常运维。" />}}
+{{< nav-card title="CheeseSec 插件" link="/zh/docs/plugins/" icon="fa-solid fa-puzzle-piece" desc="CheeseSec 生态共享的独立插件产品，涵盖开发、签名校验、发布与宿主兼容性说明。" />}}
 {{< /nav-cards >}}

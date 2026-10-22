@@ -36,7 +36,7 @@ languages:
     weight: 1
     title: CheeseSec Docs
     params:
-      description: Product manuals for CheeseSec. CheeseWAF is documented here.
+      description: Product manuals and plugin developer guides for CheeseSec.
     menus:
       main:
         - identifier: docs
@@ -51,6 +51,18 @@ languages:
           params:
             icon: fa-solid fa-shield-halved
             description: Self-hosted Web Application Firewall
+        - identifier: plugins
+          parent: docs
+          name: Plugins
+          pageRef: /docs/plugins
+          weight: 20
+          params:
+            icon: fa-solid fa-puzzle-piece
+            description: Independent plugin product for the CheeseSec ecosystem
+        - identifier: store
+          name: Plugin store
+          url: https://store.cheesesec.com/
+          weight: 30
         - identifier: github
           name: GitHub
           url: https://github.com/LaokeQwQ/CheeseWAF
@@ -64,7 +76,7 @@ languages:
     weight: 2
     title: CheeseSec 文档
     params:
-      description: CheeseSec 产品手册。目前收录 CheeseWAF。
+      description: CheeseSec 产品手册与插件开发指南。
       time_format_blog: 2006年1月2日
       time_format_default: 2006年1月2日
     menus:
@@ -81,6 +93,18 @@ languages:
           params:
             icon: fa-solid fa-shield-halved
             description: 自托管的 Web 应用防火墙
+        - identifier: plugins
+          parent: docs
+          name: 插件
+          pageRef: /docs/plugins
+          weight: 20
+          params:
+            icon: fa-solid fa-puzzle-piece
+            description: 面向 CheeseSec 生态的独立插件产品
+        - identifier: store
+          name: 插件商店
+          url: https://store.cheesesec.com/
+          weight: 30
         - identifier: github
           name: GitHub
           url: https://github.com/LaokeQwQ/CheeseWAF

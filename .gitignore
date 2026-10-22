@@ -18,3 +18,7 @@ Thumbs.db
 
 # Wrangler
 .wrangler/
+
+# Local Python validation caches
+__pycache__/
+*.pyc

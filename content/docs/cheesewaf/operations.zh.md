@@ -9,9 +9,7 @@ description: 本地账号管理、TOTP 双因素认证（2FA）、NTP 时钟同�
 
 CheeseWAF 默认使用 `storage.profile: temporary` 运行，用户、Session 和管理状态保存在内置 SQLite 中。若显式指定生产模式 `storage.profile: production`，系统执行严格的环境校验并遵循 fail-closed 原则，在外部生产持久化数据库不可用时抛出 `ErrProductionStorageUnavailable`。
 
-`storage.postgresql` 用于集中归档访问日志；`storage.redis` 端点可用于辅助缓存验证。CLI 提供 `cheesewaf crp verify` 与 `cheesewaf crp stage` 用于安全包离线校验与受保护槽位暂存；生产模式下结合策略快照与鉴权环境支持安全激活与回滚。
-
-当前 CWEDP/NetLease 包已经包含 broker-bound HTTP/file transport、一次性租约校验、直接 IP 拨号、TLS/mTLS/NodeID/leaf pin、Range 续传和来源隔离，但尚未挂载到主 `serve`、节点注册或完整的插件安装/OTA 生命周期。本地 `cheesewaf temporary-online probe` 是独立的一次性运维工具，不是生产插件出站 API。
+`storage.postgresql` 用于集中归档访问日志；`storage.redis` 端点可用于辅助缓存验证。CLI 提供 `cheesewaf crp verify` 与 `cheesewaf crp stage`，用于安全包离线校验与受保护槽位暂存。激活与回滚需要对应宿主明确支持，支持不可用时会拒绝执行。
 
 ## 1. 用户管理与 CLI 凭据运维 {#users}
 

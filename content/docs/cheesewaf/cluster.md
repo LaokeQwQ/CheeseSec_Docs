@@ -5,7 +5,7 @@ weight: 120
 description: Node join tokens, mutual TLS (mTLS) health and heartbeat interconnects, external consensus coordination, Ansible orchestration, and CLI cluster management.
 ---
 
-For large-scale, multi-node deployments, CheeseWAF provides a cluster interconnect for mTLS node identity, health and heartbeat reporting, topology/status, and orchestration hooks. The interconnect is not a site-policy replication channel. The current runnable path is a builtin single-node coordinator; selecting etcd records the shared-cluster requirement but has no etcd-backed coordinator in this binary, so it fails closed rather than falling back from a shared deployment to heartbeat election. The commercial target is native-raft for desired-state ordering, epoch fencing, and rollback references, with PostgreSQL as durable management truth. Until that migration is complete, this page's etcd commands describe a contract and are not evidence that native-raft is already shipped.
+CheeseWAF provides a cluster interconnect for mTLS node identity, health and heartbeat reporting, and node status. The interconnect is not a site-policy replication channel. The current runnable configuration supports a builtin single-node coordinator. Selecting etcd does not enable a working shared-cluster backend in the current binary and fails closed. The configuration and commands below do not provide production multi-node HA.
 
 Cluster administration is accessible via the **Cluster** module in the Web Console, the `cheesewaf cluster` CLI commands, or REST APIs at `/api/cluster/*`.
 
@@ -31,7 +31,7 @@ The following values describe the current interconnect and admission contract; t
 3. Configure `interconnect.advertise_addr` as the routable IP/port accessible by peer nodes.
 4. Keep `mtls_required: true` and configure trusted `ca_file`, `cert_file`, and `key_file` paths.
 
-The built-in consensus provider is intentionally limited to a single node and keeps only an in-memory configuration-version log. Selecting `cluster.consensus.provider: etcd` with `etcd_endpoints` records the required shared-cluster contract, but the current binary has no etcd-backed coordinator and therefore remains in protection mode instead of pretending that heartbeat state is consensus. The staged native-raft contract is documented in [Commercial Architecture](../commercial-architecture/); the separate command's current startup and join limits are in [Standalone Control Runtime](../control-plane-runtime/). Neither page enables native-raft through this configuration key.
+The built-in consensus provider is limited to a single node. Setting `cluster.consensus.provider: etcd` and `etcd_endpoints` does not enable a supported shared-cluster deployment in the current binary. For the separate command's public parameters and current limits, see [Standalone Control Runtime](../control-plane-runtime/).
 
 ### Split-Brain Protection & Majority Quorum
 
@@ -93,7 +93,7 @@ Certificate rotation likewise requires a configured existing node identity/certi
 
 ## 3. Ansible Automated Deployment {#ansible}
 
-The current `POST /api/cluster/deploy/ansible` exporter generates a CheeseWAF daemon bootstrap package only (inventory, variables, playbook, role, configuration template, and README). It does not include a CWEDP agent and is not a ready-to-run production bundle: before execution, provide a verified binary URL and SHA-256, service paths, and (for more than one node) the external etcd endpoints required by the generated role. The optional `deploy/ansible/full.yml` playbook can install a pull-only CWEDP agent only in its explicit `provision_only=true` hand-off mode, after all external control-plane preflight values plus the agent URL and SHA-256 are supplied; it still does not make CheeseWAF production storage runnable. Plugin CRP installation, upgrade, rollback, signing, promotion, and authenticated distribution are never performed by Ansible; those lifecycle operations belong to CWEDP.
+The `POST /api/cluster/deploy/ansible` exporter generates a CheeseWAF daemon bootstrap package (inventory, variables, playbook, role, configuration template, and README). Before execution, provide a verified binary URL and SHA-256, complete the service paths and required configuration, and review every generated command. The export does not provide plugin installation or a ready-to-run production multi-node HA deployment.
 
 - **Playbook Generation API**: Call `POST /api/cluster/deploy/ansible` with a list of nodes, roles (`waf` / `monitor`), SSH ports, and region metadata. The response is JSON with a `files` object mapping relative filenames (for example `inventory.ini`, `playbook.yml`, and role files) to their text contents. Save those entries as a package, fill in the required verified binary variables and etcd settings, review the generated commands, and only then run the playbook.
 - **Web UI Export**: In the **Cluster** view of the Web Console, configure the target node inventory and click "Export Ansible Bundle" to download the generated bundle for review and completion; it is not a ready-to-run production package.
@@ -113,4 +113,4 @@ The current `POST /api/cluster/deploy/ansible` exporter generates a CheeseWAF da
 | **Upgrade Rollback** | `POST /api/cluster/orchestrate/rolling-upgrade/{id}/rollback` | Create a reverse-order rollback task from backup state |
 | **Consensus State** | `GET /api/cluster/consensus` | Query current cluster consensus status and coordinator details |
 
-The default provider is `builtin`, which is intended for single-node deployments. Multi-node or shared-configuration environments must configure external `etcd` endpoints (`etcd_endpoints`) to coordinate distributed state and leader elections.
+The default provider is `builtin`, which is intended for single-node deployments. Configuring external `etcd` endpoints does not make the current binary a supported production multi-node HA deployment.

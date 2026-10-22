@@ -7,6 +7,7 @@ description: Technical documentation and user guides for CheeseSec products.
 
 This section provides comprehensive technical documentation and operational references for CheeseSec products.
 
-{{< nav-cards cols="1" >}}
+{{< nav-cards cols="2" >}}
 {{< nav-card title="CheeseWAF" link="/docs/cheesewaf/" icon="fa-solid fa-shield-halved" desc="Self-hosted Web Application Firewall covering system deployment, configuration management, security policies, and daily operations." />}}
+{{< nav-card title="CheeseSec Plugins" link="/docs/plugins/" icon="fa-solid fa-puzzle-piece" desc="An independent plugin product shared across CheeseSec. Read development, signing, publication, and host compatibility guidance." />}}
 {{< /nav-cards >}}

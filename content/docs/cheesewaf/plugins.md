@@ -7,6 +7,8 @@ description: CheeseSec plugin distribution model, CRP v1 offline resource packag
 
 CheeseWAF defines **CRP (CheeseWAF Resources Package)** as its signed resource-package format and provides local offline verification and staging commands. Release policy and developer instructions are maintained in [CheeseSec_Plugin](https://github.com/LaokeQwQ/CheeseSec_Plugin) and [CheeseSec_Plugin_Docs](https://github.com/LaokeQwQ/CheeseSec_Plugin_Docs).
 
+For the complete developer guide, read the [plugin handbook](/docs/plugins/). Browse actual published entries in the [plugin store](https://store.cheesesec.com/).
+
 ## CRP v1 Archive Layout {#crp-spec}
 
 The CheeseWAF CRP v1 parser requires resource packages to be standard ZIP archives containing **only** the following three entries. Any extra files or unknown directories cause immediate admission rejection (Hard Reject):

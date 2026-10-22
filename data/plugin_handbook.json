@@ -1,0 +1,17 @@
+{
+  "format": "public-plugin-overviews-v2",
+  "public_inputs": {
+    "handbook/public/overview.en.md": "b9f99e648fed586768d0614cb52f1377d5dd8d43213efe30c17234a0b1719e0f",
+    "handbook/public/overview.zh.md": "fb09cb4287cf07cff640d8573c3019d9a1401cad6d301388bbe36fa93b0c6c88"
+  },
+  "legacy_redirects": {
+    "/": "https://docs.cheesesec.com/docs/plugins/",
+    "/README.md": "https://docs.cheesesec.com/docs/plugins/",
+    "/docs/index.md": "https://docs.cheesesec.com/zh/docs/plugins/",
+    "/zh/": "https://docs.cheesesec.com/zh/docs/plugins/"
+  },
+  "outputs": [
+    "content/docs/plugins/_index.md",
+    "content/docs/plugins/_index.zh.md"
+  ]
+}

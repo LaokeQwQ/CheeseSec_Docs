@@ -5,7 +5,7 @@ weight: 120
 description: 节点加入令牌、mTLS 双向认证健康/心跳互联、外部共识协调、Ansible 自动化编排与 CLI 集群管理工具链。
 ---
 
-在大规模多节点部署场景下，CheeseWAF 提供用于节点 mTLS 身份认证、健康/心跳上报、拓扑状态与编排钩子的集群互联。该互联不是站点策略复制通道。当前可运行路径是单节点 builtin 协调器；选择 etcd 只能记录共享集群要求，当前二进制没有 etcd 后端协调器，因此会 fail-closed，不会从共享部署静默回退到心跳选主。商业化目标是由 native-raft 负责期望状态顺序、epoch fencing 与回滚引用，由 PostgreSQL 保存持久管理真相。在迁移完成前，本页的 etcd 命令只描述 contract，不能据此宣称 native-raft 已交付。
+CheeseWAF 提供用于节点 mTLS 身份认证、健康/心跳上报和节点状态查询的集群互联。该互联不是站点策略复制通道。当前可运行配置支持单节点 builtin 协调器；选择 etcd 不会启用可用的共享集群后端，而会拒绝运行。下面的配置和命令不代表已提供可用于生产的多节点 HA。
 
 在 Web 管理控制台中可进入 **集群管理** 模块，或通过命令行 `cheesewaf cluster` 与 REST API `/api/cluster/*` 进行管理。
 
@@ -31,7 +31,7 @@ cluster:
 3. 配置 `interconnect.advertise_addr` 为该节点可被集群内其他节点访问的通信地址。
 4. 保持 `mtls_required: true`，并在各节点配置受信的 `ca_file`、`cert_file` 与 `key_file` 证书文件。
 
-内置共识提供方只支持单节点，并且只保留内存中的配置版本日志。设置 `cluster.consensus.provider: etcd` 并填写 `etcd_endpoints` 只能记录共享集群所需的 contract；当前二进制没有 etcd 后端协调器，因此会保持写保护/保护模式，不会把心跳状态冒充为共识。native-raft contract 见[商业化架构基线](../commercial-architecture/)，独立命令的当前启动和 join 限制见[独立控制面运行时](../control-plane-runtime/)。这两份文档都不会通过当前配置键启用 native-raft。
+内置共识提供方只支持单节点。设置 `cluster.consensus.provider: etcd` 并填写 `etcd_endpoints`，不会让当前二进制支持共享集群部署。独立命令的公开参数和当前限制见[独立控制面运行时](../control-plane-runtime/)。
 
 ### 脑裂与写保护机制
 
@@ -93,7 +93,7 @@ cheesewaf cluster status
 
 ## 3. Ansible 批量自动化部署 {#ansible}
 
-当前 `POST /api/cluster/deploy/ansible` 导出器只生成 CheeseWAF 主服务引导包（inventory、变量、playbook、role、配置模板和 README）。它不包含 CWEDP 代理，也不是拿来就能执行的生产包：运行前必须补充经过校验的二进制 URL 和 SHA-256、服务路径；多节点场景还必须填写生成 role 所需的外部 etcd 地址。可选的 `deploy/ansible/full.yml` 只有在明确设置 `provision_only=true`、补齐外部控制面预检参数以及 CWEDP 代理 URL 和 SHA-256 时，才能执行只拉取代理的主机交接；这仍不会让 CheeseWAF 的 production 存储变为可运行。插件 CRP 的安装、升级、回滚、签名、晋级及认证分发都不会由 Ansible 执行，这些生命周期操作属于 CWEDP：
+`POST /api/cluster/deploy/ansible` 导出器生成 CheeseWAF 主服务引导包（inventory、变量、playbook、role、配置模板和 README）。运行前必须补充经过校验的二进制 URL 和 SHA-256、服务路径与所需配置，并逐条复核生成的命令。导出包不提供插件安装，也不是可直接运行的生产多节点 HA 部署包。
 
 - **Playbook 导出接口**：调用 `POST /api/cluster/deploy/ansible`，传入目标节点的主机清单、角色（`waf` / `monitor`）、SSH 端口与地域标签。响应为 JSON，`files` 对象将相对文件名（如 `inventory.ini`、`playbook.yml` 及角色文件）映射到文本内容；保存后先填写经过校验的二进制变量和 etcd 设置，人工复核命令，再执行 playbook。
 - **Web 控制台导出**：在 Web 管理控制台的 **集群管理** 模块中，可录入节点拓扑并点击「导出 Ansible 部署包」；下载内容仍需人工补全和复核，不是拿来就能执行的生产包。
@@ -113,4 +113,4 @@ cheesewaf cluster status
 | **升级回滚** | `POST /api/cluster/orchestrate/rolling-upgrade/{id}/rollback` | 创建逆序回滚任务，依据备份恢复配置 |
 | **共识状态** | `GET /api/cluster/consensus` | 查看当前集群共识提供方与健康状态 |
 
-单节点部署默认采用 `builtin` 模式并将状态保存在本地；多节点高可用集群必须配置外部 `etcd` 端点（`etcd_endpoints`）以协调分布式状态与选主。
+单节点部署默认采用 `builtin` 模式。配置外部 `etcd` 端点，不会让当前二进制成为受支持的生产多节点 HA 部署。
