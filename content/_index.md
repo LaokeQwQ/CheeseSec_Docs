@@ -17,7 +17,7 @@ CheeseWAF source code and pre-built binaries are hosted in the [CheeseWAF reposi
 
 {{< nav-cards cols="2" >}}
 {{< nav-card title="CheeseWAF" link="/docs/cheesewaf/" icon="fa-solid fa-shield-halved" desc="Commercial-grade self-hosted Web Application Firewall featuring AST semantic analysis, bot mitigation, API security, and asynchronous LLM-driven threat review." />}}
-{{< nav-card title="CheeseSec Plugins" link="/docs/plugins/" icon="fa-solid fa-puzzle-piece" desc="An independent plugin product for the CheeseSec ecosystem. Develop, publish, and verify extensions for compatible hosts." />}}
+{{< nav-card title="CheeseSec Plugins" link="/docs/plugins/" iconImage="/images/plugins-logo.svg" desc="An independent plugin product for the CheeseSec ecosystem. Develop, publish, and verify extensions for compatible hosts." />}}
 {{< /nav-cards >}}
 
 ## Quick Navigation {#start}

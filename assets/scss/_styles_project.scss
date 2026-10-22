@@ -14,3 +14,11 @@
 .td-shell-layout--no-toc > .td-shell-toc-float {
   display: none;
 }
+
+.td-product-card-icon {
+  display: block;
+  width: 30px;
+  height: 30px;
+  flex: 0 0 30px;
+  object-fit: contain;
+}

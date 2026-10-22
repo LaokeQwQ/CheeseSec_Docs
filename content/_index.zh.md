@@ -17,7 +17,7 @@ CheeseWAF 的源码与预编译分发包托管于 [CheeseWAF 仓库](https://git
 
 {{< nav-cards cols="2" >}}
 {{< nav-card title="CheeseWAF" link="/zh/docs/cheesewaf/" icon="fa-solid fa-shield-halved" desc="企业级自托管 Web 应用防火墙。提供语义分析、Bot 防护、API 安全及异步大模型审查能力。" />}}
-{{< nav-card title="CheeseSec 插件" link="/zh/docs/plugins/" icon="fa-solid fa-puzzle-piece" desc="面向 CheeseSec 生态的独立插件产品，提供开发、签名校验、发布与分发体系，宿主兼容性以插件说明为准。" />}}
+{{< nav-card title="CheeseSec 插件" link="/zh/docs/plugins/" iconImage="/images/plugins-logo.svg" desc="面向 CheeseSec 生态的独立插件产品，提供开发、签名校验、发布与分发体系，宿主兼容性以插件说明为准。" />}}
 {{< /nav-cards >}}
 
 ## 快速导航 {#start}

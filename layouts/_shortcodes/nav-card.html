@@ -1,0 +1,14 @@
+{{- $inner := .InnerDeindent -}}
+{{- if .Get "iconImage" -}}
+<article class="td-content-card">
+  <div class="td-content-card__body">
+    <div class="td-content-card__head">
+      <img class="td-product-card-icon" src="{{ .Get "iconImage" | relURL }}" width="30" height="30" alt="" aria-hidden="true">
+      <a class="td-content-card__title" href="{{ .Get "link" | relURL }}">{{ .Get "title" }}</a>
+    </div>
+    <p class="td-content-card__description">{{ .Get "desc" | markdownify }}</p>
+  </div>
+</article>
+{{- else -}}
+  {{- partial "shortcodes/content-card.html" (dict "shortcode" . "inner" $inner) -}}
+{{- end -}}
