@@ -8,7 +8,7 @@ description: 面向自托管场景的 Web 应用防火墙，提供单二进制�
 CheeseWAF 是一个自托管反向代理 WAF。确定性的请求检测运行在数据面，可选的大模型审查在请求链路之外异步执行，因此正常业务流量不依赖外部模型才能提供防护。
 
 {{% pageinfo color="info" %}}
-最短可用路径是：执行 Linux 一键安装，打开脚本输出的 HTTPS 初始化地址，完成 `/setup`，再接入一个测试站点。发行包请从 [GitHub Releases](https://github.com/LaokeQwQ/CheeseWAF/releases) 获取；项目协议见 [源码仓库中的 Apache License 2.0](https://github.com/LaokeQwQ/CheeseWAF/blob/master/LICENSE)。
+最短可用路径是：使用 [Linux 官方安装入口](https://cheesesec.com/install.sh)，打开脚本输出的 HTTPS 初始化地址，完成 `/setup`，再接入一个测试站点。下载优先使用官方来源，仅在下载失败时使用 GitHub 备用来源；校验和或签名失败会停止安装。命令和备用入口见 [Linux 安装指南](install/linux/)。项目协议见 [源码仓库中的 Apache License 2.0](https://github.com/LaokeQwQ/CheeseWAF/blob/master/LICENSE)。
 {{% /pageinfo %}}
 
 ## 选择入口 {#start-here}
@@ -25,7 +25,7 @@ CheeseWAF 是一个自托管反向代理 WAF。确定性的请求检测运行在
 ## 五分钟路径 {#five-minute-path}
 
 1. 准备受支持的 Linux 主机、`sudo` 权限、足够的磁盘空间，以及访问 `9443` 管理端口的方式。
-2. 执行一键安装。脚本会下载并校验最新稳定版，在可用时安装 systemd 服务，并输出 HTTPS 初始化地址。服务器无法访问 GitHub 时，改走 [Linux 安装指南](install/linux/) 中经过校验的离线安装流程。
+2. 通过官网入口执行一键安装。脚本会下载并校验最新稳定版，在可用时安装 systemd 服务，并输出 HTTPS 初始化地址。服务器无法访问外网时，改走 [Linux 安装指南](install/linux/) 中经过校验的离线安装流程。
 3. 打开脚本输出的 HTTPS 地址，创建首个管理员。一次性 Token 不要留在工单、截图、Shell 历史或日志中。
 4. 继续阅读[快速上手](tutorial/)，先接入测试站点，再切换生产 DNS。
 

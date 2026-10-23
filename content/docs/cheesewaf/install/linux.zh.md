@@ -5,7 +5,7 @@ weight: 10
 description: 通过一键脚本或离线发行包安装 CheeseWAF，并完成公网 HTTPS 管理入口的首次初始化。
 ---
 
-本指南适用于 Linux 物理机、云服务器和虚拟机。一键安装器会询问语言、识别 CPU 架构、下载并校验最新稳定版，在可用时安装 systemd 服务，并输出初始化地址；无法访问 GitHub 时，请使用离线流程。
+本指南适用于 Linux 物理机、云服务器和虚拟机。一键安装器会询问语言、识别 CPU 架构、优先从 CheeseSec 官方来源下载并校验最新稳定版，在可用时安装 systemd 服务，并输出初始化地址。GitHub 用作下载失败时的备用来源；主机无法访问外网时，请使用离线流程。
 
 ## 流程摘要 {#summary}
 
@@ -38,22 +38,36 @@ description: 通过一键脚本或离线发行包安装 CheeseWAF，并完成公
 ## 1. 一键安装（推荐） {#one-click}
 
 ```bash
-curl -fsSL https://github.com/LaokeQwQ/CheeseWAF/releases/latest/download/install-linux.sh | sudo bash
+curl --proto '=https' --proto-redir '=https' -fsSL https://cheesesec.com/install.sh | sudo bash
 ```
 
 如果当前用户已经是 `root`，可以省略 `sudo`：
 
 ```bash
-curl -fsSL https://github.com/LaokeQwQ/CheeseWAF/releases/latest/download/install-linux.sh | bash
+curl --proto '=https' --proto-redir '=https' -fsSL https://cheesesec.com/install.sh | bash
 ```
 
 脚本从 `/dev/tty` 读取语言、安装根目录和安全入口输入，因此即使脚本内容通过标准输入传入，交互输入也不会被误当作脚本内容。无人值守环境请设置文档列出的 `CHEESEWAF_*` 环境变量后运行已下载的脚本；不要把密码或初始化 Token 写入命令行参数或历史记录。
 
+下载及重定向必须使用 HTTPS。安装器优先获取官方发行信息和文件，只有官方下载失败时才尝试 GitHub。校验和或签名验证失败会在解压或安装前终止；不要切换来源绕过校验失败。如需在校验和之外验证发行来源，请单独安装可信的 `cosign`，并设置 `CHEESEWAF_VERIFY_SIGNATURE=1`；签名验证要求发行工作流身份与所选版本标签精确匹配。
+
+### GitHub 备用入口 {#github-fallback}
+
+如果无法下载官网的 `install.sh`，可使用 GitHub 发行入口：
+
+```bash
+curl --proto '=https' --proto-redir '=https' -fsSL https://github.com/LaokeQwQ/CheeseWAF/releases/latest/download/install-linux.sh | sudo bash
+```
+
+该入口只用于下载失败的情况。安装因校验和或签名错误而终止后，不应使用备用来源重试来绕过校验。
+
+### 选择版本或安装目录 {#install-options}
+
 如需安装指定的稳定版或 Beta 版本，可设置 `CHEESEWAF_RELEASE`（`v` 前缀可省略）：
 
 ```bash
-curl -fsSL https://github.com/LaokeQwQ/CheeseWAF/releases/latest/download/install-linux.sh \
-  | sudo env CHEESEWAF_RELEASE=v0.4.2-beta bash
+curl --proto '=https' --proto-redir '=https' -fsSL https://cheesesec.com/install.sh \
+  | sudo env CHEESEWAF_RELEASE=v0.4.5 bash
 ```
 
 选择语言后，交互流程会询问应用安装根目录。例如输入 `/opt/cheesewaf`，二进制、Web 资源、运行时配置、数据和日志会分别放在该目录下的 `bin/`、`web/`、`config/`、`data/`、`logs/` 子目录。直接回车则保留下面列出的分散式 FHS 默认布局。除非显式设置 `CHEESEWAF_UNIT_DIR`，systemd 单元仍安装在 `/etc/systemd/system`。
@@ -61,7 +75,7 @@ curl -fsSL https://github.com/LaokeQwQ/CheeseWAF/releases/latest/download/instal
 自动化部署时，可在调用安装器前设置 `CHEESEWAF_INSTALL_DIR`。如果同时设置 `CHEESEWAF_PREFIX`、`CHEESEWAF_WEB_DIR`、`CHEESEWAF_CONFIG_DIR`、`CHEESEWAF_DATA_DIR` 或 `CHEESEWAF_LOG_DIR`，对应的单独目录会覆盖根目录派生值：
 
 ```bash
-curl -fsSL https://github.com/LaokeQwQ/CheeseWAF/releases/latest/download/install-linux.sh \
+curl --proto '=https' --proto-redir '=https' -fsSL https://cheesesec.com/install.sh \
   | sudo env CHEESEWAF_INSTALL_DIR=/opt/cheesewaf bash
 ```
 
@@ -70,7 +84,7 @@ curl -fsSL https://github.com/LaokeQwQ/CheeseWAF/releases/latest/download/instal
 安装过程会依次完成：
 
 1. 询问中文或 English，并检测 Linux、架构、磁盘空间、`curl`、`tar`、`sha256sum`、`awk` 和 `od` 等前置条件。
-2. 下载所选服务器发行包，校验唯一匹配的 `SHA256SUMS` 条目；校验失败会在安装或启动服务前停止。
+2. 优先从官方来源下载所选服务器发行包，仅在下载失败时尝试 GitHub，并校验唯一匹配的 `SHA256SUMS` 条目。启用签名验证时，还会按精确版本标签验证校验文件；验证失败会在安装或启动服务前停止。
 3. 安装二进制、Web 控制台、运行时配置和 systemd 单元，并创建无登录权限的 `cheesewaf` 服务用户。
 4. 生成 HTTPS 管理监听、一次性初始化 Token 和安全入口路径。入口只接受 ASCII 字母和数字；默认随机生成，自定义值必须通过同一校验。
 5. 在可用时启动服务，检查监听和健康状态，并打印版本、架构、安装路径、服务状态、公网管理地址、检测到的内网管理地址、Token 有效期和后续操作。没有 systemd 时只安装文件，并明确报告服务未启动。
@@ -131,12 +145,12 @@ sudo journalctl -u cheesewaf -n 100 --no-pager
 
 ## 4. 离线或手动安装 {#offline}
 
-在可联网机器上，从 [GitHub Releases](https://github.com/LaokeQwQ/CheeseWAF/releases) 下载与服务器架构匹配的 `.tar.gz`、`SHA256SUMS` 和（发布时提供的）签名文件，再将它们传到目标服务器。在下载目录先校验并解压，然后从包根目录执行安装器：
+在可联网机器上，优先从 [CheeseSec 官网](https://cheesesec.com/) 获取与服务器架构匹配的 `.tar.gz`、`SHA256SUMS` 和（发布时提供的）签名文件，[GitHub Releases](https://github.com/LaokeQwQ/CheeseWAF/releases) 用作备用下载来源。所有文件必须来自同一发行版本，再将它们传到目标服务器。在下载目录先校验并解压，然后从包根目录执行安装器：
 
 ```bash
-sha256sum --check SHA256SUMS --ignore-missing
-tar -xzf cheesewaf-*-linux-*.tar.gz
-cd cheesewaf-*-linux-*
+sha256sum --check SHA256SUMS --ignore-missing &&
+tar -xzf cheesewaf-*-linux-*.tar.gz &&
+cd cheesewaf-*-linux-* &&
 sudo ./install-linux.sh
 ```
 
@@ -152,7 +166,7 @@ sudo ./install-linux.sh
 | --- | --- | --- |
 | 提示 `cheesewaf binary not found` | 在解压目录执行 `pwd` 和 `ls` | 从包根目录运行包内安装器，不要只解压二进制。 |
 | 提示 `web/dist/index.html missing` | `find web -maxdepth 2 -type f` | 重新下载完整发行包。 |
-| 校验失败 | `sha256sum --check SHA256SUMS --ignore-missing` | 删除压缩包，从 GitHub Releases 重新下载压缩包和对应的校验文件。 |
+| 校验和或签名验证失败 | 检查所选版本与匹配的校验、签名文件 | 停止安装并排查不匹配的原因，不要切换到备用来源或关闭校验继续安装。 |
 | 服务启动后立即退出 | `sudo journalctl -u cheesewaf -b --no-pager` | 先修复第一个配置校验错误；确认服务指向运行时配置副本，而不是仓库模板。 |
 | 远程无法访问 `9443` | `ss -ltnp \| grep ':9443'` | 在防火墙或安全组中只允许受信管理网络访问 `9443`，并确认监听地址与 `CHEESEWAF_ADMIN_PUBLIC_HOST`。 |
 | 初始化页能打开但提交失败 | `sudo ls -l /etc/cheesewaf/install-secrets.txt` | 使用回执中的初始化地址，或执行 `sudo -u cheesewaf /usr/local/bin/cheesewaf --config /etc/cheesewaf/cheesewaf.yaml --data-dir /var/lib/cheesewaf setup token reset --show` 重置；不要把地址贴进日志或工单。 |

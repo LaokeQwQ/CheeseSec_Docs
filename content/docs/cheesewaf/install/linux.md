@@ -5,7 +5,7 @@ weight: 10
 description: Install CheeseWAF with the one-line installer or an offline release archive, then complete first setup through the HTTPS management entry.
 ---
 
-This guide covers Linux physical servers, cloud instances, and virtual machines. The one-line installer asks for a language, detects the CPU architecture, downloads the latest stable release, verifies its checksum, installs the systemd service when systemd is available, and prints the first-setup URLs. Use the offline path when the host cannot reach GitHub.
+This guide covers Linux physical servers, cloud instances, and virtual machines. The one-line installer asks for a language, detects the CPU architecture, downloads the latest stable release from CheeseSec's official source first, verifies its checksum, installs the systemd service when systemd is available, and prints the first-setup URLs. GitHub is the backup for failed downloads. Use the offline path when the host has no outbound access.
 
 ## Summary {#summary}
 
@@ -38,22 +38,36 @@ For a host without outbound access: download the archive and `SHA256SUMS`, verif
 ## 1. One-line installation (recommended) {#one-click}
 
 ```bash
-curl -fsSL https://github.com/LaokeQwQ/CheeseWAF/releases/latest/download/install-linux.sh | sudo bash
+curl --proto '=https' --proto-redir '=https' -fsSL https://cheesesec.com/install.sh | sudo bash
 ```
 
 When already running as `root`, omit `sudo`:
 
 ```bash
-curl -fsSL https://github.com/LaokeQwQ/CheeseWAF/releases/latest/download/install-linux.sh | bash
+curl --proto '=https' --proto-redir '=https' -fsSL https://cheesesec.com/install.sh | bash
 ```
 
 The script reads language, install-root, and entry-name input from `/dev/tty`, so interactive answers are not consumed as script source. For unattended provisioning, set the documented `CHEESEWAF_*` environment variables and invoke the downloaded script; never put passwords or setup tokens in shell arguments or history.
 
+Downloads and redirects must use HTTPS. The installer prefers official release metadata and files, and tries GitHub only when an official download fails. A checksum failure or a failed signature verification stops the run before extraction or installation; do not switch sources to bypass a failed check. To verify release provenance as well as the checksum, install a trusted `cosign` separately and set `CHEESEWAF_VERIFY_SIGNATURE=1`; verification requires the release workflow identity for the exact selected tag.
+
+### GitHub backup entry {#github-fallback}
+
+If the official `install.sh` cannot be downloaded, use the GitHub release entry:
+
+```bash
+curl --proto '=https' --proto-redir '=https' -fsSL https://github.com/LaokeQwQ/CheeseWAF/releases/latest/download/install-linux.sh | sudo bash
+```
+
+This is a download fallback. It must not be used to retry an installation that stopped on a checksum or signature error.
+
+### Select a version or installation directory {#install-options}
+
 To install a specific stable or beta tag, set `CHEESEWAF_RELEASE` (the `v` prefix is optional):
 
 ```bash
-curl -fsSL https://github.com/LaokeQwQ/CheeseWAF/releases/latest/download/install-linux.sh \
-  | sudo env CHEESEWAF_RELEASE=v0.4.2-beta bash
+curl --proto '=https' --proto-redir '=https' -fsSL https://cheesesec.com/install.sh \
+  | sudo env CHEESEWAF_RELEASE=v0.4.5 bash
 ```
 
 During the interactive flow, choose an application install root after selecting the language. Entering `/opt/cheesewaf`, for example, places the binary, Web assets, runtime configuration, data, and logs under `bin/`, `web/`, `config/`, `data/`, and `logs/` beneath that root. Press Enter to keep the split FHS layout shown below. The systemd unit remains under `/etc/systemd/system` unless `CHEESEWAF_UNIT_DIR` is overridden.
@@ -61,7 +75,7 @@ During the interactive flow, choose an application install root after selecting 
 For automation, set `CHEESEWAF_INSTALL_DIR` before invoking the installer. Individual `CHEESEWAF_PREFIX`, `CHEESEWAF_WEB_DIR`, `CHEESEWAF_CONFIG_DIR`, `CHEESEWAF_DATA_DIR`, and `CHEESEWAF_LOG_DIR` values take precedence for their respective paths:
 
 ```bash
-curl -fsSL https://github.com/LaokeQwQ/CheeseWAF/releases/latest/download/install-linux.sh \
+curl --proto '=https' --proto-redir '=https' -fsSL https://cheesesec.com/install.sh \
   | sudo env CHEESEWAF_INSTALL_DIR=/opt/cheesewaf bash
 ```
 
@@ -70,7 +84,7 @@ Install roots must be absolute dedicated directories whose path components conta
 The installer will:
 
 1. Ask for 中文 or English and check Linux, architecture, disk space, `curl`, `tar`, `sha256sum`, `awk`, and `od` prerequisites.
-2. Download the selected server archive and verify its single matching `SHA256SUMS` entry. A failed verification stops before installation or service startup.
+2. Download the selected server archive from the official source first, using GitHub only for failed downloads, and verify its single matching `SHA256SUMS` entry. When signature verification is enabled, verify the checksum file against the exact release tag. A failed verification stops before installation or service startup.
 3. Install the binary, Web Console, runtime configuration, and systemd unit, then create the non-login `cheesewaf` service account.
 4. Generate an HTTPS management listener, a one-time setup token, and a security-entry path. The entry path accepts ASCII letters and digits only; a random value is generated by default, and a custom value is accepted only when it passes the same validation.
 5. Start the service when systemd is available, check the listener and health state, and print the version, architecture, installation paths, service state, public management URL, detected private management URLs, token lifetime, and next steps. Without systemd, the files are installed but the service is reported as not started.
@@ -131,12 +145,12 @@ With `CHEESEWAF_INSTALL_DIR=/opt/cheesewaf`, the corresponding application paths
 
 ## 4. Offline or manual installation {#offline}
 
-On a connected machine, download the architecture-specific `.tar.gz`, `SHA256SUMS`, and signature files when published from [GitHub Releases](https://github.com/LaokeQwQ/CheeseWAF/releases), then transfer them to the target host. Verify the files in the download directory, extract the archive, and run the installer from the package root:
+On a connected machine, prefer the [official CheeseSec website](https://cheesesec.com/) to obtain the architecture-specific `.tar.gz`, `SHA256SUMS`, and signature files when published. [GitHub Releases](https://github.com/LaokeQwQ/CheeseWAF/releases) is the backup download source. Keep every file from the same release, then transfer them to the target host. Verify the files in the download directory, extract the archive, and run the installer from the package root:
 
 ```bash
-sha256sum --check SHA256SUMS --ignore-missing
-tar -xzf cheesewaf-*-linux-*.tar.gz
-cd cheesewaf-*-linux-*
+sha256sum --check SHA256SUMS --ignore-missing &&
+tar -xzf cheesewaf-*-linux-*.tar.gz &&
+cd cheesewaf-*-linux-* &&
 sudo ./install-linux.sh
 ```
 
@@ -152,7 +166,7 @@ Do not use unverified binaries, third-party mirrors, or stale installer scripts.
 | --- | --- | --- |
 | `cheesewaf binary not found` | `pwd` and `ls` in the extracted directory | Run the packaged installer from the package root; do not extract only the binary. |
 | `web/dist/index.html missing` | `find web -maxdepth 2 -type f` | Download the complete release archive again. |
-| Checksum mismatch | `sha256sum --check SHA256SUMS --ignore-missing` | Delete the archive and download it again from GitHub Releases. |
+| Checksum or signature verification fails | Check the selected release and matching checksum/signature files | Stop installation and investigate the mismatch. Do not switch to the backup source or disable verification to continue. |
 | Service exits immediately | `sudo journalctl -u cheesewaf -b --no-pager` | Fix the first validation error; confirm the runtime config is a copy, not the tracked template. |
 | Port `9443` is unreachable remotely | `ss -ltnp \| grep ':9443'` | Allow `9443` from trusted administration networks in the firewall or security group, and confirm the listener and `CHEESEWAF_ADMIN_PUBLIC_HOST`. |
 | Setup page loads but initialization fails | `sudo ls -l /etc/cheesewaf/install-secrets.txt` | Use the setup URL from the receipt, or reset the token with `sudo -u cheesewaf /usr/local/bin/cheesewaf --config /etc/cheesewaf/cheesewaf.yaml --data-dir /var/lib/cheesewaf setup token reset --show`; never paste the URL into logs or tickets. |

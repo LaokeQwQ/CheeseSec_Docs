@@ -24,7 +24,7 @@ description: 选择 CheeseWAF 部署路径，准备主机，并验证首个运�
 | 权限 | `root` 或具备 `sudo` 权限的管理员 | 安装器需要创建 `cheesewaf` 服务用户和 systemd 单元。 |
 | 网络 | 能访问 `9443` 管理面，并规划 `8080` 数据面 | 管理流量与业务流量应使用不同的访问策略。 |
 | 浏览器 | 能访问管理监听器的浏览器 | Web 初始化向导和控制台都需要浏览器。 |
-| 发行包完整性 | 从 GitHub Releases 获取匹配发行包和 `SHA256SUMS` | 解压或执行前先完成校验。 |
+| 发行包完整性 | 从官方来源获取匹配发行包和 `SHA256SUMS`，GitHub 用作备用下载来源 | 解压或执行前先完成校验；校验和或签名错误时停止安装。 |
 
 一键安装器会启用 HTTPS，将管理监听绑定到所有网卡，并用一次性 Token 和生成的安全入口保护首次初始化。开放端口前，应把 `9443` 限制在受信管理网络内。发布模板和初始化向导默认使用 `0.0.0.0:9443`，并启用 `server.admin_public: true`；完全省略 `server` 相关键时，才回退到加载器的兜底值 `127.0.0.1:9443`。公开管理面仍必须启用管理 TLS、配置有效证书，并限制来源网络。
 
@@ -38,7 +38,7 @@ description: 选择 CheeseWAF 部署路径，准备主机，并验证首个运�
 
 ## 发行文件 {#release-files}
 
-官方预编译产物发布在 [GitHub Releases](https://github.com/LaokeQwQ/CheeseWAF/releases)。请根据目标平台和架构选择文件：
+发行下载优先使用 [CheeseSec 官网](https://cheesesec.com/) 入口。[Linux 安装器](linux/) 优先获取官方发行信息和文件，仅在下载失败时才使用 [GitHub Releases](https://github.com/LaokeQwQ/CheeseWAF/releases) 备用来源。校验和或签名验证失败会停止安装，不能因此切换来源继续。请根据目标平台和架构选择文件：
 
 | 文件名模式 | 目标平台 |
 | --- | --- |

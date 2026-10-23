@@ -9,7 +9,7 @@ description: 完成安装、初始化、验证，并在切换生产前接入一�
 
 ## 最短路径 {#short-version}
 
-1. 执行 Linux 一键安装；服务器无法访问 GitHub 时，安装经过校验的发行包。
+1. 通过官网入口执行 Linux 一键安装；服务器无法访问外网时，安装经过校验的发行包。
 2. 打开安装器输出的 HTTPS 初始化地址，创建首个管理员。
 3. 确认服务和就绪探针正常。
 4. 接入一个测试站点，经数据面监听器发送请求。
@@ -21,12 +21,12 @@ Web 控制台和确定性数据面防护不依赖大模型即可运行。基础�
 在具备 `sudo` 权限的 Linux 主机上执行：
 
 ```bash
-curl -fsSL https://github.com/LaokeQwQ/CheeseWAF/releases/latest/download/install-linux.sh | sudo bash
+curl --proto '=https' --proto-redir '=https' -fsSL https://cheesesec.com/install.sh | sudo bash
 ```
 
-安装器会询问语言和可选的应用安装根目录，下载并校验最新稳定版，在可用时启动 systemd 服务，并输出初始化地址。输入 `/opt/cheesewaf` 可将二进制、Web 资源、配置、数据和日志集中在同一目录；直接回车则使用标准 FHS 布局。需要指定版本时设置 `CHEESEWAF_RELEASE=vX.Y.Z[-beta]`。
+安装器会询问语言和可选的应用安装根目录，优先从官方来源下载并校验最新稳定版，在可用时启动 systemd 服务，并输出初始化地址。仅在官方下载失败时才尝试 GitHub；校验和或签名验证失败会停止安装。如果无法下载引导脚本本身，可使用 [GitHub 备用入口](../install/linux/#github-fallback)。所有下载及重定向必须使用 HTTPS。输入 `/opt/cheesewaf` 可将二进制、Web 资源、配置、数据和日志集中在同一目录；直接回车则使用标准 FHS 布局。需要指定版本时设置 `CHEESEWAF_RELEASE=vX.Y.Z[-beta]`。
 
-请妥善保管完整初始化地址。URL fragment 中包含一次性 Token，浏览器会将它转换为 `X-CheeseWAF-Setup-Token` 请求头，初始化完成后立即撤销。目标服务器无法访问 GitHub 时，请从[发行页](https://github.com/LaokeQwQ/CheeseWAF/releases)下载发行包和校验文件，再按 [Linux 安装指南](../install/linux/)的离线章节操作。Docker 部署请阅读 [Docker 指南](../install/docker/)。
+请妥善保管完整初始化地址。URL fragment 中包含一次性 Token，浏览器会将它转换为 `X-CheeseWAF-Setup-Token` 请求头，初始化完成后立即撤销。目标服务器无法访问外网时，请在可联网机器上下载同一版本的发行包和校验文件，再按 [Linux 安装指南](../install/linux/#offline) 的离线章节操作。Docker 部署请阅读 [Docker 指南](../install/docker/)。
 
 ## 第二步：初始化 {#setup}
 

@@ -8,7 +8,7 @@ description: Self-hosted Web Application Firewall with a single-binary data plan
 CheeseWAF is a self-hosted reverse-proxy WAF. It keeps deterministic request inspection on the data plane and runs optional model-assisted review out of band, so an external model is never required to serve normal traffic.
 
 {{% pageinfo color="info" %}}
-The shortest supported path is: run the one-line Linux installer, open the HTTPS setup URL it prints, complete `/setup`, and onboard one test site. Download releases from [GitHub Releases](https://github.com/LaokeQwQ/CheeseWAF/releases). The Apache License 2.0 is available in the [source repository](https://github.com/LaokeQwQ/CheeseWAF/blob/master/LICENSE).
+The shortest supported path is: run the [official Linux installer](https://cheesesec.com/install.sh), open the HTTPS setup URL it prints, complete `/setup`, and onboard one test site. Downloads prefer the official source, with GitHub as a backup for failed downloads; checksum or signature failures stop installation. See the [Linux guide](install/linux/) for the command and backup entry. The Apache License 2.0 is available in the [source repository](https://github.com/LaokeQwQ/CheeseWAF/blob/master/LICENSE).
 {{% /pageinfo %}}
 
 ## Choose a path {#start-here}
@@ -25,7 +25,7 @@ Start with the task you need to complete:
 ## Five-minute path {#five-minute-path}
 
 1. Prepare a supported Linux host with `sudo`, enough disk for the release and runtime data, and an administration path to port `9443`.
-2. Run the one-line installer. It downloads and verifies the latest stable release, installs the systemd service when available, and prints the HTTPS setup URL. Follow the verified archive path in the [Linux guide](install/linux/) when the host cannot reach GitHub.
+2. Run the official one-line installer. It downloads and verifies the latest stable release, installs the systemd service when available, and prints the HTTPS setup URL. Follow the verified archive path in the [Linux guide](install/linux/) when the host has no outbound access.
 3. Open the printed HTTPS URL, create the first administrator, and keep the one-time token out of tickets, screenshots, shell history, and logs.
 4. Follow [Quick Start](tutorial/) to add a test site before changing production DNS.
 

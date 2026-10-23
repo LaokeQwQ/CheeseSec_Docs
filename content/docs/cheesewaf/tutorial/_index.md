@@ -9,7 +9,7 @@ This is the single-node path. It follows the same order as the product workflow:
 
 ## Short version {#short-version}
 
-1. Run the one-line Linux installer, or install the verified release archive when the host cannot reach GitHub.
+1. Run the official one-line Linux installer, or install the verified release archive when the host has no outbound access.
 2. Open the HTTPS setup URL printed by the installer and create the first administrator.
 3. Confirm that the service and readiness check are healthy.
 4. Add a test site and send a request through the data-plane listener.
@@ -21,12 +21,12 @@ The Web Console and deterministic data-plane protection work without an LLM. Con
 On a Linux host with `sudo`, run:
 
 ```bash
-curl -fsSL https://github.com/LaokeQwQ/CheeseWAF/releases/latest/download/install-linux.sh | sudo bash
+curl --proto '=https' --proto-redir '=https' -fsSL https://cheesesec.com/install.sh | sudo bash
 ```
 
-The installer asks for a language and an optional application install root, downloads and verifies the latest stable release, starts the systemd service when available, and prints the setup URLs. Enter `/opt/cheesewaf` to keep the binary, Web assets, configuration, data, and logs together, or press Enter for the standard FHS layout. Set `CHEESEWAF_RELEASE=vX.Y.Z[-beta]` when you need a specific release.
+The installer asks for a language and an optional application install root, downloads and verifies the latest stable release from the official source first, starts the systemd service when available, and prints the setup URLs. GitHub is used only when an official download fails; a checksum or signature verification failure stops installation. If the bootstrap script itself cannot be downloaded, use the [GitHub backup entry](../install/linux/#github-fallback). All downloads and redirects must use HTTPS. Enter `/opt/cheesewaf` to keep the binary, Web assets, configuration, data, and logs together, or press Enter for the standard FHS layout. Set `CHEESEWAF_RELEASE=vX.Y.Z[-beta]` when you need a specific release.
 
-Keep the complete setup URL private. Its URL fragment contains a one-time token that the browser converts to the `X-CheeseWAF-Setup-Token` header; it is revoked after setup. If the server cannot reach GitHub, download the release archive and checksum files from the [release page](https://github.com/LaokeQwQ/CheeseWAF/releases) and follow the offline section of the [Linux installation guide](../install/linux/). For Docker, use the [Docker guide](../install/docker/).
+Keep the complete setup URL private. Its URL fragment contains a one-time token that the browser converts to the `X-CheeseWAF-Setup-Token` header; it is revoked after setup. If the server has no outbound access, download the matching release archive and checksum files on a connected machine and follow the offline section of the [Linux installation guide](../install/linux/#offline). For Docker, use the [Docker guide](../install/docker/).
 
 ## Step 2: Setup {#setup}
 

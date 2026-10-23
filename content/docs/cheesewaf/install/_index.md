@@ -24,7 +24,7 @@ Use this page to choose a deployment path. For a fresh Linux server, start with 
 | Privilege | `root` or an administrator with `sudo` | The installer creates the `cheesewaf` service account and systemd unit. |
 | Network | Administration path to `9443`; data-plane path to `8080` | Keep management and business traffic on separate access policies. |
 | Browser | A browser that can reach the management listener | Required for the Web setup wizard and Console. |
-| Release integrity | Matching archive and `SHA256SUMS` from GitHub Releases | Verify before extracting or running the binary. |
+| Release integrity | Matching archive and `SHA256SUMS` from the official source, with GitHub as the backup download source | Verify before extracting or running the binary; stop on checksum or signature errors. |
 
 The one-line installer enables HTTPS and binds the management listener on all interfaces, then gates first setup with a one-time token and a generated security entry. Restrict `9443` to trusted administration networks before exposing it. The shipped configuration template and the setup wizard default to `0.0.0.0:9443` with `server.admin_public: true`; a configuration that omits the `server` keys falls back to the loader default `127.0.0.1:9443`. A public listener still requires management TLS, a valid certificate, and a restricted source network.
 
@@ -38,7 +38,7 @@ On small hosts, use the lightweight profile: the setup wizard recommends `low` w
 
 ## Release files {#release-files}
 
-Official pre-built artifacts are published in [GitHub Releases](https://github.com/LaokeQwQ/CheeseWAF/releases). Select the artifact that matches the target platform and architecture:
+Start with the [official CheeseSec website](https://cheesesec.com/) for release downloads. The [Linux installer](linux/) prefers official release metadata and files, with [GitHub Releases](https://github.com/LaokeQwQ/CheeseWAF/releases) as the backup for failed downloads. Checksum or signature verification failures stop installation and must not trigger a source switch. Select the artifact that matches the target platform and architecture:
 
 | Artifact pattern | Target |
 | --- | --- |
