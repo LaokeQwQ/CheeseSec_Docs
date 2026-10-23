@@ -113,7 +113,7 @@ languages:
             icon: fa-brands fa-github
 
 params:
-  logo: images/cheesewaf-logo.png
+  logo: images/cheesesec-logo.png
   description: Product documentation for CheeseSec.
   copyright:
     authors: '[LaokeQwQ](https://github.com/LaokeQwQ)'
